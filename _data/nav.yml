@@ -1,5 +1,5 @@
-- name: Posts
-  link: /posts
+- name: Projects
+  link: /projects
 - name: Categories
   link: /categories/
 - name: About & Contact
