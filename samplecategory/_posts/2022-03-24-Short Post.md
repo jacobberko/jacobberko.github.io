@@ -4,4 +4,4 @@ author: tajacks
 title: Short Post
 ---
 
-Short Post HAHHAHA
+Short Post
