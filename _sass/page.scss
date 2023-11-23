@@ -76,8 +76,8 @@ strong {
 
 .about-section {
   display: flex;
-  align-items: center; // This aligns items vertically in the center
-  // Add any additional styling you need for this section
+  flex-direction: row-reverse;
+  align-items: center;
 }
 
 .headshot {
