@@ -11,3 +11,16 @@
 "post",
 "mobile"
 ;
+
+.headshot {
+  float: right;
+  /* Positions the image to the right */
+  margin-left: 20px;
+  /* Adds space between the text and the image */
+  border-radius: 50%;
+  /* Optional: makes the image circular */
+  width: 100px;
+  /* Adjust the size as needed */
+  height: auto;
+  /* Maintains the aspect ratio */
+}
