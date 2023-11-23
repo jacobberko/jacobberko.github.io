@@ -1,4 +1,4 @@
-- name: Posts
-  link: /posts
+- name: Projects
+  link: /projects
 - name: About & Contact
   link: /
