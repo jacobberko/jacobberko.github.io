@@ -4,7 +4,7 @@ title: LightSpeed Contact
 ---
 
 ## About
-<img src="assets/images/Jacob Berko Headshot.JPG" alt="Jake Berko" class="headshot">
+<img src="assets/images/fav2.jpg" alt="Jake Berko" class="headshot">
 I am a current sophomore at Cornell Univeristy. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and sharp business acumen. This solid technical foundation, paired with my award-winning game project recognized by the Google Change the Game Award, underscores my ability to blend technical rigor with creativity.
 <br>
 <br>
