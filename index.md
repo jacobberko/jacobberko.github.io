@@ -9,23 +9,29 @@ like AI, app and game development, and design. I am working on developing a Goog
 award winning game, as well as other iOS and coding projects. 
 
 ## Languages
-Python - Proficient
-Java - Proficient
-OCaml - Intermediate
-HTML - Beginner
-Swift - Beginner
+- Python - Proficient
+- Java - Proficient
+- OCaml - Intermediate
+- HTML - Beginner
+- Swift - Beginner
 <br>
-Here's a new paragraph for you.  
 
-## Features
-- Pagination
-    - Posts
-    - Categories
-- Posts
-- RSS
-- Syntax highlighting
-- Basic Mobile Support
-- SEO Plugin
+## Projects
+- Game of Life (OCaml)
+- Satisfy (Swift)
+- DNA Chain Processor (OCaml)
+- Text Generator "Little Language Model" (OCaml)
+- Search Engine for Text Documents (OCaml)
+- Spreadsheet Merger (Java)
+- PhD Geneology Tree (Java)
+- Clicker GUI (Java)
+- Maze Algorithm (Java)
+- Color Modeler (Python)
+- Space Invaders (Python)
+<br>
+
+For more info on each project, click on Projects tab
 
 ## Contact
-Email me, [tom@tomjack.ca](mailto:tom@tomjack.ca).
+Email me, [jmb787@cornell.edu](mailto:jmb787@cornell.edu).
+Call me, [856-449-9703]
