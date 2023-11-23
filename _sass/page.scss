@@ -31,7 +31,8 @@ div.main-content h2 {
   padding-bottom: 5px;
 }
 
-header h1, h5 {
+header h1,
+h5 {
   display: inline;
 }
 
@@ -71,4 +72,17 @@ h1,
 h2,
 strong {
   font-weight: 500;
+}
+
+.headshot {
+  width: 100px;
+  /* Adjust the size as needed */
+  height: 100px;
+  /* Make sure width and height are the same for a circle */
+  border-radius: 50%;
+  /* This makes the image circular */
+  float: left;
+  /* This aligns the image to the left */
+  margin-right: 10px;
+  /* Adds some space between the image and the text */
 }
