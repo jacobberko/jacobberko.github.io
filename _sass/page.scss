@@ -74,15 +74,16 @@ strong {
   font-weight: 500;
 }
 
+.about-section {
+  display: flex;
+  align-items: center; // This aligns items vertically in the center
+  // Add any additional styling you need for this section
+}
+
 .headshot {
   width: 175px;
-  /* Adjust the size as needed */
   height: 175px;
-  /* Make sure width and height are the same for a circle */
   border-radius: 50%;
-  /* This makes the image circular */
-  float: left;
-  /* This aligns the image to the left */
-  margin-right: 20px;
-  /* Adds some space between the image and the text */
+  margin-right: 20px; // Adjust the margin as needed
+  // float: left; is not needed with flexbox
 }
