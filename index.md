@@ -30,9 +30,10 @@ Within the realm of technology, my interests encompass areas such as Artificial 
 - Color Modeler (Python)
 - Space Invaders (Python)
 <br>
-
+<br>
 For more info on each project, click on Projects tab
 
 ## Contact
 Email me, [jmb787@cornell.edu](mailto:jmb787@cornell.edu).
+<br>
 Call me, [856-449-9703]
