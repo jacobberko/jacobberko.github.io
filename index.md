@@ -24,12 +24,8 @@ title: Jake Berko
 ## Projects
 - Game of Life (OCaml)
 - Satisfy (Swift)
-- DNA Chain Processor (OCaml)
 - Text Generator "Little Language Model" (OCaml)
 - Search Engine for Text Documents (OCaml)
-- Spreadsheet Merger (Java)
-- PhD Geneology Tree (Java)
-- Clicker GUI (Java)
 - Maze Algorithm (Java)
 - Color Modeler (Python)
 - Space Invaders (Python)
@@ -39,4 +35,4 @@ title: Jake Berko
 ## Contact
 Email me, [jmb787@cornell.edu](mailto:jmb787@cornell.edu).
 <br>
-Call me, [856-449-9703]
+Call me, 856-449-9703
