@@ -9,10 +9,6 @@ I am a current sophomore at Cornell University. My rigorous academic focus in Co
 <br>
 <br>
 
-## Interests
-Within the realm of technology, my interests encompass areas such as Artificial Intelligence, app and game development, and front-end design. This range of interests highlights my enthusiasm for both the creative and analytical aspects of tech. Whether it's exploring the complex algorithms of AI, crafting engaging and functional applications and games, or designing aesthetically pleasing and user-friendly interfaces, I am passionate about leveraging technology to create innovative solutions.
-<br>
-<br>
 
 ## Languages
 - Python - Proficient
