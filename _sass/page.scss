@@ -95,6 +95,9 @@ strong {
   /* Keeps the image aspect ratio */
   display: block;
   /* Images are inline by default, block will put it on a new line */
-  margin: 0 auto;
-  /* Centers the image within its container */
+  margin-left: 0;
+  /* Aligns the image to the left */
+  margin-right: auto;
+  /* Keeps the image to the left */
+
 }
