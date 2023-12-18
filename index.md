@@ -19,12 +19,11 @@ title: Jake Berko
 
 ## Projects
 - Game of Life (OCaml)
-- Satisfy (Swift)
+- Satisfy (iOS/Android)
 - Text Generator "Little Language Model" (OCaml)
 - Maze Algorithm (Java)
-- Search Engine for Text Documents (OCaml)
-- Color Modeler (Python)
 - Space Invaders (Python)
+- Search Engine for Text Documents (OCaml)
 <br>
 <br>
 
