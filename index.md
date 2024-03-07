@@ -11,9 +11,10 @@ title: Jake Berko
 ## Languages
 - Python - Proficient
 - Java - Proficient
-- OCaml - Intermediate
+- OCaml - Proficient
 - HTML - Beginner
 - Swift - Beginner
+- C - Beginner
 <br>
 <br>
 
