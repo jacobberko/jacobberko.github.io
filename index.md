@@ -4,7 +4,7 @@ title: Jake Berko
 ---
   <img src="images/headshot.jpg" alt="Jake Berko" class="headshot">
   <h2>About</h2>
-  <p>I am a current sophomore at Cornell University. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and sharp business insight.</p>
+  <p>I am an upcoming Junior at Cornell University. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and sharp business insight.</p>
 <br>
 <br>
 
@@ -12,9 +12,9 @@ title: Jake Berko
 - Python - Proficient
 - Java - Proficient
 - OCaml - Proficient
+- C - Proficiten
 - HTML - Beginner
 - Swift - Beginner
-- C - Beginner
 <br>
 <br>
 
