@@ -35,7 +35,6 @@ div.main-content h2 {
 header h1,
 h5 {
   display: inline;
-  font-weight: bold;
 }
 
 /* 04 Color and contrast */
@@ -43,17 +42,18 @@ h5 {
 body {
   color: #282f3a;
   background-color: #c5ccce;
+  font-weight: bold;
 }
 
 h1,
 h2,
 strong {
   color: #282f3a;
-  font-weight: bold;
+  font-weight: bolder;
 }
 
 header h5 {
-  font-weight: bold;
+  font-weight: bolder;
 }
 
 /* 05 Balance */
