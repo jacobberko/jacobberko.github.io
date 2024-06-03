@@ -20,12 +20,19 @@ I am an incoming Junior at Cornell University. My rigorous academic focus in Com
 <br>
 
 ## Relevant Coursework
-- Game of Life (OCaml)
-- Satisfy (iOS/Android)
-- Text Generator "Little Language Model" (OCaml)
-- Maze Algorithm (Java)
-- Space Invaders (Python)
-- Search Engine for Text Documents (OCaml)
+- Intro Computing Using Python
+- Calculus I & II
+- Object Oriented Programming & Data Structures
+- Intro Microeconomics
+- Into to Management
+- Data Structures & Functional Programming
+- Discrete Structures
+- Linear Algebra
+- Computer System Organization
+- Financial Accounting
+- Finance
+- Introduction to Algorithms
+- Probability Models & Inference
 <br>
 <br>
 
