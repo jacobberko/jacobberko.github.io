@@ -19,7 +19,7 @@ I am an incoming Junior at Cornell University. My rigorous academic focus in Com
 <br>
 <br>
 
-## Projects
+## Relevant Coursework
 - Game of Life (OCaml)
 - Satisfy (iOS/Android)
 - Text Generator "Little Language Model" (OCaml)
