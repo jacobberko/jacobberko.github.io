@@ -8,7 +8,7 @@ html {
 /* 01 Font family */
 
 body {
-  font-family: "Courier New", "Helvetica", sans-serif;
+  font-family: "Plus Jakarta Sans", "Helvetica", sans-serif;
 }
 
 /* 03 Spacing */
@@ -34,19 +34,21 @@ div.main-content h2 {
 header h1,
 h5 {
   display: inline;
+  font-weight: bold;
 }
 
 /* 04 Color and contrast */
 
 body {
   color: #282f3a;
-  background-color: #c5ccce;
+  background-color: #ffffff;
 }
 
 h1,
 h2,
 strong {
   color: #282f3a;
+  font-weight: bold;
 }
 
 header h5 {
