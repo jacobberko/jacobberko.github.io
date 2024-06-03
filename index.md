@@ -13,7 +13,7 @@ I am an incoming Junior at Cornell University. My rigorous academic focus in Com
 - Python - Proficient
 - Java - Proficient
 - OCaml - Proficient
-- C - Proficiten
+- C - Proficitent
 - HTML - Beginner
 - Swift - Beginner
 <br>
