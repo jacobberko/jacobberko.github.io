@@ -35,6 +35,7 @@ div.main-content h2 {
 header h1,
 h5 {
   display: inline;
+  font-weight: bold;
 }
 
 /* 04 Color and contrast */
@@ -42,18 +43,17 @@ h5 {
 body {
   color: #282f3a;
   background-color: #c5ccce;
-  font-weight: bold;
 }
 
 h1,
 h2,
 strong {
   color: #282f3a;
-  font-weight: bolder;
+  font-weight: bold;
 }
 
 header h5 {
-  font-weight: bolder;
+  font-weight: bold;
 }
 
 /* 05 Balance */
@@ -86,8 +86,6 @@ strong {
 .headshot {
   width: 125px;
   height: 125px;
-  // border-radius: 50%;
-  // margin-right: 20px;
 
 }
 
