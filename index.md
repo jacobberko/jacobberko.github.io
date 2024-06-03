@@ -2,7 +2,7 @@
 layout: default
 title: Jake Berko
 ---
-  <img src="images/memoji.png" alt="Jake Berko">
+  <img src="images/memoji.png" alt="Jake Berko" class="headshot">
   <h2>Hello There!👋</h2>
   <p>I am an incoming Junior at Cornell University. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and sharp business insight.</p>
 <br>
