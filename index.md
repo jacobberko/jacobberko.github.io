@@ -5,7 +5,7 @@ title: Jake Berko
 <img src="images/memoji.png" alt="Jake Berko" class="headshot">
 
 ## Hello There!👋
-I am an incoming Junior at Cornell University. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and business insight.
+I am an incoming junior at Cornell University. My rigorous academic focus in Computer Science, complemented by my minor in business, has provided me with a strong technical foundation and business insight.
 <br>
 <br>
 
