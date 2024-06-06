@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Jake Berko
+title: Jacob Berko
 ---
 <img src="images/memoji.png" alt="Jake Berko" class="headshot">
 
