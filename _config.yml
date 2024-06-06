@@ -1,13 +1,13 @@
 # Site Specific Configuration
-name: LightSpeed
-description: A simple Jekyll theme
-url: https://example.com
-author: tajacks
-timezone: America/Toronto
+name: Portfolio
+description: HTML developed portfolio developed by Jake Berko 
+url: https://jacobberko.com
+author: jacobberko
+timezone: America
 timezone_short: ET
 
 # Keywords
-keywords: ['seo', 'key', 'words']
+keywords: ['portfolio', 'key', 'words']
 
 # Analytics (Plausible requires sign-up)
 analytics:
