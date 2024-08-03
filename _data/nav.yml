@@ -1,4 +1,8 @@
 - name: Home
   link: /
-- name: Projects
-  link: /projects
+- name: Code
+  link: /code
+- name: Creative
+  link: /creative
+- name: Business
+  link: /business
