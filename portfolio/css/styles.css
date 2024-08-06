@@ -30,6 +30,20 @@ a {
   line-height: 30px;
 }
 
+/* Header */
+header {
+  text-align: center;
+  padding: 1em 0;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2em;
+  font-weight: 600;
+}
+
 /* Portfolio section */
 #portfolio {
   padding: 2em;
