@@ -1,5 +1,5 @@
 /* Your existing styles */
-/* body {
+body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
@@ -10,7 +10,7 @@ header {
   color: white;
   text-align: center;
   padding: 1em;
-} */
+}
 
 .gallery {
   display: flex;
