@@ -685,4 +685,33 @@
   }
   updateClock();
   window.setInterval(updateClock, 30000);
+
+  // Click-to-load Apple Music embed, with a manual fallback if it never responds.
+  doc.querySelectorAll("[data-music-embed]").forEach(function (panel) {
+    const trigger = panel.querySelector("[data-music-embed-trigger]");
+    const src = panel.dataset.embedSrc;
+    if (!trigger || !src) return;
+
+    trigger.addEventListener("click", function () {
+      const iframe = doc.createElement("iframe");
+      iframe.title = panel.dataset.embedTitle || "Apple Music player";
+      iframe.setAttribute("allow", "autoplay *; encrypted-media *;");
+      iframe.setAttribute("sandbox", "allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation");
+      iframe.src = src;
+      trigger.replaceWith(iframe);
+
+      const fallbackTimer = window.setTimeout(function () {
+        const notice = doc.createElement("p");
+        notice.className = "music-player__fallback";
+        notice.innerHTML = "Apple Music is taking a while to respond. <a href=\"" +
+          src.replace("embed.music.apple.com", "music.apple.com") +
+          "\" target=\"_blank\" rel=\"noopener noreferrer\">Open it directly instead ↗</a>";
+        panel.appendChild(notice);
+      }, 6000);
+
+      iframe.addEventListener("load", function () {
+        window.clearTimeout(fallbackTimer);
+      }, { once: true });
+    }, { once: true });
+  });
 })();
