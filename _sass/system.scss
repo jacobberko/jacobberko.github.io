@@ -3287,7 +3287,7 @@ body.game-mode::before {
 .footer-callout > a {
   display: block;
   margin: 2rem 0 clamp(3rem, 5vw, 5rem);
-  font: 900 clamp(2.8rem, 8vw, 8rem)/0.78 var(--font-display);
+  font: 900 clamp(2rem, 5.5vw, 5.5rem)/0.78 var(--font-display);
   letter-spacing: -0.09em;
   text-transform: uppercase;
 }
@@ -3810,7 +3810,7 @@ body.game-mode::before {
   .lightbox-prev { left: 0.7rem; }
   .lightbox-next { right: 0.7rem; }
 
-  .footer-callout > a { font-size: clamp(2rem, 10vw, 4rem); }
+  .footer-callout > a { font-size: clamp(1.5rem, 8vw, 3rem); }
   .footer-callout > a span:nth-child(2) { margin-left: 0; }
   .footer-meta { grid-template-columns: 1fr; }
   .footer-links { grid-column: 1; flex-wrap: wrap; }
