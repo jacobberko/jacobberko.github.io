@@ -78,18 +78,18 @@ section: creative
       </article>
     </div>
 
-    <div class="music-player window reveal" data-music-embed
-      data-embed-src="https://embed.music.apple.com/us/album/waves-ep/1824102575"
-      data-embed-title="Listen to the Waves EP by Jake Berko on Apple Music">
+    <div class="music-player window reveal">
       <div class="window-bar">
         <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
         <span class="window-bar__title">apple-music.embed</span>
         <span class="window-bar__status">LIVE</span>
       </div>
-      <button type="button" class="music-player__load" data-music-embed-trigger>
-        <span>▶ Play “Waves” inline</span>
-        <small>Loads the Apple Music player · opens in a new tab if it doesn’t respond</small>
-      </button>
+      <iframe
+        title="Listen to the Waves EP by Jake Berko on Apple Music"
+        allow="autoplay *; encrypted-media *;"
+        loading="lazy"
+        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+        src="https://embed.music.apple.com/us/album/waves-ep/1824102575"></iframe>
     </div>
   </section>
 
