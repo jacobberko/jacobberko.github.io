@@ -224,6 +224,94 @@ description: Software projects by Jacob Berko across Swift, OCaml, Java, Python,
 
             <div class="project-grid">
                 <article class="project-card tilt-card reveal">
+                    <div class="project-media project-media--doc">
+                        <div class="window">
+                            <div class="window-bar">
+                                <span>dora_poster.pdf</span>
+                                <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+                            </div>
+                            <img
+                                src="{{ '/code/images/dora-poster.jpg' | relative_url }}"
+                                alt="Research poster titled Reimplementing DoRA: Weight-Decomposed Low-Rank Adaptation in a Scaled-Down Text Classification Setting, showing method diagrams and accuracy results"
+                                width="1800"
+                                height="1200"
+                                loading="lazy"
+                                decoding="async">
+                        </div>
+                    </div>
+                    <div class="project-body">
+                        <ul class="project-meta" aria-label="DoRA reimplementation project details">
+                            <li><time datetime="2026">2026</time></li>
+                            <li>Python</li>
+                            <li>Deep learning</li>
+                        </ul>
+                        <h3>DoRA Reimplementation</h3>
+                        <p>
+                            A from-scratch reimplementation of DoRA (Weight-Decomposed Low-Rank Adaptation), which
+                            splits a frozen pretrained weight into a trainable magnitude and a direction updated
+                            through a LoRA-style low-rank branch. Built on a Phi-2 backbone rather than the paper’s
+                            LLaMA-7B and evaluated across eight commonsense reasoning benchmarks, it reached 80.3%
+                            average accuracy while training the fewest parameters of any setup we compared against.
+                        </p>
+                        <ul class="tag-list" aria-label="DoRA reimplementation technologies">
+                            <li class="tag">PyTorch</li>
+                            <li class="tag">Phi-2</li>
+                            <li class="tag">PEFT</li>
+                            <li class="tag">LoRA</li>
+                        </ul>
+                        <a
+                            class="cta cta--dark"
+                            href="https://github.com/CS4782-DoRA-Reimplementation/DoRA-Reimplementation"
+                            target="_blank"
+                            rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+                    </div>
+                </article>
+
+                <article class="project-card tilt-card reveal">
+                    <div class="project-media project-media--doc">
+                        <div class="window">
+                            <div class="window-bar">
+                                <span>read_status_tracker.ui</span>
+                                <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+                            </div>
+                            <img
+                                src="{{ '/code/images/gerrit-read-status.jpg' | relative_url }}"
+                                alt="Gerrit code review interface showing per-file read checkboxes and a Read Progress Dashboard with file and line coverage metrics"
+                                width="1600"
+                                height="792"
+                                loading="lazy"
+                                decoding="async">
+                        </div>
+                    </div>
+                    <div class="project-body">
+                        <ul class="project-meta" aria-label="Gerrit read status tracking project details">
+                            <li><time datetime="2026">2026</time></li>
+                            <li>Java</li>
+                            <li>TypeScript</li>
+                        </ul>
+                        <h3>Gerrit Read Status Tracking</h3>
+                        <p>
+                            A client-facing team project built on top of Gerrit, the open-source code review
+                            platform. Reviewers can mark individual files—or specific line ranges inside a diff—as
+                            read, and a Read Progress Dashboard rolls that up into file and line coverage so a long
+                            review can be picked up exactly where it was left off. Backed by a custom
+                            read-status-tracker plugin with REST endpoints and a Bazel/JUnit test suite.
+                        </p>
+                        <ul class="tag-list" aria-label="Gerrit read status tracking technologies">
+                            <li class="tag">Java</li>
+                            <li class="tag">TypeScript</li>
+                            <li class="tag">Bazel</li>
+                            <li class="tag">Gerrit</li>
+                        </ul>
+                        <a
+                            class="cta cta--dark"
+                            href="https://github.coecis.cornell.edu/km2285/gerrit-enhancement"
+                            target="_blank"
+                            rel="noopener noreferrer">View repository <span aria-hidden="true">↗</span></a>
+                    </div>
+                </article>
+
+                <article class="project-card tilt-card reveal">
                     <div class="project-media project-media--site-preview">
                         <div class="window">
                             <div class="window-bar">

@@ -1692,6 +1692,17 @@ body.is-leaving .page-transition i {
   object-position: center top;
 }
 
+/* Posters and UI screenshots need to stay legible, so contain rather than crop. */
+.project-media--doc {
+  min-height: 20rem;
+}
+
+.project-media--doc img {
+  padding: 0.75rem;
+  background: #f0f0ec;
+  object-fit: contain;
+}
+
 .project-media > .window > img {
   min-height: 0;
   flex: 1;
