@@ -3224,15 +3224,19 @@ ul.project-meta {
   transform: translateY(0);
 }
 
+/* Green-phosphor CRT. The filter tints the whole page so dark sections shift too,
+   which a background-colour swap alone cannot do. */
 body.crt-mode {
-  --bg: #dfead7;
-  filter: contrast(1.025);
+  --bg: #d3ecc6;
+  filter: sepia(0.55) hue-rotate(55deg) saturate(1.5) contrast(1.05);
 }
 
 body.crt-mode .site-noise {
-  opacity: 0.11;
-  background-image: repeating-linear-gradient(0deg, transparent 0 3px, rgba(17, 17, 15, 0.42) 4px);
-  background-size: 100% 4px;
+  opacity: 0.32;
+  background-image:
+    radial-gradient(125% 100% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(4, 22, 6, 0.85) 100%),
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(8, 32, 10, 0.55) 3px);
+  background-size: 100% 100%, 100% 3px;
 }
 
 body.game-mode::before {
