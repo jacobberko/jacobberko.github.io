@@ -3224,19 +3224,18 @@ ul.project-meta {
   transform: translateY(0);
 }
 
-/* Green-phosphor CRT. The filter tints the whole page so dark sections shift too,
-   which a background-colour swap alone cannot do. */
+/* Old-monitor CRT: heavy scanlines and a vignette, desaturated rather than colour-tinted. */
 body.crt-mode {
-  --bg: #d3ecc6;
-  filter: sepia(0.55) hue-rotate(55deg) saturate(1.5) contrast(1.05);
+  --bg: #e3e1d7;
+  filter: grayscale(0.4) contrast(1.1);
 }
 
 body.crt-mode .site-noise {
-  opacity: 0.32;
+  opacity: 0.7;
   background-image:
-    radial-gradient(125% 100% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(4, 22, 6, 0.85) 100%),
-    repeating-linear-gradient(0deg, transparent 0 2px, rgba(8, 32, 10, 0.55) 3px);
-  background-size: 100% 100%, 100% 3px;
+    radial-gradient(130% 105% at 50% 50%, rgba(0, 0, 0, 0) 46%, rgba(10, 10, 8, 0.8) 100%),
+    repeating-linear-gradient(0deg, transparent 0 2px, rgba(10, 10, 8, 0.9) 4px);
+  background-size: 100% 100%, 100% 4px;
 }
 
 body.game-mode::before {
