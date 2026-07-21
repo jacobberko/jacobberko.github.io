@@ -1,5 +1,11 @@
-<nav>
+<nav class="primary-nav" id="primary-nav" aria-label="Primary navigation">
+  <ul>
     {% for item in site.data.nav %}
-    <a href="{{ item.link }}">{{ item.name }}</a>
+    <li>
+      <a href="{{ item.link }}"{% if page.section == item.id %} class="is-active" aria-current="page"{% endif %} data-transition-link>
+        <span>{{ item.name }}</span>
+      </a>
+    </li>
     {% endfor %}
+  </ul>
 </nav>

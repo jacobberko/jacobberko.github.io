@@ -1,8 +1,12 @@
 - name: Home
   link: /
+  id: home
 - name: Code
-  link: /code
+  link: /code/
+  id: code
 - name: Creative
-  link: /creative
-- name: Business
-  link: /business
+  link: /creative/
+  id: creative
+- name: Startup
+  link: /business/
+  id: startup

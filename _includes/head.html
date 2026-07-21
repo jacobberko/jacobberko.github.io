@@ -1,16 +1,26 @@
 <meta charset="utf-8" />
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#e9e8e1" />
+<meta name="color-scheme" content="light" />
+<meta name="format-detection" content="telephone=no" />
 {% seo %}
+<meta property="og:image" content="{{ '/images/og-card.png' | absolute_url }}" />
+<meta property="og:image:width" content="1734" />
+<meta property="og:image:height" content="907" />
+<meta property="og:image:alt" content="Jacob Berko — software engineer, founder, and creative builder" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="{{ '/images/og-card.png' | absolute_url }}" />
+<meta name="twitter:image:alt" content="Jacob Berko — software engineer, founder, and creative builder" />
 {% if site.keywords or page.tags %}
 <meta name="keywords"
   content="{% if page.tags %}{{ page.tags | join: ','}}{% else %}{{ site.keywords | join: ',' }}{% endif %}" />
 {% endif %}
-<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" href="/images/favicon.png" />
 <link rel="apple-touch-icon" href="/apple.png" />
-<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css" />
-<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/prism.css" />
-<script src="{{ site.baseurl }}/assets/js/prism.js"></script>
+<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css?v=20260720i" />
+<script>document.documentElement.classList.add('js');</script>
+<script defer src="{{ site.baseurl }}/assets/js/site.js?v=20260720i"></script>
 {% if site.analytics.plausible.enabled %}
 <script defer data-domain="{{ site.analytics.plausible.site_fqdn }}"
   src="{{ site.analytics.plausible.script_source }}"></script>

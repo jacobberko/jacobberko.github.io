@@ -1,6 +1,18 @@
-<div class="footer">
-  <span class="footer-text float-left">Website developed by Jake Berko in HTML, hosted on Github Pages. </span>
-  <span class="footer-text float-right">
-    Site Updated: {{ site.time | date: '%Y-%m-%d' }} {{ site.timezone_short }}
-  </span>
+<div class="footer-shell">
+  <div class="footer-callout">
+    <p class="section-kicker">[ CONNECTION REQUEST ]</p>
+    <a href="mailto:jmb787@cornell.edu" data-cursor="EMAIL">
+      <span>LET'S BUILD</span>
+      <span>SOMETHING<span class="footer-dot">.</span></span>
+    </a>
+  </div>
+  <div class="footer-meta">
+    <p>Designed &amp; developed by Jake Berko. Hosted on GitHub Pages.</p>
+    <p><span id="local-clock">LOCAL TIME</span> · Build {{ site.time | date: '%Y.%m.%d' }} {{ site.timezone_short }}</p>
+    <div class="footer-links">
+      <a href="mailto:jmb787@cornell.edu">Email</a>
+      <a href="https://www.linkedin.com/in/jberko/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+      <a href="https://github.com/jacobberko" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </div>
+  </div>
 </div>

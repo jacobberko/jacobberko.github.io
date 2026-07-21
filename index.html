@@ -1,60 +1,189 @@
 ---
 layout: default
-title: Jacob Berko
+title: Jacob Berko — Software Engineer, Founder & Creative
+section: home
+description: Cornell computer science student building software, businesses, and creative projects.
 ---
-<img src="images/memoji.png" alt="Jake Berko" class="headshot">
-<h2>Hi There!👋</h2>
-I am a Senior at Cornell University majoring in Computer Science with a minor in Business. I’ve always loved the
-intersection of technology and business, a passion that drives my work as a founder of Kappa Theta Pi and my upcoming
-software engineering internship at Google. Beyond the classroom, I love to build and create. Whether I’m developing iOS
-apps, running a startup in the $5B resale market, or working on creative projects in music production, I’m always
-looking for new ways to bring ideas to life.<br>
 
-<br>
-<h2>Experiences</h2>
-<ul>
-    <li>2026 - Google - Incoming Software Engineering Intern</li>
-    <li>2025 - Protiviti - Technology Consulting Intern</li>
-    <li>2024 - Kappa Theta Pi (Preprofessional Computer Science Fraternity) - Founder/President</li>
-    <li>2024 - Jewish Federation of Greater Philadelphia - Technology Intern</li>
-    <li>2024 - Cornell Technology Consulting - Project Manager</li>
-    <li>2023 - International Business Consulting - Director of Marketing</li>
-    <li>2023 - Cornell ChemE Car - Business Lead</li>
-    <li>2022 - Google Change the Game Award - Winner</li>
-</ul>
-<br>
+<div class="page-shell home-page">
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="hero-utility reveal">
+      <p class="eyebrow"><span class="status-pulse" aria-hidden="true"></span> CS + BUSINESS / CORNELL ’26</p>
+      <p class="system-code">[ PORTFOLIO SYSTEM 001 ]</p>
+    </div>
 
-<h2>Languages</h2>
-<ul>
-    <li>Python - Proficient</li>
-    <li>Java - Proficient</li>
-    <li>OCaml - Proficient</li>
-    <li>C - Proficient</li>
-    <li>HTML - Beginner</li>
-    <li>Swift - Intermediate</li>
-    <li>JavaScript - Intermediate</li>
-    <li>SQL - Beginner</li>
-</ul>
-<br>
+    <div class="hero-title-lockup">
+      <h1 class="mega-title" id="home-title" data-scramble aria-label="Jake Berko">
+        <span>JAKE</span>
+        <span>BERKO</span>
+      </h1>
+      <button class="chrome-orb" type="button" aria-label="Open portfolio terminal" data-terminal-open data-cursor="OPEN">
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
 
-<h2>Relevant Coursework</h2>
-<ul>
-    <li>Object Oriented Programming & Data Structures</li>
-    <li>Linear Algebra</li>
-    <li>Discrete Structures</li>
-    <li>Introduction to Algorithms</li>
-    <li>Probability Models & Inference</li>
-    <li>Machine Learning</li>
-    <li>Foundations of Artificial Intelligence</li>
-    <li>Intro to Software Engineering</li>
-    <li>Deep Learning</li>
-    <li>Computer System Organization</li>
-</ul>
-<br>
+    <div class="hero-lower">
+      <div class="hero-copy reveal">
+        <p class="hero-deck">Software engineer, founder, and builder working where technology meets business.</p>
+        <div class="hero-actions">
+          <a class="cta cta--dark" href="/code/" data-cursor="WORK" data-transition-link>View coding projects <span aria-hidden="true">↗</span></a>
+          <a class="cta cta--ghost" href="mailto:jmb787@cornell.edu" data-cursor="EMAIL">Email me <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="terminal-hint">PSST—PRESS <kbd aria-label="Backtick key"><span aria-hidden="true">&#96;</span></kbd> FOR COMMAND MODE</p>
+      </div>
 
-<h2>Contact</h2>
-<ul>
-    <li>Personal Email, <a href="mailto:jmb787@cornell.edu">jmb787@cornell.edu</a></li>
-    <li>LinkedIn, <a href="https://www.linkedin.com/in/jberko/">Profile Link</a></li>
-    <li>GitHub, <a href="https://github.com/jacobberko">Profile Link</a></li>
-</ul>
+      <figure class="portrait-window window tilt-card reveal" data-draggable>
+        <div class="window-bar" data-drag-handle>
+          <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>ABOUT_ME.PNG</p>
+          <span>01</span>
+        </div>
+        <div class="portrait-frame">
+          <img src="/images/headshot-2026.png" alt="Jacob Berko wearing a dark suit jacket and white shirt against a softly blurred background" width="932" height="875" fetchpriority="high">
+          <div class="portrait-scan" aria-hidden="true"></div>
+        </div>
+        <figcaption>
+          <span>JAKE BERKO</span>
+          <span>ITHACA, NY</span>
+        </figcaption>
+      </figure>
+    </div>
+
+  </section>
+
+  <div class="ticker" aria-label="Portfolio disciplines">
+    <div class="ticker-track">
+      {% assign disciplines = "SOFTWARE ENGINEERING|iOS DEVELOPMENT|ENTREPRENEURSHIP|AI SYSTEMS|PRODUCT ENGINEERING|MOBILE ENGINEERING|ALGORITHMS|WEB DEVELOPMENT|FUNCTIONAL PROGRAMMING|MUSIC PRODUCTION|CREATIVE TECHNOLOGY|STARTUP BUILDING|INTERACTIVE SYSTEMS|PROTOTYPING|SYSTEMS THINKING|TECH + BUSINESS" | split: "|" %}
+      <div class="ticker-group">
+        {% for discipline in disciplines %}<span class="ticker-item">{{ discipline }} <i aria-hidden="true">✳</i></span>{% endfor %}
+      </div>
+      <div class="ticker-group" aria-hidden="true">
+        {% for discipline in disciplines %}<span class="ticker-item">{{ discipline }} <i aria-hidden="true">✳</i></span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <section class="snapshot-section section-block" aria-label="Quick profile">
+    <div class="stat-strip reveal">
+      <div class="stat-item"><span>01 / NOW</span><strong>Google</strong><small>Software Engineering Intern · 2026</small></div>
+      <div class="stat-item"><span>02 / STUDY</span><strong>Cornell</strong><small>Computer Science + Business</small></div>
+      <div class="stat-item"><span>03 / BUILD</span><strong>Founder</strong><small>Kappa Theta Pi</small></div>
+      <div class="stat-item"><span>04 / MODE</span><strong>Creating</strong><small>Software · Startups · Music</small></div>
+    </div>
+  </section>
+
+  <section class="about-section section-block" aria-labelledby="about-title" data-cursor-tone="dark">
+    <div class="section-header reveal">
+      <p class="section-kicker">[ 01 / PROFILE ]</p>
+      <h2 id="about-title" class="acid-heading">
+        <span class="acid-heading__line">TECHNICAL</span>
+        <span class="acid-heading__line acid-heading__line--caret">BY DESIGN.</span>
+      </h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-index reveal" aria-hidden="true">
+        <span>J</span><span>B</span><span>2</span><span>6</span>
+      </div>
+      <div class="about-copy reveal">
+        <p><span class="text-highlight" data-word-type>I am a Senior at Cornell University majoring in Computer Science with a minor in Business. I’ve always loved the intersection of technology and business, a passion that drives my work as a founder of Kappa Theta Pi and my 2026 software engineering internship at Google.</span></p>
+        <p><span class="text-highlight" data-word-type>Beyond the classroom, I love to build and create. Whether I’m developing iOS apps, running a startup in the $5B resale market, or working on creative projects in music production, I’m always looking for new ways to bring ideas to life.</span></p>
+        <div class="inline-links">
+          <a href="/code/" data-transition-link>Explore code <span aria-hidden="true">→</span></a>
+          <a href="/business/" data-transition-link>View startup <span aria-hidden="true">→</span></a>
+          <a href="/creative/" data-transition-link>Hear the work <span aria-hidden="true">→</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="experience-section section-block section-block--dark" aria-labelledby="experience-title">
+    <div class="section-header reveal">
+      <p class="section-kicker">[ 02 / EXPERIENCE.LOG ]</p>
+      <h2 id="experience-title">EXPERIENCE.</h2>
+      <p class="section-summary">A running log of engineering, consulting, entrepreneurship, and leadership.</p>
+    </div>
+
+    <ol class="experience-list">
+      <li class="experience-row reveal tilt-card">
+        <time>2026</time><strong>Google</strong><span>Software Engineering Intern</span><em>01</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2025</time><strong>Protiviti</strong><span>Technology Consulting Intern</span><em>02</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2024</time><strong>Kappa Theta Pi</strong><span>Founder / President · Preprofessional Computer Science Fraternity</span><em>03</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2024</time><strong>Jewish Federation of Greater Philadelphia</strong><span>Technology Intern</span><em>04</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2024</time><strong>Cornell Technology Consulting</strong><span>Project Manager</span><em>05</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2023</time><strong>International Business Consulting</strong><span>Director of Marketing</span><em>06</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2023</time><strong>Cornell ChemE Car</strong><span>Business Lead</span><em>07</em>
+      </li>
+      <li class="experience-row reveal tilt-card">
+        <time>2022</time><strong>Google Change the Game Award</strong><span>Winner</span><em>08</em>
+      </li>
+    </ol>
+  </section>
+
+  <section class="capabilities-section section-block" aria-labelledby="capabilities-title">
+    <div class="section-header reveal">
+      <p class="section-kicker">[ 03 / TOOLKIT ]</p>
+      <h2 id="capabilities-title">LANGUAGES &amp;<br><span>LOGIC.</span></h2>
+    </div>
+
+    <div class="capabilities-grid">
+      <div class="skills-window window reveal">
+        <div class="window-bar">
+          <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>LANGUAGES.SYS</p><span>8 ITEMS</span>
+        </div>
+        <ul class="skill-matrix">
+          <li><strong>Python</strong><span class="skill-level level-4" aria-label="Proficient"><i></i><i></i><i></i><i></i></span><small>Proficient</small></li>
+          <li><strong>Java</strong><span class="skill-level level-4" aria-label="Proficient"><i></i><i></i><i></i><i></i></span><small>Proficient</small></li>
+          <li><strong>OCaml</strong><span class="skill-level level-4" aria-label="Proficient"><i></i><i></i><i></i><i></i></span><small>Proficient</small></li>
+          <li><strong>C</strong><span class="skill-level level-4" aria-label="Proficient"><i></i><i></i><i></i><i></i></span><small>Proficient</small></li>
+          <li><strong>Swift</strong><span class="skill-level level-3" aria-label="Intermediate"><i></i><i></i><i></i><i></i></span><small>Intermediate</small></li>
+          <li><strong>JavaScript</strong><span class="skill-level level-3" aria-label="Intermediate"><i></i><i></i><i></i><i></i></span><small>Intermediate</small></li>
+          <li><strong>HTML</strong><span class="skill-level level-2" aria-label="Beginner"><i></i><i></i><i></i><i></i></span><small>Beginner</small></li>
+          <li><strong>SQL</strong><span class="skill-level level-2" aria-label="Beginner"><i></i><i></i><i></i><i></i></span><small>Beginner</small></li>
+        </ul>
+      </div>
+
+      <div class="coursework-panel reveal">
+        <div class="panel-heading"><span>COURSEWORK.DB</span><span>10 RECORDS</span></div>
+        <ol class="coursework-list">
+          <li><span>01</span>Object Oriented Programming &amp; Data Structures</li>
+          <li><span>02</span>Linear Algebra</li>
+          <li><span>03</span>Discrete Structures</li>
+          <li><span>04</span>Introduction to Algorithms</li>
+          <li><span>05</span>Probability Models &amp; Inference</li>
+          <li><span>06</span>Machine Learning</li>
+          <li><span>07</span>Foundations of Artificial Intelligence</li>
+          <li><span>08</span>Intro to Software Engineering</li>
+          <li><span>09</span>Deep Learning</li>
+          <li><span>10</span>Computer System Organization</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-panel section-block reveal" aria-labelledby="contact-title" data-cursor-tone="dark">
+    <div>
+      <p class="section-kicker">[ 04 / CONTACT ]</p>
+      <h2 id="contact-title" class="acid-heading acid-heading--contact">
+        <span class="acid-heading__line">REACH OUT</span>
+      </h2>
+    </div>
+    <div class="contact-options">
+      <a href="mailto:jmb787@cornell.edu" data-cursor="EMAIL"><span>Personal email</span><strong>jmb787@cornell.edu</strong><i aria-hidden="true">↗</i></a>
+      <a href="https://www.linkedin.com/in/jberko/" target="_blank" rel="noopener noreferrer" data-cursor="OPEN"><span>LinkedIn</span><strong>/in/jberko</strong><i aria-hidden="true">↗</i></a>
+      <a href="https://github.com/jacobberko" target="_blank" rel="noopener noreferrer" data-cursor="CODE"><span>GitHub</span><strong>@jacobberko</strong><i aria-hidden="true">↗</i></a>
+    </div>
+  </section>
+</div>

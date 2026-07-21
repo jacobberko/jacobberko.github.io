@@ -4,21 +4,67 @@
     {% include head.html %}
 </head>
 
-<body>
-    <div class="wrapper">
-        <header class="wrapper-header">
-            {% include header.html %}
-        </header>
+<body data-page="{{ page.section | default: 'home' }}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
 
-        <main class="wrapper-main">
-            <div class="main-content">
-            {{ content }}
-            </div>
-        </main>
+    <div class="boot-screen" aria-hidden="true">
+      <div class="boot-card">
+        <img src="/images/memoji.png" alt="" width="72" height="72">
+        <div>
+          <p>JB//OS <span>v.2026</span></p>
+          <div class="boot-meter"><i></i></div>
+          <small>LOADING PORTFOLIO SYSTEM…</small>
+        </div>
+      </div>
     </div>
 
-    <footer class="wrapper-footer">
-        {% include footer.html %}
+    <div class="page-transition" aria-hidden="true">
+      {% for i in (1..12) %}<i></i>{% endfor %}
+    </div>
+    <div class="scroll-progress" aria-hidden="true"><i></i></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-reticle" aria-hidden="true"><span></span></div>
+    <div class="site-noise" aria-hidden="true"></div>
+
+    <header class="site-header">
+      {% include header.html %}
+    </header>
+
+    <main id="main-content">
+      {{ content }}
+    </main>
+
+    <footer class="site-footer">
+      {% include footer.html %}
     </footer>
+
+    <div class="system-toast" role="status" aria-live="polite"></div>
+
+    <dialog class="terminal" id="terminal-dialog" aria-labelledby="terminal-title">
+      <div class="window-bar" data-terminal-drag-handle>
+        <button class="window-controls" type="button" data-terminal-close aria-label="Close terminal">
+          <i aria-hidden="true"></i><i aria-hidden="true"></i><i aria-hidden="true"></i>
+        </button>
+        <p id="terminal-title">JB_TERMINAL.EXE</p>
+      </div>
+      <div class="terminal-body" data-terminal-output>
+        <p>JACOB BERKO PORTFOLIO SYSTEM [Version 2026.07]</p>
+        <p>Type <strong>help</strong> to view available commands.</p>
+      </div>
+      <form class="terminal-form" data-terminal-form>
+        <label for="terminal-command">visitor@jb:~$</label>
+        <input id="terminal-command" name="command" autocomplete="off" spellcheck="false">
+      </form>
+    </dialog>
+
+    <dialog class="lightbox" id="gallery-lightbox" aria-label="Image viewer">
+      <button class="lightbox-close" type="button" aria-label="Close image viewer">×</button>
+      <button class="lightbox-nav lightbox-prev" type="button" aria-label="Previous image">←</button>
+      <figure>
+        <img alt="">
+        <figcaption><span></span><small></small></figcaption>
+      </figure>
+      <button class="lightbox-nav lightbox-next" type="button" aria-label="Next image">→</button>
+    </dialog>
 </body>
 </html>

@@ -1,13 +1,13 @@
 # Site Specific Configuration
-name: Portfolio
-description: HTML developed portfolio developed by Jake Berko 
+name: Jacob Berko — Portfolio
+description: Cornell computer science student, software engineer, founder, and creative builder.
 url: https://jacobberko.com
 author: jacobberko
-timezone: America
+timezone: America/New_York
 timezone_short: ET
 
 # Keywords
-keywords: ['portfolio', 'key', 'words']
+keywords: ['Jacob Berko', 'Jake Berko', 'software engineer', 'Cornell University', 'iOS developer', 'portfolio']
 
 # Analytics (Plausible requires sign-up)
 analytics:
@@ -45,4 +45,3 @@ plugins:
   - jekyll-feed
   - jekyll-paginate-v2
   - jekyll-seo-tag
-

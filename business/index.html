@@ -1,32 +1,138 @@
 ---
 layout: default
-title: Jacob Berko
+title: Startup — Throttle | Jake Berko
+description: Throttle is a policy-driven AI trading platform that researches the market, explains proposed moves, and keeps every trade under human control.
+section: startup
 ---
-<br>
-<h1>Business</h1>
-<br>
-<h4>For business inquiries, email <a href="mailto:business@jacobberko.com">business@jacobberko.com</a>.</h4>
-<br>
-<h3>The Move</h3>
-<div style="display: flex; gap: 2px; flex-wrap: wrap; justify-content: flex-start;">
-  <img src="images/themove.png" alt="The Move 1" class="image" style="width: 20%; height: auto;">
-  <img src="images/themove2.png" alt="The Move 2" class="image" style="width: 20%; height: auto;">
-  <img src="images/themove3.png" alt="The Move 3" class="image" style="width: 20%; height: auto;">
-  <img src="images/themove4.png" alt="The Move 4" class="image" style="width: 20%; height: auto;">
+
+<div class="throttle-page" data-page="startup">
+  <section class="throttle-hero" aria-labelledby="throttle-title" data-cursor-tone="dark">
+    <div class="throttle-shell throttle-hero__grid">
+      <div class="throttle-hero__copy reveal">
+        <p class="throttle-label"><span>01</span> STARTUP / AI TRADING</p>
+        <h1 id="throttle-title">Throttle<span aria-hidden="true">.</span></h1>
+        <p class="throttle-deck">AI that trades.<br>You that decides.</p>
+        <p class="throttle-summary">
+          A policy-driven trading platform that researches the market, explains every proposed move, and waits for
+          explicit approval before anything trades.
+        </p>
+      </div>
+
+      <div class="throttle-signal reveal" aria-hidden="true">
+        <div class="throttle-signal__sphere"></div>
+        <span class="throttle-signal__axis throttle-signal__axis--x"></span>
+        <span class="throttle-signal__axis throttle-signal__axis--y"></span>
+        <p>MARKET SIGNAL<br>AWAITING POLICY</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="throttle-telemetry" aria-label="Throttle system status">
+    <div class="throttle-telemetry__track">
+      {% assign throttle_statuses = "POLICY LOADED|MARKET SCANNED|SOURCES CHECKED|SIGNAL SCORED|RISK CHECKED|LIMITS VERIFIED|RESEARCH COMPLETE|THESIS EXPLAINED|BRIEF READY|HUMAN REVIEW|APPROVAL REQUIRED|AUDIT TRAIL ACTIVE|CONTROL RETAINED|BROKER STANDING BY|POLICY ENFORCED|DECISION PENDING|EXECUTION HELD|USER IN CONTROL|STRATEGY SYNCED|RECOMMENDATION READY" | split: "|" %}
+      <div class="throttle-telemetry__group">
+        {% for status in throttle_statuses %}<span>{{ status }}</span><i aria-hidden="true"></i>{% endfor %}
+      </div>
+      <div class="throttle-telemetry__group" aria-hidden="true">
+        {% for status in throttle_statuses %}<span>{{ status }}</span><i aria-hidden="true"></i>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <section class="throttle-section throttle-section--light" aria-labelledby="throttle-problem-title">
+    <div class="throttle-shell">
+      <header class="throttle-section__header reveal">
+        <p class="throttle-label"><span>02</span> THE PROBLEM</p>
+        <h2 id="throttle-problem-title">Research is expensive.<br>Discipline is harder.</h2>
+      </header>
+
+      <div class="throttle-problem-grid">
+        <article class="throttle-problem-card reveal">
+          <span>01</span>
+          <h3>Too much signal</h3>
+          <p>Markets move faster than a person can collect, compare, and contextualize every relevant source.</p>
+        </article>
+        <article class="throttle-problem-card reveal">
+          <span>02</span>
+          <h3>Too little structure</h3>
+          <p>A strategy is only useful when every decision is checked against the same rules, limits, and intent.</p>
+        </article>
+        <article class="throttle-problem-card reveal">
+          <span>03</span>
+          <h3>Wrong automation</h3>
+          <p>Black-box execution removes the most important control: the investor’s final decision.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="throttle-section throttle-section--dark" id="throttle-workflow" aria-labelledby="throttle-workflow-title" data-cursor-tone="dark">
+    <div class="throttle-shell">
+      <header class="throttle-section__header throttle-section__header--split reveal">
+        <p class="throttle-label"><span>03</span> THE LOOP</p>
+        <h2 id="throttle-workflow-title">Your strategy,<br>amplified by AI.</h2>
+        <p>Throttle converts investment intent into a repeatable research-and-approval loop.</p>
+      </header>
+
+      <ol class="throttle-workflow">
+        <li class="reveal">
+          <span class="throttle-workflow__number">01</span>
+          <div class="throttle-workflow__icon" aria-hidden="true">⌁</div>
+          <h3>Policy</h3>
+          <p>Set valuation caps, position limits, sectors, risk constraints, and the rules that define a valid move.</p>
+          <small>YOU DEFINE THE SYSTEM</small>
+        </li>
+        <li class="reveal">
+          <span class="throttle-workflow__number">02</span>
+          <div class="throttle-workflow__icon" aria-hidden="true">✳</div>
+          <h3>Morning</h3>
+          <p>A hosted agent researches the market against your policy and filters noise before it reaches you.</p>
+          <small>THE AGENT DOES THE WORK</small>
+        </li>
+        <li class="reveal">
+          <span class="throttle-workflow__number">03</span>
+          <div class="throttle-workflow__icon" aria-hidden="true">≡</div>
+          <h3>Brief</h3>
+          <p>Every proposed move arrives with a concise explanation and receipts tied directly to your rules.</p>
+          <small>EVERY MOVE EXPLAINED</small>
+        </li>
+        <li class="throttle-workflow__approval reveal">
+          <span class="throttle-workflow__number">04</span>
+          <div class="throttle-workflow__icon" aria-hidden="true">✓</div>
+          <h3>Approve</h3>
+          <p>Nothing trades until you review it and explicitly decide. The final action always stays human.</p>
+          <small>YOUR DECISION IS THE GATE</small>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="throttle-section throttle-section--cockpit" aria-labelledby="throttle-cockpit-title" data-cursor-tone="dark">
+    <div class="throttle-shell throttle-cockpit-grid">
+      <div class="throttle-cockpit-copy reveal">
+        <p class="throttle-label"><span>04</span> POSITIONING</p>
+        <h2 id="throttle-cockpit-title">The cockpit.<br>Not autopilot.</h2>
+        <p>
+          Throttle is designed to increase leverage without removing judgment. It works around the systems and
+          boundaries the investor already trusts.
+        </p>
+      </div>
+      <ul class="throttle-principles">
+        <li class="reveal"><span>01</span><strong>Your broker</strong><small>Keep the infrastructure you already use.</small></li>
+        <li class="reveal"><span>02</span><strong>Your policy</strong><small>Every recommendation must pass your rules.</small></li>
+        <li class="reveal"><span>03</span><strong>Your decision</strong><small>No trade happens without explicit approval.</small></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="throttle-final" aria-labelledby="throttle-final-title" data-cursor-tone="dark">
+    <div class="throttle-shell">
+      <p class="throttle-label reveal"><span>05</span> BUILT BY JAKE BERKO</p>
+      <h2 id="throttle-final-title" class="reveal">Keep the speed.<br>Keep the wheel.</h2>
+      <div class="throttle-final__row reveal">
+        <p>Agent, policy guardrails, product, and execution—built end to end.</p>
+        <a class="throttle-button throttle-button--light" href="mailto:jmb787@cornell.edu?subject=Throttle%20inquiry">Start a conversation <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </section>
 </div>
-<br>
-<p> The Move is a community-curated social platform that centralizes the best local events into one real-time feed. From
-  underground shows to campus pop-ups, we help you find your crowd and discover your city as it happens.
-</p>
-<br>
-<br>
-<h3>Website Redesign Services</h3>
-<img src="images/chemecar.png" alt="Jake Berko" class="image" style="width:500px; height:auto;">
-<br>
-<p>
-  I specialize in website redesigns, transforming outdated sites into modern, user-friendly experiences. By focusing on
-  intuitive navigation, responsive design, and engaging aesthetics, I help businesses enhance their online presence,
-  improve user satisfaction, and achieve their digital goals.
-</p>
-<a href="mailto:business@jacobberko.com">Email Me</a>
-<br>

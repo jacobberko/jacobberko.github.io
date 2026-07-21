@@ -1,8 +1,21 @@
-<div class="header">
-    <h1>Jake Berko</h1>
-    <br>
-    <h5><i>Website coded entirely in HTML to showcase web development skills as well as my other projects.</i></h5>
-    <br>
-    {% include nav.html %}
-    <hr>
+<div class="header-shell">
+  <a class="brand" href="/" aria-label="Jacob Berko home" data-cursor="HOME" data-transition-link>
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-copy">
+      <strong>JB//OS</strong>
+      <small>PORTFOLIO.26</small>
+    </span>
+  </a>
+
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">
+    <span>Menu</span>
+    <span class="nav-toggle-icon" aria-hidden="true"></span>
+  </button>
+
+  {% include nav.html %}
+
+  <div class="header-actions">
+    <span class="availability"><i aria-hidden="true"></i> Open to connect</span>
+    <a class="header-contact" href="mailto:jmb787@cornell.edu" data-cursor="EMAIL">Contact <span aria-hidden="true">↗</span></a>
+  </div>
 </div>

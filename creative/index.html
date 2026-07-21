@@ -1,18 +1,106 @@
 ---
 layout: default
-title: Jacob Berko
+title: Creative Work | Jake Berko
+description: Listen to Waves, Jake Berko's first electronic album, and explore a forty-two-frame photography archive.
+section: creative
 ---
-<br>
-<h1>Creative Projects</h1>
-<br>
-<h3>Electronic Album</h3>
 
-<iframe allow="autoplay *; encrypted-media *;" frameborder="0" height="450"
-    style="width:100%;max-width:660px;overflow:hidden;background:transparent;"
-    sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
-    src="https://embed.music.apple.com/us/album/waves-ep/1824102575"></iframe>
-<br>
-<p> Driven by a strong interest in music, I undertook the task of learning music production tools, including Logic Pro.
-    My efforts have resulted in the creation of my first electronic album, a collection titled "Waves"
-    Out on Apple Music, Spotify, and all major streaming platforms.</p>
-<br>
+<div class="page-shell page-shell--creative creative-page" data-page="creative">
+  <section class="creative-hero" aria-labelledby="creative-title">
+    <div class="creative-hero__copy reveal">
+      <p class="eyebrow">BERKO//OS &nbsp;·&nbsp; CREATIVE ARCHIVE</p>
+      <h1 class="creative-title" id="creative-title">
+        <span class="creative-title__outline">Creative</span>
+        <span class="creative-title__solid">work.</span>
+      </h1>
+      <p class="hero-copy">Sound, image, and the experiments that happen between them.</p>
+    </div>
+
+    <aside class="creative-console window reveal" aria-label="Creative archive status">
+      <div class="window-bar">
+        <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+        <span class="window-bar__title">creative.sys</span>
+        <span class="window-bar__status">LIVE</span>
+      </div>
+      <div class="creative-console__screen" data-cursor-tone="dark">
+        <div class="creative-console__wave" aria-hidden="true">
+          {% for i in (1..18) %}<i></i>{% endfor %}
+        </div>
+        <p><span>01</span> ELECTRONIC MUSIC</p>
+        <p><span>02</span> PHOTOGRAPHY / 42 FRAMES</p>
+        <small>MEDIA CHANNELS READY_</small>
+      </div>
+    </aside>
+  </section>
+
+  <section class="section-block creative-waves" id="waves" aria-labelledby="music-production-title">
+    <header class="section-header reveal">
+      <p class="section-kicker">01 / ELECTRONIC ALBUM</p>
+      <h2 id="music-production-title">Music Production</h2>
+      <p class="section-summary">My first electronic EP, built while teaching myself Logic Pro.</p>
+    </header>
+
+    <div class="album-stage" data-cursor-tone="dark">
+      <figure class="album-art reveal">
+        <img
+          src="{{ '/creative/images/waves.png' | relative_url }}"
+          alt="Waves album cover by Jake Berko, featuring a black-and-white photograph of a surfer beneath bold typography"
+          width="1384"
+          height="1386"
+          loading="lazy"
+          decoding="async">
+      </figure>
+
+      <article class="window reveal">
+        <div class="window-bar">
+          <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="window-bar__title">waves_ep.audio</span>
+          <span class="window-bar__status">STREAMING</span>
+        </div>
+        <div class="window-content">
+          <p>
+            Driven by a strong interest in music, I taught myself production tools including Logic Pro. That process
+            became “Waves,” my first electronic album—now available on Apple Music, Spotify, and major streaming platforms.
+          </p>
+          <ul class="tag-list" aria-label="Waves album details">
+            <li class="tag">Logic Pro</li>
+            <li class="tag">Electronic album</li>
+            <li class="tag">Waves</li>
+          </ul>
+          <a
+            class="cta cta--dark"
+            href="https://music.apple.com/us/album/waves-ep/1824102575"
+            target="_blank"
+            rel="noopener noreferrer">
+            Open in Apple Music <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </article>
+    </div>
+
+    <div class="music-player window reveal">
+      <div class="window-bar">
+        <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+        <span class="window-bar__title">apple-music.embed</span>
+        <span class="window-bar__status">LIVE</span>
+      </div>
+      <iframe
+        title="Listen to the Waves EP by Jake Berko on Apple Music"
+        allow="autoplay *; encrypted-media *;"
+        loading="lazy"
+        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+        src="https://embed.music.apple.com/us/album/waves-ep/1824102575"></iframe>
+    </div>
+  </section>
+
+  <section class="section-block creative-photo-link" aria-labelledby="photography-link-title">
+    <a class="creative-photo-link__card reveal" href="{{ '/portfolio/' | relative_url }}" data-cursor="EXPLORE">
+      <div>
+        <p class="section-kicker">02 / VISUAL ARCHIVE</p>
+        <h2 id="photography-link-title">Photography</h2>
+      </div>
+      <p>Forty-two places, details, and passing moments—now restored as its own fullscreen photography archive.</p>
+      <span aria-hidden="true">OPEN 42 FRAMES ↗</span>
+    </a>
+  </section>
+</div>
