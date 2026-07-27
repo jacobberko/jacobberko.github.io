@@ -2100,6 +2100,9 @@ ul.project-meta {
 }
 
 .creative-waves {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding-inline: unquote("max(var(--page-pad), calc((100vw - 100rem) / 2 + var(--page-pad)))");
   color: var(--paper);
   background: var(--ink);
 }
@@ -2233,7 +2236,7 @@ ul.project-meta {
 
 /* Creative archive */
 .creative-page {
-  overflow: clip;
+  overflow: visible;
 }
 
 .creative-hero {
