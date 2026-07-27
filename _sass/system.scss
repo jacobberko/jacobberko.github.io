@@ -1939,6 +1939,25 @@ ul.project-meta {
   height: 2.8rem;
 }
 
+.store-badge-availability {
+  display: inline-flex;
+  width: 9.26154rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  border: 1px solid var(--ink);
+  border-radius: 0.55rem;
+  color: var(--ink);
+  background: #fff;
+  font: 750 0.67rem/1 var(--font-mono);
+  letter-spacing: 0.045em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .project-list {
   margin: 0;
   padding: 0;
@@ -2071,6 +2090,8 @@ ul.project-meta {
 }
 
 .album-stage {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(18rem, 0.85fr) minmax(20rem, 1.15fr);
   gap: clamp(2rem, 6vw, 6rem);
@@ -2086,22 +2107,40 @@ ul.project-meta {
 .creative-waves .section-header {
   position: relative;
   z-index: 2;
-  margin-bottom: 0;
-  padding-bottom: clamp(4rem, 7vw, 7rem);
+  row-gap: clamp(1rem, 1.7vw, 1.5rem);
+  margin-bottom: clamp(3rem, 6vw, 6rem);
+  padding-bottom: clamp(0.75rem, 1.5vw, 1.5rem);
+}
+
+.creative-waves .section-header h2 {
+  padding-bottom: 0.12em;
+  line-height: 0.94;
 }
 
 .creative-waves .section-summary {
-  margin-top: 0.35rem;
+  align-self: start;
+  margin-top: 0;
+  line-height: 1.5;
 }
 
 @media (min-width: 901px) {
   .creative-waves .section-header {
     grid-template-columns: minmax(10rem, 0.45fr) minmax(0, 2fr);
+    grid-template-areas:
+      "kicker title"
+      ". summary";
+  }
+
+  .creative-waves .section-kicker {
+    grid-area: kicker;
   }
 
   .creative-waves .section-header h2 {
-    position: relative;
-    top: -0.35rem;
+    grid-area: title;
+  }
+
+  .creative-waves .section-summary {
+    grid-area: summary;
   }
 
   .creative-photo-link__card > div,
