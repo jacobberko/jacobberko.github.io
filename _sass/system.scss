@@ -2099,22 +2099,34 @@ ul.project-meta {
   border-radius: var(--radius-lg);
 }
 
+.creative-waves {
+  color: var(--paper);
+  background: var(--ink);
+}
+
 .creative-waves .section-header {
   position: relative;
   z-index: 2;
   row-gap: clamp(1rem, 1.7vw, 1.5rem);
   margin-bottom: 0;
-  padding-bottom: clamp(10rem, 14vw, 16rem);
+  padding-bottom: clamp(4rem, 7vw, 7rem);
 }
 
 .creative-waves .section-header h2 {
   padding-bottom: 0.12em;
+  color: var(--paper);
   line-height: 0.94;
+}
+
+.creative-waves .section-kicker,
+.creative-waves .section-summary {
+  color: var(--paper);
 }
 
 .creative-waves .section-summary {
   align-self: start;
   margin-top: 0;
+  opacity: 0.78;
   line-height: 1.5;
 }
 
