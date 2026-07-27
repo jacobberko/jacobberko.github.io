@@ -1211,10 +1211,8 @@ body.is-leaving .page-transition i {
 }
 
 .about-copy .text-highlight {
-  color: var(--ink);
-  background: var(--acid);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
+  color: var(--acid);
+  background: transparent;
 }
 
 .about-section .acid-heading,
@@ -1267,18 +1265,14 @@ body.is-leaving .page-transition i {
 .about-copy > p {
   margin: 0;
   font-size: clamp(1.25rem, 2.15vw, 2.15rem);
+  font-weight: 500;
   letter-spacing: -0.035em;
-  line-height: 1.22;
+  line-height: 1.28;
 }
 
 .about-copy > p + p {
   margin-top: 1.6rem;
   color: var(--paper);
-}
-
-.about-copy .text-highlight {
-  padding: 0.025em 0.08em 0.055em;
-  box-shadow: 0.08em 0 0 var(--acid), -0.08em 0 0 var(--acid);
 }
 
 .word-type-ready .type-word {
@@ -2096,6 +2090,7 @@ ul.project-meta {
   grid-template-columns: minmax(18rem, 0.85fr) minmax(20rem, 1.15fr);
   gap: clamp(2rem, 6vw, 6rem);
   align-items: center;
+  margin-top: clamp(6rem, 10vw, 10rem);
   padding: clamp(2rem, 6vw, 6rem);
   color: var(--paper);
   background:
@@ -2109,7 +2104,7 @@ ul.project-meta {
   z-index: 2;
   row-gap: clamp(1rem, 1.7vw, 1.5rem);
   margin-bottom: 0;
-  padding-bottom: clamp(7rem, 10vw, 11rem);
+  padding-bottom: clamp(3rem, 5vw, 5rem);
 }
 
 .creative-waves .section-header h2 {
