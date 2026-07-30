@@ -19,7 +19,7 @@ description: Software projects by Jacob Berko across Swift, OCaml, Java, Python,
 
         <div class="stat-strip" aria-label="Project archive at a glance">
             <div class="stat-item">
-                <strong>09</strong>
+                <strong>10</strong>
                 <span>projects</span>
             </div>
             <div class="stat-item">
@@ -37,7 +37,7 @@ description: Software projects by Jacob Berko across Swift, OCaml, Java, Python,
             <div class="section-header reveal">
                 <p class="section-kicker">01 / SHIPPED SOFTWARE</p>
                 <h2 id="featured-projects-title">Available on iOS</h2>
-                <p class="section-summary">Three iOS apps designed around practical, everyday goals.</p>
+                <p class="section-summary">Four iOS apps built around movement, focus, and everyday utility.</p>
             </div>
 
             <div class="project-grid project-grid--featured">
@@ -103,44 +103,146 @@ description: Software projects by Jacob Berko across Swift, OCaml, Java, Python,
                 </article>
 
                 <article class="project-card project-card--featured tilt-card reveal">
-                    <div class="project-media">
+                    <div class="project-media project-media--phones" data-cursor-tone="dark">
+                        <div class="window">
+                            <div class="window-bar">
+                                <span>earned.app / preview</span>
+                                <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+                            </div>
+                            <div class="project-phone-grid" aria-label="Earned mobile interface screens">
+                                <img
+                                    src="{{ '/code/images/earned-today.png' | relative_url }}"
+                                    alt="Earned Today screen with readiness, weekly progress, and the next recommended workout"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/earned-train.png' | relative_url }}"
+                                    alt="Earned Train screen showing an adaptive weekly strength plan"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/earned-insights.png' | relative_url }}"
+                                    alt="Earned Insights screen showing strength and training-volume trends"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/earned-active-workout.png' | relative_url }}"
+                                    alt="Earned active workout screen for logging a strength-training session"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="project-body">
+                        <ul class="project-meta" aria-label="Earned project details">
+                            <li><time datetime="2025">2025</time></li>
+                            <li>SwiftUI</li>
+                            <li>iPhone + Apple Watch</li>
+                        </ul>
+                        <h3>Earned</h3>
+                        <p>
+                            Formerly Fitness Buddy, Earned is a local-first adaptive strength-training app for iPhone
+                            and Apple Watch. It builds a personalized weekly plan, logs every set, advances successful
+                            lifts, and turns workout history into clear readiness, progress, and training-volume insights.
+                        </p>
+                        <p>
+                            HealthKit integration, Live Activities, haptic feedback, and on-device storage keep the
+                            experience useful in the gym without requiring an account or sending training data to a server.
+                        </p>
+                        <ul class="tag-list" aria-label="Earned features">
+                            <li class="tag">Adaptive programming</li>
+                            <li class="tag">Apple Watch</li>
+                            <li class="tag">HealthKit</li>
+                            <li class="tag">Offline-first</li>
+                        </ul>
+                        <a
+                            class="store-badge-link"
+                            href="https://apps.apple.com/us/app/fitness-buddy/id6744622085"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Download Earned on the App Store (opens in a new tab)">
+                            <img
+                                class="store-badge"
+                                src="{{ '/code/images/download.png' | relative_url }}"
+                                alt="Download Earned on the App Store"
+                                width="688"
+                                height="208"
+                                loading="lazy"
+                                decoding="async">
+                        </a>
+                    </div>
+                </article>
+
+                <article class="project-card project-card--featured tilt-card reveal">
+                    <div class="project-media project-media--phones" data-cursor-tone="dark">
                         <div class="window">
                             <div class="window-bar">
                                 <span>routes.app / preview</span>
                                 <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
                             </div>
-                            <img
-                                src="{{ '/code/images/routes.png' | relative_url }}"
-                                alt="Routes app screens showing route generation and activity options"
-                                width="3384"
-                                height="1152"
-                                decoding="async"
-                                fetchpriority="high">
+                            <div class="project-phone-grid" aria-label="Routes mobile interface screens">
+                                <img
+                                    src="{{ '/code/images/routes-today.png' | relative_url }}"
+                                    alt="Routes Today screen showing the next run and current training week"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/routes-coach.png' | relative_url }}"
+                                    alt="Routes Coach screen showing an adaptive race-training plan"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/routes-library.png' | relative_url }}"
+                                    alt="Routes route library with saved runs and generated paths"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/routes-profile.png' | relative_url }}"
+                                    alt="Routes profile screen with running preferences and training settings"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                            </div>
                         </div>
                     </div>
 
                     <div class="project-body">
                         <ul class="project-meta" aria-label="Routes project details">
                             <li><time datetime="2025">2025</time></li>
-                            <li>Swift</li>
-                            <li>Live on iOS</li>
+                            <li>SwiftUI</li>
+                            <li>iPhone + Apple Watch</li>
                         </ul>
-                        <h3>Routes!</h3>
+                        <h3>Routes</h3>
                         <p>
-                            Routes is a mobile app that helps users discover custom running, walking, and cycling loops
-                            based on their preferred distance, terrain, and elevation. Instead of retracing the same
-                            paths, users can instantly generate fresh route ideas tailored to their exact needs—from a
-                            quick 1-mile jog to a challenging 10-mile trail ride.
+                            Routes turns “how far should I run?” and “where should I go?” into one focused running
+                            experience. Generate target-distance loops and out-and-backs, then follow an explainable
+                            race plan that adapts conservatively as training changes.
                         </p>
                         <p>
-                            With surface and elevation filters, offline saving, GPX export, and a privacy-first design
-                            that stores no location history, Routes makes exploring your surroundings effortless and fun.
+                            Surface, elevation, and path preferences shape each route. Saved routes, GPX export,
+                            Apple Watch support, and private on-device data make it practical from planning through run day.
                         </p>
                         <ul class="tag-list" aria-label="Routes features">
                             <li class="tag">Route generation</li>
+                            <li class="tag">Adaptive coaching</li>
+                            <li class="tag">Apple Watch</li>
                             <li class="tag">GPX export</li>
-                            <li class="tag">Offline saving</li>
-                            <li class="tag">Privacy-first</li>
                         </ul>
                         <a
                             class="store-badge-link"
@@ -161,51 +263,80 @@ description: Software projects by Jacob Berko across Swift, OCaml, Java, Python,
                 </article>
 
                 <article class="project-card project-card--featured tilt-card reveal">
-                    <div class="project-media">
+                    <div class="project-media project-media--phones" data-cursor-tone="dark">
                         <div class="window">
                             <div class="window-bar">
-                                <span>fitness_buddy.app / preview</span>
+                                <span>satisfy.app / preview</span>
                                 <span class="window-controls" aria-hidden="true"><i></i><i></i><i></i></span>
                             </div>
-                            <img
-                                src="{{ '/code/images/fitnessbuddy.png' | relative_url }}"
-                                alt="Fitness Buddy app screens showing personalized workout planning"
-                                width="3182"
-                                height="1298"
-                                loading="lazy"
-                                decoding="async">
+                            <div class="project-phone-grid" aria-label="Satisfy mobile puzzle screens">
+                                <img
+                                    src="{{ '/code/images/satisfy-world-map.jpg' | relative_url }}"
+                                    alt="Satisfy world map with puzzle locations arranged across an illustrated landscape"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/satisfy-light-vault.jpg' | relative_url }}"
+                                    alt="Satisfy Light Vault puzzle using light and spatial interaction"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/satisfy-sliding-coast.jpg' | relative_url }}"
+                                    alt="Satisfy Sliding Coast puzzle with a tactile route-building interaction"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                                <img
+                                    src="{{ '/code/images/satisfy-finished-map.jpg' | relative_url }}"
+                                    alt="Satisfy completed world map with the full route brought to life"
+                                    width="1320"
+                                    height="2868"
+                                    loading="lazy"
+                                    decoding="async">
+                            </div>
                         </div>
                     </div>
 
                     <div class="project-body">
-                        <ul class="project-meta" aria-label="Fitness Buddy project details">
-                            <li><time datetime="2025">2025</time></li>
-                            <li>Swift</li>
-                            <li>Live on iOS</li>
+                        <ul class="project-meta" aria-label="Satisfy project details">
+                            <li>Originally built in 2022</li>
+                            <li>Launched in 2025</li>
+                            <li>iOS puzzle game</li>
                         </ul>
-                        <h3>Fitness Buddy!</h3>
+                        <h3>Satisfy! Game</h3>
                         <p>
-                            The Fitness Buddy app is designed to enhance your fitness journey by providing personalized
-                            workout plans based on your individual metrics and goals. Users can input their current
-                            height, weight, and gym experience level, and the app generates tailored exercise routines
-                            using AI to help achieve their objectives—whether building muscle, losing weight, or
-                            improving endurance.
+                            Winner of the Google Change the Game Award 2022. Satisfy is a tactile puzzle journey built
+                            around one evolving map. Zoom into each part of the world and solve a compact interaction
+                            using light, balance, rhythm, routes, shape, and motion. Every completed puzzle reveals
+                            another piece of the landscape until the full route comes alive.
                         </p>
-                        <ul class="tag-list" aria-label="Fitness Buddy features">
-                            <li class="tag">AI routines</li>
-                            <li class="tag">Personalized plans</li>
-                            <li class="tag">Goal tracking</li>
+                        <p>
+                            Designed for calm focus, it includes 20 handcrafted puzzles, precise physics-inspired
+                            interactions, responsive sound and haptic feedback, and optional hints. There are no
+                            accounts, advertisements, tracking, or in-app purchases, and the full game works offline.
+                            Take your time. Complete the map. Make every movement satisfy.
+                        </p>
+                        <ul class="tag-list" aria-label="Satisfy features">
+                            <li class="tag">20 handcrafted puzzles</li>
+                            <li class="tag">Evolving map</li>
+                            <li class="tag">Sound + haptics</li>
+                            <li class="tag">Fully offline</li>
                         </ul>
                         <a
                             class="store-badge-link"
-                            href="https://apps.apple.com/us/app/fitness-buddy/id6744622085"
+                            href="https://apps.apple.com/ph/app/satisfy-game/id6748092482"
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label="Download Fitness Buddy on the App Store (opens in a new tab)">
+                            aria-label="Download Satisfy on the App Store (opens in a new tab)">
                             <img
                                 class="store-badge"
                                 src="{{ '/code/images/download.png' | relative_url }}"
-                                alt="Download Fitness Buddy on the App Store"
+                                alt="Download Satisfy on the App Store"
                                 width="688"
                                 height="208"
                                 loading="lazy"

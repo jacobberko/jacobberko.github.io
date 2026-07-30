@@ -424,14 +424,41 @@ kbd {
   display: block;
   width: 2.55rem;
   height: 2.55rem;
-  background: var(--ink);
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.98) 0 4%, transparent 15%),
+    linear-gradient(112deg, transparent 15%, rgba(42, 255, 211, 0.82) 29%, rgba(76, 94, 255, 0.6) 38%, transparent 52%),
+    conic-gradient(
+      from 212deg,
+      #171329 0deg,
+      #31275b 28deg,
+      #0c7197 48deg,
+      #31e5b1 66deg,
+      #8cf7ec 78deg,
+      #4e45a4 98deg,
+      #d94c9e 120deg,
+      #41184e 148deg,
+      #092c59 174deg,
+      #11bca1 196deg,
+      #d5e85f 212deg,
+      #f6d19a 226deg,
+      #d85ca9 248deg,
+      #34194f 272deg,
+      #176ea6 294deg,
+      #39d9c0 312deg,
+      #523267 334deg,
+      #171329 360deg
+    );
+  background-blend-mode: screen, screen, normal;
+  box-shadow:
+    inset 0.2rem 0.16rem 0.4rem rgba(255, 255, 255, 0.48),
+    inset -0.28rem -0.24rem 0.46rem rgba(20, 8, 43, 0.42);
   clip-path: polygon(36% 0, 52% 0, 56% 29%, 73% 6%, 87% 17%, 65% 38%, 100% 40%, 100% 57%, 66% 59%, 89% 80%, 76% 92%, 56% 68%, 53% 100%, 36% 100%, 34% 69%, 13% 93%, 0 80%, 24% 59%, 0 56%, 0 39%, 25% 37%, 2% 18%, 15% 6%, 34% 29%);
-  transition: transform 500ms var(--ease-out), background 300ms ease;
+  transition: transform 500ms var(--ease-out), filter 250ms ease;
 }
 
 .brand:hover .brand-mark {
-  background: conic-gradient(from 45deg, var(--cyan), var(--violet), var(--magenta), var(--orange), var(--acid), var(--cyan));
   transform: rotate(90deg) scale(0.9);
+  filter: saturate(1.08) contrast(1.05) brightness(1.04);
 }
 
 .brand-copy {
@@ -1651,7 +1678,7 @@ body.is-leaving .page-transition i {
 .project-card--featured {
   grid-column: span 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .project-card--featured:nth-child(even) .project-media {
@@ -1931,6 +1958,7 @@ ul.project-meta {
 .store-badge {
   width: auto;
   height: 2.8rem;
+  border-radius: 0.38rem;
 }
 
 .store-badge-availability {
@@ -3591,7 +3619,7 @@ body.game-mode::before {
   .hero-lower { grid-template-columns: minmax(0, 0.95fr) minmax(15rem, 0.65fr); }
   .portrait-window { max-width: 21rem; }
   .chrome-orb { right: 0; }
-  .project-card--featured { grid-template-columns: minmax(0, 1.05fr) minmax(17rem, 0.95fr); }
+  .project-card--featured { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
   .throttle-workflow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .throttle-workflow li { border-bottom: 1px solid rgba(244, 244, 239, 0.4); }
