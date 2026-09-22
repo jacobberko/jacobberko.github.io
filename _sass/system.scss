@@ -2463,6 +2463,22 @@ ul.project-meta {
 
 .album-art:hover img { transform: scale(1.015); }
 
+/* The Cure reuses the album stage with a portrait book cover. */
+.album-art--book {
+  width: unquote("min(100%, 22rem)");
+  aspect-ratio: auto;
+}
+
+.album-art--book::before { background: #ff2350; }
+.album-art--book::after { background: var(--violet); }
+
+.album-art--book img {
+  height: auto;
+  aspect-ratio: 900 / 1436;
+  box-shadow: 1.1rem 1.1rem 0 #8a0b2c;
+  object-fit: cover;
+}
+
 .music-player {
   min-width: 0;
   margin-top: clamp(2rem, 5vw, 5rem);

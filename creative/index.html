@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Creative Work | Jake Berko
-description: Listen to Waves, Jake Berko's first electronic album, and explore a forty-two-frame photography archive.
+description: Listen to Waves, Jake Berko's first electronic album, and read a preview of The Cure, his near-future thriller.
 section: creative
 ---
 
@@ -13,7 +13,7 @@ section: creative
         <span class="creative-title__outline">Creative</span>
         <span class="creative-title__solid">work.</span>
       </h1>
-      <p class="hero-copy">Sound, image, and the experiments that happen between them.</p>
+      <p class="hero-copy">Sound, story, and the experiments that happen between them.</p>
     </div>
 
     <aside class="creative-console window reveal" aria-label="Creative archive status">
@@ -27,7 +27,7 @@ section: creative
           {% for i in (1..18) %}<i></i>{% endfor %}
         </div>
         <p><span>01</span> ELECTRONIC MUSIC</p>
-        <p><span>02</span> PHOTOGRAPHY / 42 FRAMES</p>
+        <p><span>02</span> NOVEL / THE CURE</p>
         <small>MEDIA CHANNELS READY_</small>
       </div>
     </aside>
@@ -93,6 +93,56 @@ section: creative
     </div>
   </section>
 
+  <section class="section-block creative-book" id="the-cure" aria-labelledby="book-title">
+    <header class="section-header reveal">
+      <p class="section-kicker">02 / NOVEL</p>
+      <h2 id="book-title">The Cure</h2>
+      <p class="section-summary">A near-future outbreak thriller. The opening chapters are free to read.</p>
+    </header>
+
+    <div class="album-stage" data-cursor-tone="dark">
+      <figure class="album-art album-art--book reveal">
+        <img
+          src="{{ '/creative/images/the-cure-cover.jpg' | relative_url }}"
+          alt="Cover of The Cure, a novel by Jake Berko: a lone silhouetted figure in a red haze above tall white title lettering"
+          width="900"
+          height="1436"
+          loading="lazy"
+          decoding="async">
+      </figure>
+
+      <article class="window reveal">
+        <div class="window-bar">
+          <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="window-bar__title">the_cure.pdf</span>
+          <span class="window-bar__status">PREVIEW</span>
+        </div>
+        <div class="window-content">
+          <p>
+            In 2032, a new virus starts moving through Bellevue, and its first symptom is rage. High school teacher
+            Riley Hartfield watches her classroom empty out one desk at a time while the city slowly comes apart.
+            Three years later, deep inside a sealed research facility, one scientist claims to have found the cure.
+          </p>
+          <ul class="tag-list" aria-label="The Cure details">
+            <li class="tag">Novel</li>
+            <li class="tag">Thriller</li>
+            <li class="tag">Near future</li>
+          </ul>
+          <a
+            class="cta cta--dark"
+            href="{{ '/creative/the-cure-preview.pdf' | relative_url }}"
+            target="_blank"
+            rel="noopener noreferrer">
+            Read the preview <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+{% comment %}
+  Photography link, hidden for now. The archive itself still lives at /portfolio/.
+  To bring it back, delete this comment wrapper.
   <section class="section-block creative-photo-link" aria-labelledby="photography-link-title">
     <a class="creative-photo-link__card reveal" href="{{ '/portfolio/' | relative_url }}" data-cursor="EXPLORE">
       <div>
@@ -103,4 +153,5 @@ section: creative
       <span aria-hidden="true">OPEN 42 FRAMES ↗</span>
     </a>
   </section>
+{% endcomment %}
 </div>
