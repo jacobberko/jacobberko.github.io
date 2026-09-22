@@ -2904,6 +2904,13 @@ ul.project-meta {
   letter-spacing: 0.1em;
 }
 
+.throttle-status__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(20rem, 0.85fr);
+  gap: clamp(2.5rem, 6vw, 6rem);
+  align-items: end;
+}
+
 .throttle-status__header h2 {
   max-width: 15ch;
   margin: 1.4rem 0 0;
@@ -2918,64 +2925,51 @@ ul.project-meta {
 .throttle-status__header h2 span { color: var(--acid); }
 
 .throttle-status__milestone {
-  margin-top: clamp(3rem, 6vw, 5.5rem);
-  padding: clamp(1.4rem, 3vw, 2.4rem) 0;
+  padding-top: 1.3rem;
   border-top: 1px solid rgba(244, 244, 239, 0.42);
-  border-bottom: 1px solid rgba(244, 244, 239, 0.42);
 }
 
 .throttle-status__point {
-  margin: 1rem 0 0;
+  margin: 0.9rem 0 0;
   font-family: var(--font-display);
-  font-size: clamp(1.8rem, 3.6vw, 3.6rem);
+  font-size: clamp(1.8rem, 3vw, 3rem);
   font-weight: 900;
   letter-spacing: -0.06em;
   line-height: 0.95;
 }
 
-.throttle-status__hiring {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  margin-top: clamp(2.5rem, 5vw, 4.5rem);
-  padding: clamp(1.5rem, 3.5vw, 3rem);
-  color: var(--throttle-black);
-  background: var(--acid);
-  border-radius: var(--radius-md);
+.throttle-status__ticket {
+  margin-top: 2.2rem;
+  border: 1px solid var(--acid);
 }
 
-.throttle-status__hiring .throttle-status__tag { color: currentColor; opacity: 0.7; }
+.throttle-status__ticket-body {
+  padding: 1.3rem 1.4rem 1.5rem;
+}
 
-.throttle-status__hiring-copy {
+.throttle-status__ticket-body .throttle-status__tag { color: var(--acid); }
+
+.throttle-status__ticket-body p:last-child {
   margin: 0.8rem 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.6rem, 3vw, 3rem);
-  font-weight: 900;
-  letter-spacing: -0.06em;
-  line-height: 0.95;
+  font-size: 1.15rem;
 }
 
 .throttle-status__cta {
-  display: inline-flex;
-  flex: none;
-  min-height: 4.4rem;
+  display: flex;
   align-items: center;
-  gap: 2.5rem;
-  padding: 1rem 1.6rem;
-  color: var(--throttle-white);
-  background: var(--throttle-black);
-  border-radius: 999px;
-  font: 800 0.9rem var(--font-mono);
-  letter-spacing: 0.06em;
+  justify-content: space-between;
+  padding: 1.15rem 1.4rem;
+  border-top: 1px dashed var(--acid);
+  color: var(--acid);
+  font: 800 0.82rem var(--font-mono);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: color 220ms ease, background 220ms ease, transform 300ms var(--ease-out);
+  transition: color 200ms ease, background 200ms ease;
 }
 
 .throttle-status__cta:hover {
   color: var(--throttle-black);
-  background: var(--throttle-white);
-  transform: translateY(-0.2rem);
+  background: var(--acid);
 }
 
 @keyframes creativeWave {
@@ -3882,6 +3876,8 @@ body.game-mode::before {
     grid-template-columns: 1fr;
   }
 
+  .throttle-status__grid { grid-template-columns: 1fr; }
+
   .throttle-signal {
     width: unquote("min(70vw, 30rem)");
     justify-self: center;
@@ -3998,9 +3994,6 @@ body.game-mode::before {
   .throttle-deck { font-size: clamp(2.1rem, 10vw, 4rem); }
   .throttle-button { width: 100%; }
   .throttle-signal { width: unquote("min(82vw, 23rem)"); }
-
-  .throttle-status__hiring { align-items: stretch; flex-direction: column; }
-  .throttle-status__cta { justify-content: space-between; }
 
   .gallery-grid { grid-template-columns: 1fr; }
   .gallery-item,
