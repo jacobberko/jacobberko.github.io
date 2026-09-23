@@ -674,11 +674,12 @@
 
   if (typeof JBOS.registerCommand === "function") {
     JBOS.registerCommand("theme", {
-      help: "theme [default|crt|synthwave|next|random]",
+      help: "theme -crt | -synthwave | -default | -next | -random",
       aliases: ["themes"],
       run: function (args) {
         const raw = String(args && args[0] ? args[0] : "");
-        const arg = raw.toLowerCase();
+        // Flags work too: `theme -crt`, `theme --synthwave`, `theme -next`.
+        const arg = raw.toLowerCase().replace(/^-{1,2}(?=[a-z])/, "");
 
         if (!arg || arg === "list" || arg === "ls" || arg === "status") {
           listThemes();
@@ -686,7 +687,7 @@
         }
         if (arg === "help" || arg === "-h" || arg === "--help" || arg === "?") {
           print("theme                 list display modes", "theme-term-item");
-          print("theme <name>          default · crt · synthwave", "theme-term-item");
+          print("theme <name>          default · crt · synthwave (or -crt, -synthwave)", "theme-term-item");
           print("theme next | prev     cycle through modes", "theme-term-item");
           print("theme random          let fate pick", "theme-term-item");
           return;
@@ -713,22 +714,6 @@
         }
         switchFromTerminal(target, preface);
       }
-    });
-
-    // Hidden shortcuts: `crt` / `synthwave` toggle straight in (and back out).
-    [
-      { id: "crt", aliases: ["amber", "phosphor"] },
-      { id: "synthwave", aliases: ["outrun", "vaporwave", "retrowave"] }
-    ].forEach(function (shortcut) {
-      if (JBOS.commands && JBOS.commands[shortcut.id]) return;
-      JBOS.registerCommand(shortcut.id, {
-        hidden: true,
-        help: "toggle the " + shortcut.id + " display mode",
-        aliases: shortcut.aliases,
-        run: function () {
-          switchFromTerminal(terminalTheme() === shortcut.id ? "default" : shortcut.id);
-        }
-      });
     });
   }
 

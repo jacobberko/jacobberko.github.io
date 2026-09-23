@@ -437,14 +437,6 @@
   let terminalBaseTop = 0;
   let terminalWidth = 0;
   let terminalHeight = 0;
-  const routes = {
-    home: "/",
-    code: "/code/",
-    creative: "/creative/",
-    startup: "/business/",
-    business: "/business/",
-    photo: "/portfolio/"
-  };
 
   function clampTerminalOffset(value, minimum, maximum) {
     if (minimum > maximum) return (minimum + maximum) / 2;
@@ -603,18 +595,10 @@
       const registered = JBOS.commands[command] || JBOS.commands[JBOS.aliases[command]];
       JBOS.emit("terminal-command", { command: command, args: args, raw: raw });
 
-      if (routes[command]) {
-        terminalLine("Opening " + command + "…", true);
-        window.setTimeout(function () { window.location.href = routes[command]; }, 280);
-        return;
-      }
+      // The terminal is for fun: easter-egg commands registered by the modules, plus help and clear.
       if (command === "help") {
-        const extra = Object.keys(JBOS.commands).filter(function (name) { return !JBOS.commands[name].hidden; });
-        terminalLine("COMMANDS: " + ["home", "code", "creative", "startup", "photo", "contact", "about"].concat(extra, ["clear"]).join(" · "), true);
-      } else if (command === "about") {
-        terminalLine("Jacob Berko — Cornell CS student, software engineer, founder, and creative builder.");
-      } else if (command === "contact") {
-        terminalLine("EMAIL: jmb787@cornell.edu · LINKEDIN: /in/jberko · GITHUB: @jacobberko", true);
+        const fun = Object.keys(JBOS.commands).filter(function (name) { return !JBOS.commands[name].hidden; }).sort();
+        terminalLine("COMMANDS: " + fun.concat(["clear"]).join(" · "), true);
       } else if (command === "clear") {
         terminalOutput.innerHTML = "";
       } else if (registered) {

@@ -1,12 +1,11 @@
 (function () {
   "use strict";
 
-  // JB//OS easter eggs.
-  // Terminal secrets, page-wide word triggers, physics toys, a screensaver, an achievements tracker
-  // and the 404 toy. Effects run one at a time, stop on Escape or a click, and swap motion for a
-  // toast when the visitor prefers reduced motion. Every secret can be found on a touch screen too
-  // (terminal twins for typed words, a phone shake, press-and-hold, a swipeable Konami code), and
-  // unlocks are announced to screen readers. Nothing here reads or sends anything off-page.
+  // JB//OS easter eggs. The terminal is for fun: gravity, barrel, party, hack, snake, screensaver,
+  // shake and secrets (plus theme/sound from their own modules). On the page: the hero name bursts
+  // on five quick clicks, a mouse or phone shake wobbles the page, 30 idle seconds start a
+  // screensaver (click to leave), the chrome star charges up, and the 404 page has a runaway page to
+  // catch. Effects run one at a time, stop on Escape, and swap motion for a toast under reduced motion.
 
   const doc = document;
   const root = doc.documentElement;
@@ -34,9 +33,8 @@
     Object.prototype.hasOwnProperty.call(HTMLElement.prototype, "popover");
   const supportsTransforms = Boolean(window.CSS && CSS.supports &&
     CSS.supports("translate", "1px 1px") && CSS.supports("rotate", "1deg"));
-  // Mirrors the routes and built-ins handled directly by site.js.
-  const ROUTES = { home: "/", code: "/code/", creative: "/creative/", startup: "/business/", business: "/business/", photo: "/portfolio/" };
-  const BUILTINS = ["help", "about", "contact", "clear"];
+  // Built-ins handled directly by site.js.
+  const BUILTINS = ["help", "clear"];
 
   /* ---------------------------------------------------------------------------------------------
    * Small helpers
@@ -134,39 +132,12 @@
     }
   }
 
-  function ithacaHour() {
-    try {
-      const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hourCycle: "h23" }).formatToParts(new Date());
-      const hour = parts.filter(function (part) { return part.type === "hour"; })[0];
-      return hour ? Number(hour.value) % 24 : new Date().getHours();
-    } catch (error) {
-      return new Date().getHours();
-    }
-  }
 
   function textBar(percent, width) {
     const filled = Math.round(clamp(percent, 0, 100) / 100 * width);
     return "[" + "█".repeat(filled) + "░".repeat(width - filled) + "]";
   }
 
-  function wrapWords(text, width) {
-    const words = String(text).replace(/\s+/g, " ").trim().split(" ");
-    const lines = [];
-    let line = "";
-    words.forEach(function (word) {
-      while (word.length > width) {
-        if (line) { lines.push(line); line = ""; }
-        lines.push(word.slice(0, width));
-        word = word.slice(width);
-      }
-      if (!word) return;
-      if (!line) line = word;
-      else if ((line + " " + word).length <= width) line += " " + word;
-      else { lines.push(line); line = word; }
-    });
-    if (line) lines.push(line);
-    return lines.length ? lines : [""];
-  }
 
   // Optimal-string-alignment distance: like Levenshtein, but a swapped pair ("cta") costs 1.
   function editDistance(a, b) {
@@ -195,9 +166,6 @@
     return typeof term.print === "function" ? term.print(String(text), className || false) : null;
   }
 
-  function printPre(text, extra) {
-    return print(text, "egg-pre" + (extra ? " " + extra : ""));
-  }
 
   function scrollTerminal() {
     if (terminalOutput) terminalOutput.scrollTop = terminalOutput.scrollHeight;
@@ -210,13 +178,6 @@
     return node;
   }
 
-  function printLink(prefix, label, href) {
-    const line = make("p", "egg-link-line", prefix || "");
-    const link = make("a", "egg-term-link", label);
-    link.href = href;
-    line.appendChild(link);
-    return appendToTerminal(line);
-  }
 
   // Prefer the terminal when it is open (the toast would sit behind the modal backdrop).
   function say(message, className) {
@@ -239,38 +200,12 @@
   // phone shake, the orb hover has a press-and-hold, the Konami code can be swiped and the console
   // function has a terminal twin. `secrets` shows the hint that fits the current device.
   const EGGS = [
-    { id: "burst", name: "Structural Failure", hint: "The big name on the home page cracks under pressure. Five quick clicks.", touch: "The big name on the home page cracks under pressure. Five quick taps." },
-    { id: "google", name: "Feeling Lucky", hint: "Type (anywhere, no box needed) where Jake interns in 2026.", touch: "Tell the terminal where Jake interns in 2026." },
-    { id: "ithaca", name: "Lake Effect", hint: "Type the town Jake studies in. Dress warmly.", touch: "Tell the terminal the town Jake studies in. Dress warmly." },
-    { id: "gravity", name: "Newton Was Right", hint: "Type the reason apples fall.", touch: "Tell the terminal the reason apples fall." },
-    { id: "hello", name: "Polite Visitor", hint: "Just say it. Literally type a greeting on the page.", touch: "Just say it. Greet the terminal." },
-    { id: "cornell", name: "Big Red", hint: "Type the school's name. Brace for water.", touch: "Give the terminal the school's name. Brace for water." },
-    { id: "barrel", name: "Barrel Roll", hint: "Do a ______ roll. (Type the blank.)", touch: "Do a ______ roll. (Type the blank in the terminal.)" },
-    { id: "askew", name: "Slightly Off", hint: "Type a word that means 'a little crooked'.", touch: "Give the terminal a word that means 'a little crooked'." },
-    { id: "rainbow", name: "Full Spectrum", hint: "Type something with seven colours.", touch: "Give the terminal something with seven colours." },
-    { id: "xyzzy", name: "Nothing Happens", hint: "Type the oldest magic word in text adventures.", touch: "Say the oldest magic word in text adventures. (The terminal is a text adventure.)" },
-    { id: "shake", name: "Snow Globe", hint: "Shake your mouse like it owes you money.", touch: "Shake your phone like it owes you money. (Nothing? Type `shake` in the terminal first.)" },
-    { id: "saver", name: "AFK", hint: "Step away for a minute. The system gets bored.", touch: "Leave the page alone for a minute. (Phone dozes off first? Tell the terminal you're afk.)" },
-    { id: "tab", name: "Come Back!", hint: "Switch to another tab, then peek at this one's title.", touch: "Switch to another app or tab for a moment, then come back." },
-    { id: "boot", name: "Off and On Again", hint: "Triple-click the JB//OS logo in the header.", touch: "Triple-tap the JB//OS logo in the header." },
-    { id: "konami", name: "Thirty Lives", hint: "↑ ↑ ↓ ↓ ← → ← → B A", touch: "Swipe it on the page: ↑ ↑ ↓ ↓ ← → ← →, then tap twice for B A." },
-    { id: "console", name: "View Source", hint: "Developers: the console has a message, and a function, for you.", touch: "No devtools on a phone? The terminal can view the source too." },
-    { id: "orb", name: "Orb Whisperer", hint: "Hover the chrome star on the home page. Stay a while.", touch: "Press and hold the chrome star on the home page." },
-    { id: "sudo", name: "Root Access", hint: "Ask for elevated permission to do the obvious: `sudo hire jake`." },
-    { id: "hire", name: "Talent Scout", hint: "There is a command for the obvious next step." },
-    { id: "dotfiles", name: "Hidden Files", hint: "`ls` hides the shy files. It has a flag for that." },
-    { id: "env", name: "Leaky .env", hint: "Read the one file nobody should ever commit." },
-    { id: "cowsay", name: "Moo", hint: "Let a cow say something." },
-    { id: "matrix", name: "Red Pill", hint: "Follow the digital rain." },
-    { id: "snake", name: "Nokia Nostalgia", hint: "There is a game older than smartphones in here." },
-    { id: "hack", name: "I'm In", hint: "Be a movie hacker for a moment." },
-    { id: "party", name: "Party Mode", hint: "It's a party command. It also works typed on the page.", touch: "It's a party command." },
-    { id: "rm", name: "Chaos Engineer", hint: "Run the most dangerous command in Unix. (It's fine.)" },
-    { id: "vim", name: "Escape Artist", hint: "Open vim. Now leave. Good luck." },
-    { id: "theme", name: "Interior Decorator", hint: "Redecorate the OS with `theme`." },
-    { id: "sound", name: "Audiophile", hint: "Turn the sound on (header button or `sound on`)." },
-    { id: "lost", name: "Lost", hint: "Visit a page that doesn't exist." },
-    { id: "found", name: "…And Found", hint: "On the 404 page, catch the runaway page three times." }
+    { id: "burst", hint: "The big name on the home page cracks under pressure. Five quick clicks.", touch: "The big name on the home page cracks under pressure. Five quick taps." },
+    { id: "shake", hint: "Shake your mouse like it owes you money.", touch: "Shake your phone like it owes you money. (Nothing? Type `shake` in here first.)" },
+    { id: "saver", hint: "Stop touching anything for thirty seconds. The system gets bored." },
+    { id: "orb", hint: "Hover the chrome star on the home page. Stay a while.", touch: "Press and hold the chrome star on the home page." },
+    { id: "konami", hint: "↑ ↑ ↓ ↓ ← → ← → B A", touch: "Grab a keyboard: ↑ ↑ ↓ ↓ ← → ← → B A." },
+    { id: "lost", hint: "Visit a page that doesn't exist, then catch the runaway page three times." }
   ];
   // Touch-only devices (no fine hover pointer) get the touch route in hints.
   function hintFor(egg) { return (!finePointer && egg.touch) || egg.hint; }
@@ -738,110 +673,7 @@
     });
   }
 
-  function googleConfetti() {
-    unlock("google");
-    toast("GOOGLE · SOFTWARE ENGINEERING INTERN, 2026 · FEELING LUCKY?");
-    const colors = ["#4285F4", "#EA4335", "#FBBC05", "#34A853"];
-    if (confettiEffect("google", [
-      { delay: 0, colors: colors, count: 150, power: 1250 },
-      { delay: 280, colors: colors, origin: "left", count: 80 },
-      { delay: 280, colors: colors, origin: "right", count: 80 }
-    ])) sfx("success");
-  }
 
-  function snowfall() {
-    unlock("ithaca");
-    toast("ITHACA FORECAST: SNOW. (IT IS ALWAYS SNOWING.)");
-    if (reduceMotion) return;
-    effect("ithaca", function (fx) {
-      const tint = make("div", "egg-snow-tint");
-      host().appendChild(tint);
-      fx.onEnd(function () { tint.remove(); });
-      const view = fxCanvas(fx);
-      const ctx = view.ctx;
-      const COLUMN = 8;
-      let bank = new Float32Array(Math.ceil(view.w / COLUMN) + 2);
-      const flakes = [];
-      let spawning = true;
-      let spawnDebt = 0;
-      let fade = 1;
-      let fading = false;
-
-      function flake(anywhere) {
-        const big = Math.random() < 0.06;
-        const radius = big ? rand(3.6, 5.2) : rand(1, 3.1);
-        return {
-          x: rand(-20, view.w + 20),
-          y: anywhere ? rand(-20, view.h * 0.85) : rand(-30, -6),
-          r: radius,
-          vy: 55 + radius * 30 + rand(-10, 10),
-          sway: rand(12, 34),
-          freq: rand(0.6, 1.6),
-          phase: rand(0, Math.PI * 2),
-          age: anywhere ? 0 : 1
-        };
-      }
-      for (let i = 0; i < Math.round(view.w / 14); i += 1) flakes.push(flake(true));
-
-      window.requestAnimationFrame(function () { tint.classList.add("is-visible"); });
-      sfx("snow");
-      fx.after(5600, function () { spawning = false; tint.classList.remove("is-visible"); });
-      fx.after(8200, function () { fading = true; });
-
-      let time = 0;
-      fx.loop(function (dt) {
-        time += dt;
-        const columns = Math.ceil(view.w / COLUMN) + 2;
-        if (bank.length !== columns) bank = new Float32Array(columns);
-        if (spawning && flakes.length < 460) {
-          spawnDebt += dt * view.w / 12;
-          while (spawnDebt >= 1) { flakes.push(flake(false)); spawnDebt -= 1; }
-        }
-        if (fading) fade = Math.max(0, fade - dt / 1.2);
-
-        ctx.clearRect(0, 0, view.w, view.h);
-        ctx.globalAlpha = fade;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
-        ctx.beginPath();
-        for (let i = flakes.length - 1; i >= 0; i -= 1) {
-          const f = flakes[i];
-          f.age = Math.min(f.age + dt * 2, 1);
-          f.y += f.vy * dt;
-          f.x += Math.cos(time * f.freq + f.phase) * f.sway * dt;
-          const column = clamp(Math.floor(f.x / COLUMN), 0, columns - 1);
-          if (f.y + f.r >= view.h - bank[column]) {
-            bank[column] = Math.min(bank[column] + f.r * 0.8, 34);
-            if (column > 0) bank[column - 1] = Math.min(bank[column - 1] + f.r * 0.35, 34);
-            if (column < columns - 1) bank[column + 1] = Math.min(bank[column + 1] + f.r * 0.35, 34);
-            flakes.splice(i, 1);
-            continue;
-          }
-          ctx.moveTo(f.x + f.r * f.age, f.y);
-          ctx.arc(f.x, f.y, f.r * f.age, 0, Math.PI * 2);
-        }
-        ctx.fill();
-
-        // The snowbank along the bottom edge.
-        ctx.beginPath();
-        ctx.moveTo(0, view.h);
-        for (let c = 0; c < columns; c += 1) ctx.lineTo(c * COLUMN, view.h - bank[c]);
-        ctx.lineTo(view.w, view.h);
-        ctx.closePath();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(17, 21, 40, 0.22)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-
-        if (fading && fade <= 0) {
-          fx.end();
-          return false;
-        }
-        return true;
-      });
-    });
-  }
 
   function gravity() {
     unlock("gravity");
@@ -941,66 +773,6 @@
     });
   }
 
-  function bigRedWave() {
-    unlock("cornell");
-    toast("CORNELL ’26 · GO BIG RED");
-    if (reduceMotion) return;
-    effect("cornell", function (fx) {
-      const view = fxCanvas(fx);
-      const ctx = view.ctx;
-      const DURATION = 3.4;
-      const display = cssVar("--font-display", "\"Arial Black\", sans-serif");
-      const layers = [
-        { color: "#7a0f12", scale: 1.14, phase: 1.3 },
-        { color: "#b31b1b", scale: 1, phase: 0, text: true },
-        { color: "rgba(214, 58, 58, 0.92)", scale: 0.7, phase: 2.2 }
-      ];
-      let t = 0;
-      sfx("wave");
-      fx.onEnd(stopLongSounds);
-      fx.loop(function (dt) {
-        t += dt;
-        const w = view.w;
-        const h = view.h;
-        const p = Math.min(t / DURATION, 1);
-        const front = -0.25 * w + easeInOutSine(Math.min(p / 0.55, 1)) * 1.65 * w;
-        const level = p < 0.2 ? easeOutCubic(p / 0.2) : (p < 0.62 ? 1 : 1 - easeInCubic((p - 0.62) / 0.38));
-        const height = h * 0.68 * level;
-        ctx.clearRect(0, 0, w, h);
-        layers.forEach(function (layer) {
-          const path = new Path2D();
-          path.moveTo(0, h);
-          for (let x = 0; x <= w + 12; x += 12) {
-            const behind = clamp((front - x) / (0.45 * w), 0, 1);
-            const ramp = behind * behind * (3 - 2 * behind);
-            const crest = Math.exp(-Math.pow((front - x - 0.06 * w) / (0.07 * w), 2)) * 0.12 * h * level;
-            const ripple = Math.sin(x * 0.012 + t * 3.2 + layer.phase) * 14 + Math.sin(x * 0.027 - t * 2.1 + layer.phase) * 7;
-            path.lineTo(x, h - (height * layer.scale * ramp + crest * layer.scale) + ripple * ramp);
-          }
-          path.lineTo(w, h);
-          path.closePath();
-          ctx.fillStyle = layer.color;
-          ctx.fill(path);
-          if (layer.text) {
-            ctx.save();
-            ctx.clip(path);
-            const size = Math.min(w * 0.13, 190);
-            ctx.font = "900 " + size + "px " + display;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = "rgba(247, 245, 238, 0.95)";
-            ctx.fillText("GO BIG RED", w / 2, h * 0.64 + Math.sin(t * 2.4) * 8);
-            ctx.restore();
-          }
-        });
-        if (p >= 1) {
-          fx.end();
-          return false;
-        }
-        return true;
-      });
-    });
-  }
 
   function animateMain(name, keyframes, timing, message, reducedMessage) {
     const main = doc.getElementById("main-content") || doc.querySelector("main");
@@ -1030,63 +802,10 @@
       "DO A BARREL ROLL!", "BARREL ROLL DECLINED: REDUCED MOTION IS ON. (IMAGINE IT. VERY IMPRESSIVE.)");
   }
 
-  function askew() {
-    unlock("askew");
-    animateMain("askew", [
-      { transform: "rotate(0deg)" },
-      { transform: "rotate(-2.2deg)", offset: 0.12 },
-      { transform: "rotate(-2.2deg)", offset: 0.88 },
-      { transform: "rotate(0deg)" }
-    ], { duration: 3600, easing: "ease-in-out" },
-    "HMM. SOMETHING LOOKS A LITTLE… OFF.", "EVERYTHING IS PERFECTLY LEVEL. (REDUCED MOTION IS ON.)");
-  }
 
-  function rainbow() {
-    unlock("rainbow");
-    sfx("powerup");
-    animateMain("rainbow", [
-      { filter: "hue-rotate(0deg) saturate(1)" },
-      { filter: "hue-rotate(180deg) saturate(1.8)" },
-      { filter: "hue-rotate(360deg) saturate(1)" }
-    ], { duration: 1600, iterations: 2, easing: "linear" },
-    "FULL SPECTRUM MODE: ALL SEVEN COLOURS, NO EXTRA CHARGE.", "FULL SPECTRUM MODE: SKIPPED THE STROBE FOR REDUCED MOTION.");
-  }
 
-  function ithacaGreeting() {
-    const hour = ithacaHour();
-    return {
-      late: hour < 5 || hour >= 22,
-      phrase: hour < 5 || hour >= 22 ? "UP LATE, HUH?" : hour < 12 ? "GOOD MORNING" : hour < 17 ? "GOOD AFTERNOON" : "GOOD EVENING",
-      time: ithacaTime({ hour: "numeric", minute: "2-digit" })
-    };
-  }
 
-  function hello() {
-    unlock("hello");
-    const greeting = ithacaGreeting();
-    toast("HELLO, VISITOR · " + greeting.phrase + " FROM ITHACA (" + greeting.time + ") · JB//OS SAYS HI");
-    sfx("chime");
-    const mark = doc.querySelector(".site-header .brand-mark") || doc.querySelector(".site-header .brand");
-    if (!mark) return;
-    const old = doc.querySelector(".egg-bubble");
-    if (old) old.remove();
-    const rect = mark.getBoundingClientRect();
-    const bubble = make("div", "egg-bubble", pick(["hi!", "hey there!", "hello, human!", "oh, hi!"]));
-    bubble.setAttribute("aria-hidden", "true");
-    const left = Math.max(8, Math.round(rect.left - 6));
-    bubble.style.left = left + "px";
-    bubble.style.top = Math.round(rect.bottom + 12) + "px";
-    bubble.style.setProperty("--egg-tail", Math.max(12, Math.round(rect.left + rect.width / 2 - left)) + "px");
-    body.appendChild(bubble);
-    window.setTimeout(function () { bubble.classList.add("is-leaving"); }, 2500);
-    window.setTimeout(function () { bubble.remove(); }, 2900);
-  }
 
-  function xyzzy() {
-    unlock("xyzzy");
-    sfx("beep");
-    toast("A HOLLOW VOICE SAYS: “NOTHING HAPPENS.”");
-  }
 
   function busy() {
     if (!active) return false;
@@ -1094,144 +813,125 @@
     return true;
   }
 
+  // PARTY: a countdown on the beat, the drop, sweeping lasers, the disco ball, a scrolling banner,
+  // confetti cannons every bar and a firework finale. Colour washes pulse at the tempo (about two per
+  // second), well under strobe territory.
   function party() {
-    unlock("party");
     if (busy()) return;
     if (reduceMotion) {
-      say("PARTY MODE (QUIET EDITION): PLEASE IMAGINE CONFETTI AND A DISCO BALL.");
+      say("PARTY MODE (QUIET EDITION): PLEASE IMAGINE LASERS, A DISCO BALL AND A VERY GOOD DJ.");
       return;
     }
     closeTerminal();
     effect("party", function (fx) {
-      const disco = make("div", "egg-disco");
+      const BEAT = 60000 / 124;
+      const DROP_AT = 4 * BEAT;
+      const PARTY_BEATS = 20;
+      const stage = make("div", "egg-disco");
       const lights = make("div", "egg-disco__lights");
       for (let i = 0; i < 6; i += 1) lights.appendChild(make("i"));
       const ball = make("div", "egg-disco__ball");
       ball.appendChild(make("span"));
-      disco.appendChild(make("div", "egg-disco__wash"));
-      disco.appendChild(lights);
-      disco.appendChild(ball);
-      host().appendChild(disco);
-      body.classList.add("egg-party");
+      const banner = make("div", "egg-party-banner");
+      const bannerText = "JB//OS AFTER HOURS ✳ 124 BPM ✳ NO SLEEP TILL SHIPPED ✳ ";
+      const bannerTrack = make("div", "egg-party-banner__track");
+      for (let i = 0; i < 4; i += 1) bannerTrack.appendChild(make("span", "", bannerText));
+      banner.appendChild(bannerTrack);
+      const count = make("div", "egg-party-count");
+      stage.appendChild(make("div", "egg-disco__wash"));
+      stage.appendChild(lights);
+      stage.appendChild(ball);
+      stage.appendChild(banner);
+      stage.appendChild(count);
+      stage.style.setProperty("--beat", Math.round(BEAT) + "ms");
+      host().appendChild(stage);
       fx.onEnd(function () {
-        disco.remove();
+        stage.remove();
         body.classList.remove("egg-party");
         stopLongSounds();
       });
-      window.requestAnimationFrame(function () { disco.classList.add("is-visible"); });
+      window.requestAnimationFrame(function () { stage.classList.add("is-visible"); });
+
+      ["3", "2", "1", "DROP"].forEach(function (label, i) {
+        fx.after(i * BEAT, function () {
+          count.textContent = label;
+          count.classList.remove("is-hit");
+          void count.offsetWidth;
+          count.classList.add("is-hit");
+          sfx(label === "DROP" ? "powerup" : "tick");
+        });
+      });
 
       const view = fxCanvas(fx);
       const field = confettiField(view);
-      [0, 1000, 2000, 3000].forEach(function (delay) {
-        fx.after(delay, function () {
-          field.burst({ origin: "left", count: 70 });
-          field.burst({ origin: "right", count: 70 });
+      const palette = themePalette();
+      let dropped = false;
+      let elapsed = 0;
+
+      fx.after(DROP_AT, function () {
+        dropped = true;
+        count.textContent = "";
+        stage.classList.add("is-dropped");
+        body.classList.add("egg-party");
+        sfx("party");
+        toast("PARTY MODE · 124 BPM · ESC TO STOP");
+        field.burst({ origin: "left", count: 100 });
+        field.burst({ origin: "right", count: 100 });
+      });
+      for (let bar = 1; bar < PARTY_BEATS / 4; bar += 1) {
+        fx.after(DROP_AT + bar * 4 * BEAT, function () {
+          field.burst({ origin: bar % 2 ? "left" : "right", count: 70 });
+          sfx("pop");
+        });
+      }
+      const finale = DROP_AT + PARTY_BEATS * BEAT;
+      [0.18, 0.5, 0.82, 0.34, 0.66].forEach(function (x, i) {
+        fx.after(finale + i * BEAT * 0.5, function () {
+          field.burst({ origin: { x: view.w * x, y: view.h * (i < 3 ? 0.32 : 0.22) }, spread: Math.PI, count: 70, power: 620 });
           sfx("pop");
         });
       });
-      sfx("party");
-      toast("PARTY MODE · 124 BPM · ESC TO STOP");
+
+      // Laser beams from the floor corners, sweeping on the beat.
+      function drawLasers() {
+        const ctx = view.ctx;
+        const beams = [
+          { x: 0, dir: 1 }, { x: view.w, dir: -1 }, { x: view.w * 0.5, dir: 1 }
+        ];
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.lineCap = "round";
+        beams.forEach(function (beam, b) {
+          for (let k = 0; k < 3; k += 1) {
+            const phase = elapsed / (BEAT / 1000) * Math.PI / 2 + b * 1.7 + k * 0.5;
+            const angle = -Math.PI / 2 + beam.dir * (0.25 + 0.55 * Math.sin(phase)) * (b === 2 ? 0.7 : 1);
+            const length = Math.hypot(view.w, view.h);
+            ctx.strokeStyle = palette[(b * 3 + k) % palette.length];
+            ctx.globalAlpha = 0.38;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = ctx.strokeStyle;
+            ctx.shadowBlur = 16;
+            ctx.beginPath();
+            ctx.moveTo(beam.x, view.h + 4);
+            ctx.lineTo(beam.x + Math.cos(angle) * length, view.h + Math.sin(angle) * length);
+            ctx.stroke();
+          }
+        });
+        ctx.restore();
+      }
+
       fx.loop(function (dt) {
+        elapsed += dt;
         field.step(dt);
         field.draw();
+        if (dropped && elapsed * 1000 < finale) drawLasers();
         return true;
       });
-      fx.after(5200, function () { disco.classList.remove("is-visible"); });
-      fx.after(5900, function () { fx.end(); });
+      fx.after(finale + 2400, function () { stage.classList.remove("is-visible"); });
+      fx.after(finale + 3100, function () { fx.end(); });
     });
   }
 
-  function matrix(fromTerminal) {
-    unlock("matrix");
-    if (busy()) return;
-    if (reduceMotion) {
-      say("MATRIX: DIGITAL RAIN POSTPONED (REDUCED MOTION). THERE IS NO SPOON EITHER.");
-      return;
-    }
-    const reopen = Boolean(fromTerminal && terminalOpen());
-    closeTerminal();
-    effect("matrix", function (fx) {
-      const view = fxCanvas(fx, "egg-canvas--solid");
-      const ctx = view.ctx;
-      const acid = cssVar("--acid", "#d9ff43");
-      const mono = cssVar("--font-mono", "monospace");
-      const glyphs = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789JB/OS<>{}=+*";
-      const size = view.w < 640 ? 14 : 18;
-      let columns = [];
-
-      function layout() {
-        columns = [];
-        const count = Math.ceil(view.w / size);
-        for (let i = 0; i < count; i += 1) columns.push({ y: rand(-45, 0), speed: rand(9, 24), last: -1, head: "" });
-        ctx.fillStyle = "#030503";
-        ctx.fillRect(0, 0, view.w, view.h);
-      }
-      layout();
-      window.addEventListener("resize", layout);
-      fx.onEnd(function () { window.removeEventListener("resize", layout); });
-
-      const message = make("div", "egg-matrix-msg");
-      host().appendChild(message);
-      fx.onEnd(function () { message.remove(); });
-      const script = ["Wake up, visitor…", "The portfolio has you…", "Follow the acid rabbit."];
-      script.forEach(function (line, index) {
-        const start = 900 + index * 2300;
-        fx.after(start, function () { message.textContent = ""; });
-        for (let c = 1; c <= line.length; c += 1) {
-          fx.after(start + c * 60, function () {
-            message.textContent = line.slice(0, c);
-            if (c % 2) sfx("tick");
-          });
-        }
-      });
-      fx.after(900 + script.length * 2300, function () { message.textContent = ""; });
-
-      fx.loop(function (dt) {
-        ctx.fillStyle = "rgba(3, 5, 3, " + (1 - Math.pow(0.91, dt * 60)).toFixed(3) + ")";
-        ctx.fillRect(0, 0, view.w, view.h);
-        ctx.font = "700 " + size + "px " + mono;
-        ctx.textBaseline = "top";
-        columns.forEach(function (column, index) {
-          column.y += column.speed * dt;
-          const row = Math.floor(column.y);
-          if (row !== column.last) {
-            const x = index * size;
-            if (column.last >= 0 && column.head) {
-              ctx.fillStyle = acid;
-              ctx.fillText(column.head, x, column.last * size);
-            }
-            if (row >= 0) {
-              column.head = glyphs.charAt(Math.floor(Math.random() * glyphs.length));
-              ctx.fillStyle = "#f4ffd6";
-              ctx.fillText(column.head, x, row * size);
-            }
-            column.last = row;
-          }
-          if (row * size > view.h && Math.random() > 0.975) {
-            column.y = rand(-24, 0);
-            column.last = -1;
-            column.head = "";
-          }
-        });
-        return true;
-      });
-
-      fx.onSkip = function () {
-        view.canvas.classList.add("is-fading");
-        message.classList.add("is-fading");
-        fx.after(360, function () { fx.end(); });
-      };
-      fx.after(16000, function () { fx.skip(); });
-      if (reopen) {
-        fx.onEnd(function () {
-          window.setTimeout(function () {
-            openTerminal();
-            print("You took the red pill. Welcome back to the terminal.", "egg-ok");
-          }, 90);
-        });
-      }
-    });
-  }
 
   function wobble() {
     unlock("shake");
@@ -1322,14 +1022,13 @@
         return true;
       });
 
-      let origin = null;
-      const wakeEvents = ["pointermove", "keydown", "wheel", "touchstart"];
+      // Only a click or tap ends it (Escape too, so keyboard users are never stuck); moving the mouse,
+      // scrolling or other keys just let it keep bouncing.
+      const wakeEvents = ["pointerdown", "keydown"];
       function wake(event) {
-        if (event.type === "pointermove") {
-          if (!origin) { origin = { x: event.clientX, y: event.clientY }; return; }
-          if (Math.abs(event.clientX - origin.x) + Math.abs(event.clientY - origin.y) < 14) return;
-        }
-        if (event.type === "keydown") event.preventDefault();
+        if (event.type === "keydown" && event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
         fx.skip();
       }
       fx.after(450, function () {
@@ -1347,192 +1046,12 @@
     });
   }
 
-  function bootReplay() {
-    unlock("boot");
-    if (busy()) return;
-    if (reduceMotion) {
-      say("JB//OS REBOOTED. (QUIETLY, BECAUSE REDUCED MOTION IS ON.)");
-      return;
-    }
-    closeTerminal();
-    effect("boot", function (fx) {
-      const screen = make("div", "egg-boot");
-      const card = make("div", "egg-boot__card");
-      const image = make("img");
-      image.src = "/images/memoji.png";
-      image.alt = "";
-      image.width = 72;
-      image.height = 72;
-      const info = make("div", "egg-boot__info");
-      const title = make("p", "egg-boot__title", "JB//OS ");
-      title.appendChild(make("span", "", "v.2026 · REBOOT"));
-      const meter = make("div", "egg-boot__meter");
-      meter.appendChild(make("i"));
-      const log = make("ol", "egg-boot__log");
-      info.appendChild(title);
-      info.appendChild(meter);
-      info.appendChild(log);
-      card.appendChild(image);
-      card.appendChild(info);
-      screen.appendChild(card);
-      host().appendChild(screen);
-      fx.onEnd(function () { screen.remove(); });
-      sfx("boot");
-      [
-        "[ OK ] Mounted /dev/imagination",
-        "[ OK ] Started caffeine.service",
-        "[ OK ] Loaded 1 portfolio (handmade, 0 frameworks)",
-        "[ OK ] Reached target: Delight"
-      ].forEach(function (line, index) {
-        fx.after(260 + index * 330, function () {
-          log.appendChild(make("li", "", line));
-          sfx("tick");
-        });
-      });
-      fx.after(1950, function () { screen.classList.add("is-exiting"); });
-      fx.after(2550, function () { fx.end(); });
-    });
-  }
 
-  function nuke() {
-    unlock("rm");
-    if (busy()) return;
-    if (reduceMotion) {
-      say("rm: nice try. Nothing was deleted. (Reduced motion is on, so we skipped the dramatics.)");
-      return;
-    }
-    closeTerminal();
-    effect("rm", function (fx) {
-      const chunks = pickChunks(60);
-      const order = shuffle(chunks.slice());
-      const log = make("div", "egg-rmlog");
-      host().appendChild(log);
-      body.classList.add("egg-glitching");
-      sfx("glitch");
-      let panic = null;
-      let stamp = null;
-      fx.onEnd(function () {
-        body.classList.remove("egg-glitching");
-        chunks.forEach(function (chunk) { chunk.el.classList.remove("egg-deleted"); });
-        log.remove();
-        if (panic) panic.remove();
-        if (stamp) stamp.remove();
-      });
 
-      const step = 1450 / Math.max(order.length, 1);
-      order.forEach(function (chunk, index) {
-        fx.after(260 + index * step, function () {
-          chunk.el.classList.add("egg-deleted");
-          if (index % 4 === 0) sfx("tick");
-        });
-      });
-      const victims = [
-        "/home/jake/portfolio/index.html", "/home/jake/portfolio/assets/css/styles.css", "/usr/bin/coffee",
-        "/etc/motivation.conf", "/var/log/all-nighters.log", "/home/jake/.config/opinions.toml",
-        "/opt/throttle-ai/", "/home/jake/Music/Waves/", "/lib/jbos/kernel.js", "/boot/memoji.png",
-        "/dev/imagination", "/home/jake/todo.txt", "/usr/share/easter-eggs/", "/home/jake/.env",
-        "/bin/ship-it", "/home/visitor/good-vibes"
-      ];
-      victims.forEach(function (path, index) {
-        fx.after(120 + index * 105, function () {
-          log.appendChild(make("p", "", "removed '" + path + "'"));
-          while (log.childElementCount > 12) log.removeChild(log.firstChild);
-        });
-      });
-
-      fx.after(1950, function () {
-        body.classList.remove("egg-glitching");
-        panic = make("div", "egg-panic");
-        panic.appendChild(make("pre", "", [
-          "Kernel panic - not syncing: Attempted to kill portfolio! exitcode=0x00000194",
-          "CPU: 0 PID: 1 Comm: rm Tainted: visitor 2026.09-jbos",
-          "Call Trace:",
-          " <TASK>",
-          "  dump_stack+0x404/0x404",
-          "  panic+0x1337/0x2026",
-          "  do_exit+0xcafe/0xbeef",
-          "  rm_rf_root+0x42/0x42",
-          " </TASK>",
-          "---[ end Kernel panic - not syncing: Attempted to kill portfolio! ]---"
-        ].join("\n")));
-        const countdown = make("p", "egg-panic__countdown", "Rebooting in 3…");
-        panic.appendChild(countdown);
-        host().appendChild(panic);
-        log.remove();
-        sfx("powerdown");
-        fx.after(500, function () { countdown.textContent = "Rebooting in 2…"; sfx("tick"); });
-        fx.after(1000, function () { countdown.textContent = "Rebooting in 1…"; sfx("tick"); });
-      });
-
-      fx.after(3500, function () {
-        chunks.forEach(function (chunk) { chunk.el.classList.remove("egg-deleted"); });
-        if (panic) panic.classList.add("is-leaving");
-        stamp = make("div", "egg-stamp");
-        stamp.appendChild(make("strong", "", "JUST KIDDING."));
-        stamp.appendChild(make("small", "", "NOTHING WAS DELETED · ALL FILES ACCOUNTED FOR"));
-        host().appendChild(stamp);
-        sfx("success");
-      });
-      fx.after(5300, function () { fx.end(); });
-      fx.onSkip = function () {
-        fx.end();
-        toast("RESTORED. (IT WAS ALWAYS FINE.)");
-      };
-    });
-  }
-
-  function hireConfetti() {
-    if (reduceMotion) return;
-    confettiEffect("hire", [
-      { delay: 0, count: 140, power: 1250 },
-      { delay: 220, origin: "left", count: 70 },
-      { delay: 220, origin: "right", count: 70 }
-    ]);
-  }
 
   /* ---------------------------------------------------------------------------------------------
    * Page-wide secrets
    * ------------------------------------------------------------------------------------------- */
-
-  // Words typed anywhere (outside inputs, with no dialog open) trigger effects.
-  const WORDS = {
-    google: googleConfetti,
-    ithaca: snowfall,
-    gravity: gravity,
-    hello: hello,
-    cornell: bigRedWave,
-    barrel: barrelRoll,
-    askew: askew,
-    rainbow: rainbow,
-    xyzzy: xyzzy,
-    party: party,
-    matrix: function () { matrix(false); }
-  };
-  const WORD_LIST = Object.keys(WORDS);
-  let typedBuffer = "";
-  let typedAt = 0;
-
-  doc.addEventListener("keydown", function (event) {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.isComposing) return;
-    if (isEditable(event.target) || isEditable(doc.activeElement) || dialogOpen() || snakeGame) {
-      typedBuffer = "";
-      return;
-    }
-    if (!event.key || event.key.length !== 1 || !/[a-z]/i.test(event.key)) return;
-    const now = clock();
-    if (now - typedAt > 1600) typedBuffer = "";
-    typedAt = now;
-    typedBuffer = (typedBuffer + event.key.toLowerCase()).slice(-12);
-    for (let i = 0; i < WORD_LIST.length; i += 1) {
-      const word = WORD_LIST[i];
-      if (typedBuffer.slice(-word.length) === word) {
-        typedBuffer = "";
-        if (active && word !== "hello" && word !== "xyzzy") return;
-        WORDS[word]();
-        return;
-      }
-    }
-  });
 
   // Five quick clicks on the hero name.
   const scrambleTitle = doc.querySelector("h1[data-scramble]");
@@ -1648,8 +1167,8 @@
     return state;
   })();
 
-  // One minute of stillness starts the screensaver.
-  const IDLE_MS = 60000;
+  // Thirty seconds of stillness starts the screensaver.
+  const IDLE_MS = 30000;
   let lastActivity = clock();
   let idleNoticeShown = false;
   function markActivity() {
@@ -1675,94 +1194,9 @@
     screensaver(false);
   }, 4000);
 
-  // A cheeky tab title while the visitor is elsewhere.
-  const awayTitles = [
-    "Come back! JB//OS misses you",
-    "(1) new message: hire Jake",
-    "404: visitor not found",
-    "brb, compiling feelings…",
-    "JB//OS is napping… zzz",
-    "Psst. Your tab is lonely."
-  ];
-  let savedTitle = null;
-  let hiddenAt = 0;
-  doc.addEventListener("visibilitychange", function () {
-    if (doc.hidden) {
-      if (savedTitle === null) savedTitle = doc.title;
-      hiddenAt = clock();
-      doc.title = pick(awayTitles);
-    } else {
-      markActivity();
-      if (savedTitle !== null) {
-        doc.title = savedTitle;
-        savedTitle = null;
-        if (clock() - hiddenAt > 1500) unlock("tab");
-      }
-    }
-  });
-  window.addEventListener("pageshow", function () {
-    if (savedTitle !== null && !doc.hidden) {
-      doc.title = savedTitle;
-      savedTitle = null;
-    }
-  });
-
-  // Triple-click the header brand to replay a mini boot. A single click still navigates home,
-  // just after a short wait to see whether more clicks are coming (a touch longer for fingers).
-  const brand = doc.querySelector(".site-header .brand");
-  const MULTI_CLICK_MS = finePointer ? 260 : 340;
-  if (brand) {
-    let brandClicks = 0;
-    let brandTimer = 0;
-    brand.addEventListener("click", function (event) {
-      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.detail === 0) return;
-      event.preventDefault();
-      event.stopPropagation();
-      brandClicks += 1;
-      window.clearTimeout(brandTimer);
-      if (brandClicks >= 3) {
-        brandClicks = 0;
-        if (!active) bootReplay();
-        return;
-      }
-      sfx("click");
-      const href = brand.href;
-      brandTimer = window.setTimeout(function () {
-        brandClicks = 0;
-        followLink(href);
-      }, MULTI_CLICK_MS);
-    });
-  }
-
-  function followLink(href) {
-    let destination;
-    try { destination = new URL(href, window.location.href); } catch (error) { return; }
-    if (destination.origin === window.location.origin && destination.pathname === window.location.pathname && destination.search === window.location.search) {
-      window.location.href = destination.href;
-      return;
-    }
-    body.classList.remove("nav-open");
-    body.classList.add("is-leaving");
-    window.setTimeout(function () { window.location.href = destination.href; }, reduceMotion ? 0 : 430);
-  }
-
   // Little extras in the home hero (the markup stays untouched; behaviour is attached here).
   const heroSection = doc.querySelector(".home-hero");
   if (heroSection) {
-    const eyebrow = heroSection.querySelector(".hero-utility .eyebrow");
-    if (eyebrow) {
-      const statuses = [
-        "SYSTEM STATUS: NOMINAL · COFFEE: LOW",
-        "STATUS: BUILDING SOMETHING. PROBABLY TWO THINGS.",
-        "CPU: 1× JAKE · SLEEP: SCHEDULED, NOT GUARANTEED",
-        "ALL SYSTEMS GO · GO BIG RED",
-        "UPTIME: EXCELLENT · BUGS: UNDER NEGOTIATION"
-      ];
-      eyebrow.addEventListener("click", function () {
-        toast(pick(statuses));
-        sfx("beep");
-      });
-    }
 
     const hintKey = heroSection.querySelector(".terminal-hint kbd");
     if (hintKey) {
@@ -1847,119 +1281,6 @@
     }
   }
 
-  // Achievements fed by other modules.
-  let lastInputAt = -Infinity;
-  ["pointerdown", "keydown"].forEach(function (type) {
-    window.addEventListener(type, function () { lastInputAt = clock(); }, { capture: true, passive: true });
-  });
-  if (typeof JBOS.on === "function") {
-    JBOS.on("theme-change", function () {
-      if (clock() - lastInputAt < 3000) unlock("theme");
-    });
-    JBOS.on("sound-change", function (detail) {
-      if (detail && detail.enabled) unlock("sound");
-    });
-  }
-  if ("MutationObserver" in window) {
-    let gameMode = body.classList.contains("game-mode");
-    new MutationObserver(function () {
-      const now = body.classList.contains("game-mode");
-      if (now && !gameMode) {
-        unlock("konami");
-        sfx("powerup");
-      }
-      gameMode = now;
-    }).observe(body, { attributes: true, attributeFilter: ["class"] });
-  }
-
-  // The Konami code, swiped: ↑ ↑ ↓ ↓ ← → ← → then two taps for B A. Touch events (not pointer
-  // events) are used because a vertical swipe scrolls the page, which cancels the pointer but still
-  // ends the touch. Everything is passive, so scrolling and taps behave exactly as normal.
-  if ("ontouchstart" in window) {
-    const SWIPE_CODE = "UUDDLRLRTT";
-    let gestures = "";
-    let lastGestureAt = 0;
-    let touchStart = null;
-    window.addEventListener("touchstart", function (event) {
-      touchStart = event.touches.length === 1
-        ? { x: event.touches[0].clientX, y: event.touches[0].clientY, at: clock() }
-        : null;
-    }, { passive: true });
-    window.addEventListener("touchcancel", function () { touchStart = null; }, { passive: true });
-    window.addEventListener("touchend", function (event) {
-      const start = touchStart;
-      touchStart = null;
-      if (!start || event.touches.length || !event.changedTouches.length) return;
-      if (active || dialogOpen() || isEditable(event.target)) { gestures = ""; return; }
-      const end = event.changedTouches[0];
-      const dx = end.clientX - start.x;
-      const dy = end.clientY - start.y;
-      const distance = Math.max(Math.abs(dx), Math.abs(dy));
-      const duration = clock() - start.at;
-      let gesture = "";
-      if (distance < 12 && duration < 400) gesture = "T";
-      else if (distance > 40 && duration < 800) {
-        if (Math.abs(dx) > Math.abs(dy) * 1.4) gesture = dx > 0 ? "R" : "L";
-        else if (Math.abs(dy) > Math.abs(dx) * 1.4) gesture = dy > 0 ? "D" : "U";
-      }
-      const now = clock();
-      if (!gesture || now - lastGestureAt > 2200) gestures = "";
-      lastGestureAt = now;
-      if (!gesture) return;
-      gestures = (gestures + gesture).slice(-SWIPE_CODE.length);
-      if (gestures === SWIPE_CODE) {
-        gestures = "";
-        arcadeMode();
-      }
-    }, { passive: true });
-  }
-
-  // Same arcade badge site.js shows for the keyboard code (the observer above awards the egg).
-  function arcadeMode() {
-    body.classList.remove("game-mode");
-    void body.offsetWidth;
-    body.classList.add("game-mode");
-    toast("GAME MODE UNLOCKED · NICE WORK");
-    window.setTimeout(function () { body.classList.remove("game-mode"); }, 2200);
-  }
-
-  // A note for whoever opens devtools.
-  function blockWord(word) {
-    const font = {
-      J: ["     ██", "     ██", "     ██", "██   ██", " █████ "],
-      B: ["██████ ", "██   ██", "██████ ", "██   ██", "██████ "],
-      "/": ["    ██", "   ██ ", "  ██  ", " ██   ", "██    "],
-      O: [" ██████ ", "██    ██", "██    ██", "██    ██", " ██████ "],
-      S: [" ███████", "██      ", " ██████ ", "      ██", "███████ "]
-    };
-    const rows = ["", "", "", "", ""];
-    word.split("").forEach(function (letter, index) {
-      const glyph = font[letter];
-      if (!glyph) return;
-      rows.forEach(function (row, r) { rows[r] = row + (index ? " " : "") + glyph[r]; });
-    });
-    return rows.join("\n");
-  }
-
-  try {
-    if (window.console && typeof window.console.log === "function") {
-      window.console.log("%c" + blockWord("JB//OS"),
-        "color:#d9ff43;background:#111528;font:700 10px/1.15 Menlo,Consolas,monospace;padding:12px 16px;border-left:6px solid #ff58c8;");
-      window.console.log("%cHEY, CURIOUS DEV.%c This site is hand-built: vanilla JS, handmade Sass, zero frameworks.\n" +
-        "Press ` for the terminal, type `secrets` in it, or run hireJake() right here.",
-        "color:#11110f;background:#d9ff43;font:800 12px Menlo,Consolas,monospace;padding:3px 6px;",
-        "color:inherit;font:500 12px Menlo,Consolas,monospace;");
-    }
-  } catch (error) { /* console unavailable */ }
-
-  window.hireJake = function () {
-    unlock("console");
-    toast("HIRE REQUEST RECEIVED FROM THE CONSOLE. BOLD MOVE.");
-    hireConfetti();
-    sfx("fanfare");
-    return "Offer drafted. Send it to " + EMAIL + " (subject: \"I found the console\").";
-  };
-
   /* ---------------------------------------------------------------------------------------------
    * Terminal: async jobs, input modes, history, tab completion, did-you-mean
    * ------------------------------------------------------------------------------------------- */
@@ -2020,7 +1341,7 @@
   }
 
   function commandNames(includeHidden) {
-    const names = Object.keys(ROUTES).concat(BUILTINS);
+    const names = BUILTINS.slice();
     Object.keys(JBOS.commands || {}).forEach(function (name) {
       if (includeHidden || !JBOS.commands[name].hidden) names.push(name);
     });
@@ -2028,7 +1349,7 @@
   }
 
   function isKnownCommand(name) {
-    return Boolean(ROUTES[name] || BUILTINS.indexOf(name) >= 0 ||
+    return Boolean(BUILTINS.indexOf(name) >= 0 ||
       (JBOS.commands && JBOS.commands[name]) || (JBOS.aliases && JBOS.aliases[name]));
   }
 
@@ -2075,7 +1396,7 @@
     return prefix;
   }
 
-  // Tab completes commands and fake file paths; it only swallows Tab when it actually did something,
+  // Tab completes command names; it only swallows Tab when it actually did something,
   // so keyboard users can still tab out of the prompt.
   function complete() {
     const value = terminalInput.value;
@@ -2095,28 +1416,7 @@
       else print(matches.join("   "), "egg-dim");
       return true;
     }
-    const command = parts[0].toLowerCase();
-    if (!/^(cat|ls|cd|vim|vi|nvim|nano|rm|less|more|bat)$/.test(command)) return false;
-    const partial = parts[parts.length - 1];
-    const slash = partial.lastIndexOf("/");
-    const dirPart = slash >= 0 ? partial.slice(0, slash + 1) : "";
-    const stem = slash >= 0 ? partial.slice(slash + 1) : partial;
-    const dir = resolvePath(dirPart || "~");
-    if (!dir || !isDir(dir.node)) return false;
-    const entries = Object.keys(dir.node).filter(function (name) {
-      return name.indexOf(stem) === 0 && (stem.charAt(0) === "." || name.charAt(0) !== ".");
-    });
-    if (!entries.length) return false;
-    const before = value.slice(0, value.length - partial.length);
-    if (entries.length === 1) {
-      const name = entries[0];
-      setInputValue(before + dirPart + name + (isDir(dir.node[name]) ? "/" : " "));
-      return true;
-    }
-    const shared = commonPrefix(entries);
-    if (shared.length > stem.length) setInputValue(before + dirPart + shared);
-    else print(entries.map(function (name) { return isDir(dir.node[name]) ? name + "/" : name; }).join("   "), "egg-dim");
-    return true;
+    return false;
   }
 
   if (terminalInput && !JBOS.terminalExtras) {
@@ -2173,135 +1473,6 @@
   }
 
   /* ---------------------------------------------------------------------------------------------
-   * A small fake filesystem for ls / cat / cd
-   * ------------------------------------------------------------------------------------------- */
-
-  const FS = {
-    "about.txt": [
-      "Jake Berko: Cornell Computer Science (Masters), minor in Business.",
-      "President of Kappa Theta Pi. Founder of Throttle AI. Google SWE intern, 2026.",
-      "Also: music producer, photographer, and chronic side-project starter.",
-      "Next steps: `hire`, `contact`, or `cat todo.txt`."
-    ].join("\n"),
-    "todo.txt": [
-      "[x] learn to code",
-      "[x] build a portfolio",
-      "[x] overengineer the portfolio",
-      "[ ] stop overengineering the portfolio",
-      "[ ] sleep",
-      "[ ] reply to emails (sorry!)",
-      "[ ] find every easter egg        <- you are here"
-    ].join("\n"),
-    "secrets.txt": [
-      "TOP SECRET · EYES ONLY",
-      "1. The big name on the home page has a breaking point.",
-      "2. Some words work anywhere on the page. No input box required.",
-      "3. The logo remembers how it booted.",
-      "4. This file is a decoy. The real list lives in the `secrets` command."
-    ].join("\n"),
-    "resume.pdf": function () {
-      return [
-        "%PDF-1.7 ÿØþ%âãÏÓ obj<</Type/Catalog>> stream x\u009Cí½ë",
-        "§¶†®æß©ƒ endstream endobj %%EOF",
-        "",
-        "cat: this is a terminal, not Acrobat. For the real thing, try `contact`."
-      ].join("\n");
-    },
-    ".env": [
-      "# JB//OS environment. DO NOT COMMIT. (whoops)",
-      "COFFEE_LEVEL=critical",
-      "SLEEP_HOURS=4.5            # finals week estimate",
-      "ADMIN_PASSWORD=hunter2     # shows up as ******* for you, right?",
-      "SECRET_TO_SUCCESS=ship_it_then_polish_it",
-      "FAVORITE_BUG=off_by_one",
-      "API_KEY=nice-try",
-      "EASTER_EGGS=too_many"
-    ].join("\n"),
-    ".bash_history": [
-      "git commit -m \"final\"",
-      "git commit -m \"final final\"",
-      "git commit -m \"ok actually final\"",
-      "git push --force    # sorry",
-      "how do i exit vim",
-      ":q",
-      ":q!",
-      "sudo make me a sandwich",
-      "npm install sleep   # 404",
-      "ls -a",
-      "cat .env"
-    ].join("\n"),
-    "recipes": {
-      "ramen.txt": [
-        "INSTANT RAMEN, FINALS-WEEK EDITION",
-        "1. Boil water.",
-        "2. Add noodles. Add an egg if feeling fancy.",
-        "3. Eat over keyboard.",
-        "4. Push to production."
-      ].join("\n"),
-      "cereal.md": [
-        "# Cereal",
-        "Cereal first, then milk. This is not up for debate.",
-        "Serves: 1 (at 2 a.m.)"
-      ].join("\n"),
-      "cold-brew.js": [
-        "while (awake) {",
-        "  brew();",
-        "  ship();",
-        "}"
-      ].join("\n")
-    },
-    "projects": {
-      "throttle-ai.md": [
-        "# Throttle AI",
-        "Founder. The full story lives on the startup page.",
-        "Type `startup` to open it."
-      ].join("\n"),
-      "jbos.txt": [
-        "JB//OS 2026: the website you are standing in.",
-        "Vanilla JS, handmade Sass, zero frameworks,",
-        "and a frankly irresponsible number of easter eggs."
-      ].join("\n"),
-      "snake.exe": function () {
-        return "Binary file snake.exe matches. Try running `snake` instead.";
-      }
-    }
-  };
-
-  function isDir(node) { return Boolean(node) && typeof node === "object"; }
-  function fileText(node) { return typeof node === "function" ? node() : String(node); }
-
-  function resolvePath(input) {
-    let path = String(input || "").trim();
-    path = path.replace(/^~\/?/, "").replace(/^\/home\/visitor\/?/, "").replace(/^\.\//, "").replace(/\/+$/, "");
-    if (path === "" || path === "." || path === "~" || path === "/") return { node: FS, name: "~" };
-    const parts = path.split("/").filter(Boolean);
-    let node = FS;
-    let name = "~";
-    for (let i = 0; i < parts.length; i += 1) {
-      const part = parts[i];
-      if (part === ".") continue;
-      if (part === "..") { node = FS; name = "~"; continue; }
-      if (!isDir(node) || !Object.prototype.hasOwnProperty.call(node, part)) return null;
-      node = node[part];
-      name = part;
-    }
-    return { node: node, name: name };
-  }
-
-  function longEntry(name, node) {
-    const dir = name === "." || name === ".." || isDir(node);
-    const size = dir ? 4096 : fileText(node).length;
-    const perms = dir ? "drwxr-xr-x" : (name === ".env" ? "-rw-------" : (/\.exe$/.test(name) ? "-rwxr-xr-x" : "-rw-r--r--"));
-    return perms + "  jake  staff  " + String(size).padStart(5) + "  " +
-      ithacaTime({ month: "short", day: "2-digit" }) + "  " + name + (dir && name.charAt(0) !== "." ? "/" : "");
-  }
-
-  function envValue(key) {
-    const match = FS[".env"].match(new RegExp("^" + key + "=([^\\s#]*)", "m"));
-    return match ? match[1] : "";
-  }
-
-  /* ---------------------------------------------------------------------------------------------
    * Terminal commands
    * ------------------------------------------------------------------------------------------- */
 
@@ -2309,7 +1480,7 @@
     if (typeof JBOS.registerCommand !== "function") return;
     const taken = function (candidate) {
       return Boolean((JBOS.commands && JBOS.commands[candidate]) || (JBOS.aliases && JBOS.aliases[candidate]) ||
-        ROUTES[candidate] || BUILTINS.indexOf(candidate) >= 0);
+        BUILTINS.indexOf(candidate) >= 0);
     };
     // Never clobber a command another module already registered.
     if (taken(name)) return;
@@ -2317,296 +1488,23 @@
     JBOS.registerCommand(name, spec);
   }
 
-  register("ls", {
-    help: "ls [-a] [-l] [path]: list files",
-    aliases: ["dir", "ll"],
-    run: function (args, raw) {
-      const flags = args.filter(function (arg) { return arg.charAt(0) === "-"; }).join("");
-      const isLl = /^ll\b/i.test(raw);
-      const all = isLl || /a/.test(flags);
-      const long = isLl || /l/.test(flags);
-      const targets = args.filter(function (arg) { return arg.charAt(0) !== "-"; });
-      (targets.length ? targets : ["~"]).forEach(function (target) {
-        const entry = resolvePath(target);
-        if (!entry) { print("ls: " + target + ": No such file or directory"); return; }
-        if (!isDir(entry.node)) { print(long ? longEntry(entry.name, entry.node) : entry.name); return; }
-        if (targets.length > 1) print(target + ":", "egg-dim");
-        let names = Object.keys(entry.node).sort();
-        if (!all) names = names.filter(function (name) { return name.charAt(0) !== "."; });
-        else names = [".", ".."].concat(names);
-        if (long) {
-          print("total " + names.length, "egg-dim");
-          printPre(names.map(function (name) { return longEntry(name, entry.node[name]); }).join("\n"));
-        } else {
-          print(names.map(function (name) { return isDir(entry.node[name]) ? name + "/" : name; }).join("   "));
-        }
-      });
-      if (all) unlock("dotfiles");
-    }
-  });
 
-  register("cat", {
-    help: "cat <file>: print a file",
-    aliases: ["less", "more", "bat"],
-    run: function (args) {
-      if (!args.length) {
-        print("cat: meow. (Try `cat todo.txt`, or `ls` to look around.)");
-        return;
-      }
-      args.forEach(function (target) {
-        const entry = resolvePath(target);
-        if (!entry) { print("cat: " + target + ": No such file or directory"); return; }
-        if (isDir(entry.node)) { print("cat: " + target + ": Is a directory"); return; }
-        printPre(fileText(entry.node));
-        if (entry.name === ".env") {
-          print("⚠ Leaked credentials detected. Rotating hunter2 → hunter3… done.", "egg-warn");
-          unlock("env");
-        }
-      });
-    }
-  });
 
-  register("cd", {
-    hidden: true,
-    help: "cd <place>: jump around the site",
-    run: function (args) {
-      const target = (args[0] || "").replace(/^\.\//, "");
-      const places = { code: "/code/", creative: "/creative/", startup: "/business/", business: "/business/", photo: "/portfolio/", portfolio: "/portfolio/", "the-move": "/the-move/" };
-      if (!target || target === "~") { print("Already home. (~ is where the heart is.)"); return; }
-      if (target === "/" || target === ".." || target === "home") {
-        print("Opening home…", true);
-        window.setTimeout(function () { window.location.href = "/"; }, 280);
-        return;
-      }
-      const slug = target.replace(/^\/+|\/+$/g, "").toLowerCase();
-      if (places[slug]) {
-        print("Opening " + slug + "…", true);
-        window.setTimeout(function () { window.location.href = places[slug]; }, 280);
-        return;
-      }
-      const entry = resolvePath(target);
-      if (entry && isDir(entry.node)) print("cd: you can look, but you can't live in " + entry.name + "/. Try `ls " + entry.name + "`.");
-      else if (entry) print("cd: not a directory: " + target);
-      else print("cd: no such file or directory: " + target);
-    }
-  });
 
-  register("pwd", {
-    hidden: true,
-    help: "pwd: where am I?",
-    run: function () { print("/home/visitor (also known as " + window.location.pathname + ")"); }
-  });
 
-  register("echo", {
-    hidden: true,
-    help: "echo <text>: say it back",
-    run: function (args, raw) {
-      const text = raw.replace(/^\S+\s*/, "").replace(/\$([A-Z_]+)/g, function (match, key) { return envValue(key) || ""; });
-      print(text);
-    }
-  });
 
-  register("whoami", {
-    help: "whoami: who are you, really?",
-    aliases: ["id"],
-    run: function () {
-      print("visitor");
-      print("uid=1337(visitor) gid=100(curious) groups=100(curious),200(recruiters?),300(friends)", "egg-dim");
-      print("theme: " + (root.getAttribute("data-theme") || "default") +
-        " · sound: " + (JBOS.sound && JBOS.sound.enabled ? "on" : "off"), "egg-dim");
-    }
-  });
 
-  register("date", {
-    help: "date: the time in Ithaca",
-    run: function () {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 0);
-      const day = Math.floor((now - start) / 86400000);
-      print(ithacaTime({ weekday: "short", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit" }) + " ET (Ithaca, NY)");
-      print("Day " + day + " of " + now.getFullYear() + " · Unix time " + Math.floor(now.getTime() / 1000) + " · Page uptime " + Math.max(1, Math.round((Date.now() - bootedAt) / 60000)) + " min", "egg-dim");
-    }
-  });
 
-  const FORTUNES = [
-    "You will refactor something that worked fine. It will be worth it.",
-    "A bug you fixed last week is planning its comeback. Bring snacks.",
-    "The best time to push to production was never on a Friday.",
-    "Your next side project will ship. This is not a prediction, it is a dare.",
-    "There are 10 kinds of people: those who read binary and those who don't.",
-    "Somewhere, a semicolon is missing. It is not your fault. It is absolutely your fault.",
-    "Good things come to those who git pull --rebase.",
-    "Today's lucky numbers: 200, 201, 204. Avoid: 404, 500.",
-    "Ithaca is gorges. Your code could be too.",
-    "Rubber-duck debugging works. So does emailing Jake: " + EMAIL,
-    "It works on your machine. Ship the machine.",
-    "Coffee is just a dependency with side effects.",
-    "You miss 100% of the easter eggs you don't look for. Try `secrets`."
-  ];
 
-  register("fortune", {
-    help: "fortune: a fortune cookie, but for engineers",
-    run: function () { print(pick(FORTUNES), "egg-ok"); }
-  });
 
-  function cowsay(text) {
-    const width = terminalColumns() < 46 ? 24 : 38;
-    const lines = wrapWords(text, width);
-    const widest = Math.max.apply(null, lines.map(function (line) { return line.length; }));
-    const bubble = lines.length === 1
-      ? ["< " + lines[0] + " >"]
-      : lines.map(function (line, index) {
-        const padded = line + " ".repeat(widest - line.length);
-        const edges = index === 0 ? ["/", "\\"] : (index === lines.length - 1 ? ["\\", "/"] : ["|", "|"]);
-        return edges[0] + " " + padded + " " + edges[1];
-      });
-    return [" " + "_".repeat(widest + 2)].concat(bubble, [" " + "-".repeat(widest + 2)], [
-      "        \\   ^__^",
-      "         \\  (oo)\\_______",
-      "            (__)\\       )\\/\\",
-      "                ||----w |",
-      "                ||     ||"
-    ]).join("\n");
-  }
 
-  register("cowsay", {
-    help: "cowsay <text>: a cow says your text",
-    run: function (args, raw) {
-      const text = raw.replace(/^\S+\s*/, "").slice(0, 240) || pick(["Moo. Hire Jake.", "Have you tried typing `secrets`?", "I'm not a regular cow, I'm a terminal cow."]);
-      printPre(cowsay(text), "egg-cow");
-      unlock("cowsay");
-    }
-  });
 
-  register("neofetch", {
-    help: "neofetch: system info, with a logo",
-    aliases: ["fastfetch", "screenfetch"],
-    run: function () {
-      const logo = [
-        "     ██╗██████╗ ",
-        "     ██║██╔══██╗",
-        "     ██║██████╔╝",
-        "██   ██║██╔══██╗",
-        "╚█████╔╝██████╔╝",
-        " ╚════╝ ╚═════╝ "
-      ];
-      const uptime = Math.max(1, Math.round((Date.now() - bootedAt) / 60000));
-      const info = [
-        "visitor@jacobberko.com",
-        "----------------------",
-        "OS: JB//OS 2026 (handmade)",
-        "Host: GitHub Pages",
-        "Kernel: vanilla-js (0 frameworks)",
-        "Uptime: " + uptime + (uptime === 1 ? " min" : " mins"),
-        "Packages: " + commandNames(true).length + " commands",
-        "Shell: jbsh 1.0",
-        "Resolution: " + window.innerWidth + "x" + window.innerHeight,
-        "Theme: " + (root.getAttribute("data-theme") || "default"),
-        "Sound: " + (JBOS.sound && JBOS.sound.enabled ? "on" : "off"),
-        "CPU: 1x Jake @ 4.5h sleep",
-        "Memory: coffee (97% used)"
-      ];
-      let text;
-      if (terminalColumns() >= 58) {
-        text = info.map(function (line, index) {
-          return (logo[index] || " ".repeat(logo[0].length)) + "   " + line;
-        }).join("\n");
-      } else {
-        text = logo.join("\n") + "\n\n" + info.join("\n");
-      }
-      printPre(text, "egg-neofetch");
-      const swatches = make("p", "egg-swatches");
-      swatches.setAttribute("aria-hidden", "true");
-      ["--ink", "--acid", "--cyan", "--magenta", "--orange", "--violet", "--paper"].forEach(function (token) {
-        const swatch = make("span");
-        swatch.style.background = "var(" + token + ")";
-        swatches.appendChild(swatch);
-      });
-      appendToTerminal(swatches);
-    }
-  });
 
-  register("man", {
-    hidden: true,
-    help: "man <command>: read the manual",
-    run: function (args) {
-      const name = (args[0] || "").toLowerCase();
-      if (!name) { print("What manual page do you want? (Try `man snake`.)"); return; }
-      const builtin = { help: "help: list commands", about: "about: who is Jake?", contact: "contact: how to reach Jake", clear: "clear: wipe the screen" };
-      const target = (JBOS.commands && (JBOS.commands[name] || JBOS.commands[JBOS.aliases && JBOS.aliases[name]])) || null;
-      const text = builtin[name] || (target && target.help) || (ROUTES[name] ? name + ": open the " + name + " page" : "");
-      print(text ? "MANUAL: " + text : "No manual entry for " + name + ". (Try `help`.)", text ? "egg-ok" : "");
-    }
-  });
 
-  register("history", {
-    hidden: true,
-    help: "history: what you've typed this session",
-    run: function () {
-      if (!history.length) { print("No history yet."); return; }
-      printPre(history.slice(-20).map(function (item, index, list) {
-        return String(history.length - list.length + index + 1).padStart(4) + "  " + item;
-      }).join("\n"));
-    }
-  });
 
-  register("ping", {
-    hidden: true,
-    help: "ping: are we connected?",
-    run: function () {
-      const current = startJob();
-      print("PING jacobberko.com (127.0.0.1): 56 data bytes");
-      for (let i = 0; i < 4; i += 1) {
-        current.after(260 + i * 380, function () {
-          print("64 bytes from 127.0.0.1: icmp_seq=" + i + " ttl=64 time=" + rand(0.02, 0.09).toFixed(3) + " ms");
-          sfx("beep");
-        });
-      }
-      current.after(260 + 4 * 380, function () {
-        print("--- it's all local. it was always local. 0% packet loss ---", "egg-dim");
-        current.done();
-      });
-    }
-  });
 
-  register("coffee", {
-    hidden: true,
-    aliases: ["brew"],
-    help: "coffee: fuel",
-    run: function () {
-      printPre([
-        "    ( (",
-        "     ) )",
-        "  ........",
-        "  |      |]",
-        "  \\      /",
-        "   `----'"
-      ].join("\n"), "egg-cow");
-      print("Brewing… done. Productivity +12%. Sleep −12%.", "egg-ok");
-    }
-  });
 
-  register("42", {
-    hidden: true,
-    help: "42: the answer",
-    run: function () { print("The answer. Now you just need the question.", "egg-ok"); }
-  });
 
-  register("hello", {
-    hidden: true,
-    aliases: ["hi", "hey", "howdy", "hiya", "yo"],
-    help: "hello: say hi",
-    run: function () {
-      const greeting = ithacaGreeting();
-      const phrase = greeting.phrase.charAt(0) + greeting.phrase.slice(1).toLowerCase();
-      print("Hello, visitor! " + (greeting.late
-        ? phrase + " It's " + greeting.time + " in Ithaca."
-        : phrase + " from Ithaca, where it's " + greeting.time + "."), "egg-ok");
-      print("I'm JB//OS. Type `help` for commands, or `secrets` for… secrets.", "egg-dim");
-      sfx("chime");
-      unlock("hello");
-    }
-  });
 
   // Runs fn once the terminal has fully closed (its close handlers have released the page).
   function afterTerminalCloses(fn) {
@@ -2615,11 +1513,10 @@
     closeTerminal();
   }
 
-  // The page-wide words also work as (hidden) commands, so touch screens without a keyboard can
-  // reach them. The terminal closes first so the effect plays on the page, not behind the modal.
+  // Page effects launched from the terminal: it closes first so the effect plays on the page itself.
   function pageEffectCommand(name, spec) {
     register(name, {
-      hidden: true,
+      hidden: Boolean(spec.hidden),
       aliases: spec.aliases || [],
       help: spec.help,
       run: function () {
@@ -2632,13 +1529,8 @@
     });
   }
 
-  pageEffectCommand("google", { help: "google: feeling lucky?", line: "Searching for Jake's 2026 internship… I'm feeling lucky.", run: googleConfetti });
-  pageEffectCommand("ithaca", { help: "ithaca: check the forecast", line: "Fetching the Ithaca forecast… bundle up.", run: snowfall });
-  pageEffectCommand("gravity", { help: "gravity: let physics happen", line: "Enabling gravity. Hold on to something.", aliases: ["newton"], run: gravity });
-  pageEffectCommand("cornell", { help: "cornell: go Big Red", line: "Go Big Red! Surf's up.", aliases: ["bigred"], run: bigRedWave });
-  pageEffectCommand("barrel", { help: "barrel: do a barrel roll", line: "Do a barrel roll!", aliases: ["barrelroll"], run: barrelRoll });
-  pageEffectCommand("askew", { help: "askew: something's off", line: "Adjusting the frame… slightly.", run: askew });
-  pageEffectCommand("rainbow", { help: "rainbow: full spectrum mode", line: "Loading all seven colours…", run: rainbow });
+  pageEffectCommand("gravity", { help: "gravity: turn on physics and watch the page fall", line: "Enabling gravity. Hold on to something.", aliases: ["newton"], run: gravity });
+  pageEffectCommand("barrel", { help: "barrel: do a barrel roll", line: "Do a barrel roll!", aliases: ["barrelroll", "roll"], run: barrelRoll });
 
   register("do", {
     hidden: true,
@@ -2650,16 +1542,6 @@
     }
   });
 
-  register("xyzzy", {
-    hidden: true,
-    aliases: ["plugh"],
-    help: "xyzzy: a magic word",
-    run: function () {
-      print("A hollow voice says: “Nothing happens.”", "egg-ok");
-      sfx("beep");
-      unlock("xyzzy");
-    }
-  });
 
   register("shake", {
     hidden: true,
@@ -2696,83 +1578,16 @@
   });
 
   // The devtools note, for visitors without devtools (hello, phones).
-  register("view-source", {
-    hidden: true,
-    aliases: ["viewsource", "source", "devtools", "inspect", "console"],
-    help: "view-source: peek behind the curtain",
-    run: function () {
-      printPre(blockWord("JB//OS"), "egg-neofetch");
-      print("HEY, CURIOUS DEV. This site is hand-built: vanilla JS, handmade Sass, zero frameworks.", "egg-ok");
-      print("The browser console has a function waiting for you: hireJake(). No console? This terminal will run it too.", "egg-dim");
-    }
-  });
 
-  register("hirejake()", {
-    hidden: true,
-    aliases: ["hirejake", "hirejake();", "window.hirejake()"],
-    help: "hireJake(): the console function, terminal edition",
-    run: function () {
-      print("> hireJake()", "egg-dim");
-      print("\"" + window.hireJake() + "\"", "egg-ok");
-    }
-  });
 
-  register("jake", {
-    hidden: true,
-    help: "jake: the guy",
-    run: function () { print("That's the guy who built this. Want to talk to him? Type `contact`.", "egg-ok"); }
-  });
 
-  register("make", {
-    hidden: true,
-    help: "make: build things",
-    run: function (args) {
-      if (/^me\b/i.test(args.join(" "))) print("What? Make it yourself.");
-      else print("make: *** No targets specified and no makefile found.  Stop.");
-    }
-  });
 
-  register("nano", {
-    hidden: true,
-    help: "nano: a gentle editor",
-    run: function () { print("nano: this terminal is a vim household. Try `vim` (if you dare)."); }
-  });
 
-  register("emacs", {
-    hidden: true,
-    help: "emacs: an operating system",
-    run: function () { print("emacs: a great operating system, lacking only a decent editor. Try `vim`."); }
-  });
 
-  register(":q", {
-    hidden: true,
-    aliases: [":q!", ":wq", ":x", ":qa"],
-    help: ":q: leave vim",
-    run: function () { print("You're not in vim. But respect for the reflex."); }
-  });
 
-  register("exit", {
-    help: "exit: close the terminal",
-    aliases: ["quit", "logout"],
-    run: function () {
-      print("logout");
-      print("Connection to jb closed.", "egg-dim");
-      window.setTimeout(closeTerminal, 420);
-    }
-  });
 
-  register("reboot", {
-    hidden: true,
-    aliases: ["restart"],
-    help: "reboot: replay the boot sequence",
-    run: function () {
-      print("Rebooting…", "egg-ok");
-      window.setTimeout(bootReplay, 250);
-    }
-  });
 
   register("screensaver", {
-    hidden: true,
     aliases: ["zzz", "afk"],
     help: "screensaver: start it now",
     run: function () {
@@ -2781,28 +1596,18 @@
     }
   });
 
-  register("matrix", {
-    help: "matrix: follow the digital rain",
-    run: function () {
-      if (active) { print("matrix: another effect is running. Try again in a sec."); return; }
-      print("Entering the matrix… (Esc or click to leave)", "egg-ok");
-      window.setTimeout(function () { matrix(true); }, 380);
-    }
-  });
 
   register("party", {
-    hidden: true,
-    aliases: ["disco"],
-    help: "party: it's a party",
+    aliases: ["disco", "rave"],
+    help: "party: 3, 2, 1… drop",
     run: function () {
       if (active) { print("party: the last party is still going."); return; }
-      print("♪ PARTY MODE ♪", "egg-ok");
+      print("♪ JB//OS AFTER HOURS · DOORS OPEN ♪", "egg-ok");
       window.setTimeout(party, 300);
     }
   });
 
   register("hack", {
-    hidden: true,
     aliases: ["hacker", "hax"],
     help: "hack: hollywood mode",
     run: function () {
@@ -2846,215 +1651,25 @@
         sfx("success");
       });
       current.after(120 + total * 58 + 900, function () {
-        print("Relax: nothing was hacked. It's a portfolio. Type `hire` to do something useful instead.", "egg-dim");
+        print("Relax: nothing was hacked. It's a portfolio. Type `help` to see what else this terminal can do.", "egg-dim");
         current.done();
       });
     }
   });
 
-  function runHire(fromSudo) {
-    const current = startJob();
-    print(fromSudo ? "Escalating hiring pipeline with root privileges…" : "Initializing hiring pipeline…", "egg-dim");
-    const bar = print("", "egg-progress");
-    const stages = [
-      [0, "scanning skills"],
-      [14, "linking experience: Google SWE Intern '26"],
-      [31, "resolving dependencies: coffee@^4.2"],
-      [47, "importing founder energy (Throttle AI)"],
-      [63, "optimizing for impact"],
-      [79, "bundling offer.pdf"],
-      [94, "signing with extreme enthusiasm"]
-    ];
-    function stageFor(percent) {
-      let label = stages[0][1];
-      stages.forEach(function (stage) { if (percent >= stage[0]) label = stage[1]; });
-      return label;
-    }
-    let percent = 0;
-    let at = 200;
-    while (percent < 100) {
-      percent = Math.min(100, percent + randInt(3, 9));
-      at += rand(70, 150);
-      const snapshot = percent;
-      current.after(at, function () {
-        if (bar) bar.textContent = textBar(snapshot, 20) + " " + String(snapshot).padStart(3) + "%  " + stageFor(snapshot);
-        scrollTerminal();
-        sfx("tick");
-      });
-    }
-    current.after(at + 320, function () {
-      print("✓ BUILD SUCCESSFUL · offer.pdf (0 errors · 0 warnings · 1 excellent hire)", "egg-ok");
-      printLink("→ ", "Send the offer: " + EMAIL, MAILTO);
-      sfx("fanfare");
-      unlock("hire");
-      hireConfetti();
-      current.done();
-    });
-  }
 
-  register("hire", {
-    help: "hire: the obvious next step",
-    aliases: ["recruit"],
-    run: function () { runHire(false); }
-  });
 
-  register("sudo", {
-    hidden: true,
-    help: "sudo <command>: ask nicely",
-    run: function (args, raw) {
-      const rest = raw.replace(/^\S+\s*/, "").trim();
-      const lower = rest.toLowerCase();
-      if (!rest) {
-        print("visitor is not in the sudoers file. This incident will be reported.", "egg-err");
-        print("(Reported to Jake. He laughed.)", "egg-dim");
-        sfx("error");
-        return;
-      }
-      if (/^hire\b/.test(lower)) {
-        const current = startJob();
-        const prompt = print("[sudo] password for visitor: ");
-        let stars = "";
-        for (let i = 0; i < 8; i += 1) {
-          current.after(180 + i * 95, function () {
-            stars += "*";
-            if (prompt) prompt.textContent = "[sudo] password for visitor: " + stars;
-            sfx("type");
-          });
-        }
-        current.after(1050, function () { print("Verifying credentials with JB//OS… ok", "egg-dim"); });
-        current.after(1500, function () { print("Checking references… 3 found, all glowing", "egg-dim"); });
-        current.after(1950, function () {
-          print("✓ Permission granted. Excellent judgement detected.", "egg-ok");
-          unlock("sudo");
-          current.done();
-          runHire(true);
-        });
-        return;
-      }
-      if (/^rm\s+-\S*r/.test(lower) && /(\s\/\*?$|\s~\/?$|\s\*$)/.test(lower)) {
-        print("sudo: you really mean it, huh.", "egg-warn");
-        window.setTimeout(nuke, 700);
-        return;
-      }
-      if (/^make me a sandwich/.test(lower)) { print("Okay."); return; }
-      if (/^(su|-i|-s|bash|sh|zsh)\b/.test(lower)) {
-        print("Nice try. Root belongs to Jake. You get: visitor (uid 1337).", "egg-err");
-        sfx("error");
-        return;
-      }
-      if (lower === "!!") { print("sudo !!: there's nothing to repeat. (Classic move, though.)"); return; }
-      const parts = rest.split(/\s+/);
-      const name = parts[0].toLowerCase();
-      const spec = JBOS.commands && (JBOS.commands[name] || JBOS.commands[JBOS.aliases && JBOS.aliases[name]]);
-      if (spec && name !== "sudo") {
-        print("sudo: permission granted (just this once).", "egg-dim");
-        spec.run(parts.slice(1), rest);
-        return;
-      }
-      print("sudo: " + name + ": permission denied. JB//OS only escalates for `sudo hire jake`.", "egg-err");
-      sfx("error");
-    }
-  });
 
-  register("rm", {
-    hidden: true,
-    help: "rm: remove files (please don't)",
-    run: function (args) {
-      const flags = args.filter(function (arg) { return arg.charAt(0) === "-"; }).join("");
-      const targets = args.filter(function (arg) { return arg.charAt(0) !== "-"; });
-      if (!targets.length) { print("rm: missing operand"); return; }
-      const recursive = /r/i.test(flags);
-      const rootTarget = targets.filter(function (target) { return /^(\/\*?|~\/?|\*|\/home\/?\S*)$/.test(target); })[0];
-      if (recursive && rootTarget) {
-        print("rm: it is dangerous to operate recursively on '" + rootTarget + "'", "egg-warn");
-        print("Are you absolutely sure? [y/N]", "egg-warn");
-        sfx("error");
-        setInputMode({
-          prompt: "[y/N]",
-          handle: function (answer) {
-            setInputMode(null);
-            print("[y/N] " + answer);
-            if (/^y(es)?$/i.test(answer)) {
-              print("Deleting everything. It was nice knowing you.", "egg-err");
-              window.setTimeout(nuke, 650);
-            } else {
-              print("Phew. Aborted. The portfolio lives another day.", "egg-ok");
-            }
-          }
-        });
-        return;
-      }
-      targets.forEach(function (target) {
-        const entry = resolvePath(target);
-        if (!entry) print("rm: " + target + ": No such file or directory");
-        else if (isDir(entry.node) && !recursive) print("rm: " + target + ": is a directory");
-        else print("rm: cannot remove '" + target + "': " + pick(["Read-only portfolio", "Jake still needs that", "Operation not permitted", "Permission denied (nice try)"]));
-      });
-    }
-  });
 
-  function vimScreen(file) {
-    return [
-      "~",
-      "~",
-      "~                 VIM - Vi IMproved-ish",
-      "~                   version 9.jbos",
-      "~",
-      "~          type  :q<Enter>        to exit",
-      "~          type  :help<Enter>     for help (not really)",
-      "~",
-      "~",
-      "\"" + file + "\" [readonly] 42L, 1337B"
-    ].join("\n");
-  }
 
-  register("vim", {
-    hidden: true,
-    aliases: ["vi", "nvim"],
-    help: "vim: the editor you can't leave",
-    run: function (args) {
-      const file = (args[0] || "portfolio.txt").slice(0, 40);
-      printPre(vimScreen(file), "egg-vim");
-      let attempts = 0;
-      setInputMode({
-        prompt: ":",
-        handle: function (raw) {
-          const command = raw.replace(/^:/, "").trim();
-          print(":" + command, "egg-vim-echo");
-          if (/^(q|q!|qa|qa!|wq|wq!|x|x!|wqa|wqa!)$/.test(command) || raw === "ZZ" || raw === "ZQ") {
-            setInputMode(null);
-            print("Exited vim. Put that on your résumé.", "egg-ok");
-            sfx("success");
-            unlock("vim");
-            return;
-          }
-          attempts += 1;
-          if (command === "w" || command === "w!") print("E45: 'readonly' option is set (add ! to override)", "egg-err");
-          else if (/^(help|h)$/.test(command)) print("E149: Sorry, no help for you. (psst: q)", "egg-err");
-          else if (/^(exit|quit|logout|bye|stop|help me|please|let me out)$/i.test(command)) print("E37: No write since last change (add ! to override)", "egg-err");
-          else if (!command) print("-- NORMAL --", "egg-dim");
-          else if (command.charAt(0) === "!") print("E484: Shell escapes are disabled in this sandbox", "egg-err");
-          else print("E492: Not an editor command: " + command.slice(0, 60), "egg-err");
-          if (attempts === 3) print("Hint: type q and press Enter. Everyone gets stuck the first time.", "egg-dim");
-          else if (attempts === 6) print("Hint, louder: the prompt already has the colon. Just type q.", "egg-dim");
-          sfx("error");
-        },
-        onClose: function () {
-          toast("YOU ESCAPED VIM BY CLOSING THE WHOLE TERMINAL. HONESTLY? VALID.");
-        }
-      });
-    }
-  });
 
   register("secrets", {
-    help: "secrets [all]: hints for the hidden stuff",
+    help: "secrets: hints for the hidden stuff on the page",
     aliases: ["hints", "eggs"],
-    run: function (args) {
-      const all = String(args[0] || "").toLowerCase() === "all";
+    run: function () {
       print("JB//OS SECRETS · THINGS TO TRY", "egg-banner egg-banner--small");
-      const hints = all ? EGGS : shuffle(EGGS.slice()).slice(0, 4);
-      hints.forEach(function (egg) { print("  ? " + hintFor(egg)); });
-      if (!all) print("(`secrets all` lists every hint)", "egg-dim");
+      EGGS.forEach(function (egg) { print("  ? " + hintFor(egg)); });
+      print("The fun commands are in `help`.", "egg-dim");
     }
   });
 
