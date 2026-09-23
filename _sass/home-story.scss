@@ -1,0 +1,2334 @@
+/* ==========================================================================
+   Home concept #2 · Scroll Story (lab/story/index.html + assets/js/home-story.js)
+   --------------------------------------------------------------------------
+   home-story.js measures every chapter once per resize and, from one
+   requestAnimationFrame loop, writes unitless custom properties:
+     --in     0 -> 1 while a chapter slides into view
+     --p      0 -> 1 while its stage is pinned (position: sticky)
+     --out    0 -> 1 while the next chapter covers it (or it scrolls away)
+     --vel    signed scroll velocity (-1 -> 1) and --speed, its magnitude
+   Everything that moves is derived from those here, and only transform,
+   opacity and clip-path ever change on scroll.
+
+   The base rules are the calm static layout used without JS, with
+   prefers-reduced-motion, on very short screens, or for any chapter whose
+   stage cannot fit the viewport. `.is-pinned` rules layer the cinematic
+   version on top. Colours come from the site tokens so themes restyle it.
+   ========================================================================== */
+
+.home-story {
+
+  /* ---------- Utilities ---------- */
+
+  .story-sr {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* ---------- Shell ---------- */
+
+  .story {
+    // Text colour for anything painted on --acid. Resolved here, in the root scope, so it
+    // stays the dark on-accent ink of the dark themes (and plain --ink by default) even
+    // inside chapters and cards that re-scope --ink. Title bars and the chapter rail opt
+    // into the theme scopes through data-theme-scope in the markup.
+    --story-on-acid: var(--on-accent, var(--ink));
+    position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow-x: clip;
+    isolation: isolate;
+  }
+
+  .story-chapter {
+    --vel: 0;
+    --speed: 0;
+    position: relative;
+  }
+
+  .story-bio {
+    --len: 240;
+    z-index: 1;
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  .story-work {
+    --len: calc(var(--n) * 24);
+    z-index: 2;
+    color: var(--ink);
+    background: var(--bg);
+  }
+
+  .story-stack {
+    --len: 200;
+    z-index: 3;
+    color: var(--paper);
+    background: var(--midnight);
+  }
+
+  .story-outro {
+    --len: 70;
+    z-index: 4;
+    color: var(--ink);
+    background: var(--acid);
+  }
+
+  .story-chapter::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .story-bio::before {
+    background: repeating-linear-gradient(0deg, transparent 0 3px, var(--paper) 3px 4px);
+    opacity: 0.035;
+  }
+
+  .story-work::before {
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 4rem 4rem;
+    opacity: 0.35;
+  }
+
+  .story-stack::before {
+    background-image: radial-gradient(circle, var(--paper) 1px, transparent 1.6px);
+    background-size: 1.1rem 1.1rem;
+    opacity: 0.07;
+  }
+
+  .story-outro::before {
+    background-image: radial-gradient(circle, var(--ink) 1px, transparent 1.6px);
+    background-size: 0.8rem 0.8rem;
+    opacity: 0.12;
+  }
+
+  .story-stage {
+    position: relative;
+    z-index: 1;
+  }
+
+  .story-stage__inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 100%;
+    max-width: 100rem;
+    min-width: 0;
+    align-content: start;
+    gap: clamp(1.75rem, 3.5vw, 3rem);
+    margin: 0 auto;
+    padding: clamp(3rem, 6vw, 5.5rem) var(--page-pad) clamp(3.5rem, 7vw, 6rem);
+  }
+
+  .story-stage__inner > * {
+    min-width: 0;
+  }
+
+  .story-layer {
+    display: none;
+  }
+
+  /* Window title bar along the top edge of every chapter. */
+  .story-tab {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    min-height: 2.45rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.5rem var(--page-pad);
+    border-bottom: 1px solid var(--ink);
+    color: var(--ink);
+    background: var(--paper-2);
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.075em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .story-tab > span:nth-child(2),
+  .story-card__bar > span:nth-child(2) {
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .story-tab__dots {
+    display: flex;
+    gap: 0.28rem;
+  }
+
+  .story-tab__dots i {
+    display: block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border: 1px solid var(--ink);
+    background: var(--orange);
+  }
+
+  .story-tab__dots i:nth-child(2) { background: var(--acid); }
+  .story-tab__dots i:nth-child(3) { background: var(--cyan); }
+
+  /* ---------- Chapter headings ---------- */
+
+  .story-head {
+    display: grid;
+    justify-items: start;
+    gap: 0.9rem;
+  }
+
+  .story-kicker {
+    display: inline-flex;
+    width: fit-content;
+    margin: 0;
+    padding: 0.32rem 0.55rem;
+    color: var(--ink);
+    background: var(--acid);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .story-title {
+    max-width: 100%;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 5vw, 5.2rem);
+    font-weight: 900;
+    letter-spacing: -0.075em;
+    line-height: 0.86;
+    text-transform: uppercase;
+  }
+
+  // Headings only take focus programmatically (chapter jumps), as a reading position.
+  .story-title[tabindex] {
+    outline: none;
+  }
+
+  .story-title span { color: var(--acid); }
+  .story-work .story-title span { color: var(--violet); }
+
+  .story-outro .story-kicker {
+    color: var(--acid);
+    background: var(--ink);
+  }
+
+  .story-outro .story-title span {
+    color: var(--paper);
+    -webkit-text-stroke: clamp(1px, 0.08vw, 2px) var(--ink);
+  }
+
+  /* ---------- Intro band ---------- */
+
+  .story-intro {
+    position: relative;
+    z-index: 5;
+    border-block: 1px solid var(--ink);
+    color: var(--ink);
+    background: var(--acid);
+  }
+
+  .story-marquee {
+    overflow: hidden;
+  }
+
+  .story-marquee__track {
+    display: flex;
+    width: max-content;
+  }
+
+  .story-marquee__group {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.85rem;
+    padding-right: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .story-intro .story-marquee__group {
+    gap: 0.8rem;
+    padding: 0.72rem 0.8rem 0.72rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .story-intro b {
+    padding: 0.22rem 0.42rem;
+    color: var(--acid);
+    background: var(--ink);
+  }
+
+  .story-intro i,
+  .story-marquee i {
+    font-style: normal;
+  }
+
+  /* ---------- 01 · Bio (static) ---------- */
+
+  .story-bio__frames {
+    display: grid;
+    gap: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .story-bio__frame {
+    min-width: 0;
+  }
+
+  .story-bio__label {
+    margin: 0 0 1rem;
+    color: var(--acid);
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .story-words {
+    max-width: 29em;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.6vw, 2.7rem);
+    font-weight: 900;
+    letter-spacing: -0.045em;
+    line-height: 1.16;
+  }
+
+  .story-word {
+    position: relative;
+    display: inline-block;
+    isolation: isolate;
+  }
+
+  .story-word > span {
+    display: inline-block;
+  }
+
+  .story-word::before,
+  .story-word::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+  }
+
+  .story-word::before {
+    display: none;
+  }
+
+  .story-word::after {
+    z-index: -1;
+    inset: 0.1em -0.12em 0.02em;
+    background: var(--acid);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+
+  .story-word.is-key > span { color: var(--ink); }
+  .story-word.is-key::after { transform: none; }
+  .story-word.is-num > span { color: var(--cyan); }
+
+  .story-bio__meter {
+    display: none;
+  }
+
+  /* ---------- 02 · Experience (static) ---------- */
+
+  .story-work__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+    gap: 1.25rem 2rem;
+  }
+
+  .story-work__heading {
+    display: grid;
+    justify-items: start;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  .story-work__readout,
+  .story-track__line,
+  .story-track__pen,
+  .story-card__stem,
+  .story-card__node,
+  .story-burst {
+    display: none;
+  }
+
+  .story-work__viewport,
+  .story-track {
+    position: relative;
+  }
+
+  .story-track__list {
+    display: grid;
+    grid-template-columns: unquote("repeat(auto-fill, minmax(min(100%, 16rem), 1fr))");
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .story-card {
+    position: relative;
+    min-width: 0;
+  }
+
+  .story-card__body {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius-md);
+    color: var(--ink);
+    background: var(--paper);
+    box-shadow: 0.4rem 0.4rem 0 var(--ink);
+  }
+
+  .story-card__bar {
+    display: grid;
+    min-height: 2.2rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.45rem 0.7rem;
+    border-bottom: 1px solid var(--ink);
+    background: var(--paper-2);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .story-card__content {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem 1.1rem 1.25rem;
+  }
+
+  .story-card__year {
+    margin: 0;
+    color: var(--violet);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+  }
+
+  .story-card h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 1.7vw, 1.65rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1.02;
+    overflow-wrap: break-word;
+  }
+
+  .story-card__role {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .story-card--finale .story-card__body {
+    color: var(--paper);
+    background: var(--ink);
+    box-shadow: 0.4rem 0.4rem 0 var(--acid);
+  }
+
+  .story-card--finale .story-card__bar {
+    color: var(--ink);
+    background: var(--acid);
+  }
+
+  .story-card--finale .story-card__year { color: var(--acid); }
+
+  .story-card--finale .story-card__role {
+    color: var(--paper);
+    opacity: 0.74;
+  }
+
+  .story-card--finale .story-card__content {
+    padding-bottom: 2.9rem;
+  }
+
+  .story-card__badge {
+    position: absolute;
+    top: 2.95rem;
+    right: 0.75rem;
+    padding: 0.28rem 0.5rem;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    color: var(--ink);
+    background: var(--acid);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .story-card__stamp {
+    position: absolute;
+    right: 0.85rem;
+    bottom: 0.8rem;
+    padding: 0.3rem 0.5rem;
+    border: 2px solid var(--magenta);
+    border-radius: 0.2rem;
+    color: var(--magenta);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    transform: rotate(-9deg);
+  }
+
+  /* ---------- 03 · Stack (static) ---------- */
+
+  .story-stack__panels {
+    display: grid;
+    align-items: start;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  .story-panel.window {
+    min-width: 0;
+    color: var(--ink);
+    background: var(--paper);
+    box-shadow: 0.45rem 0.45rem 0 var(--acid);
+  }
+
+  .story-eq__channels {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: clamp(0.35rem, 1vw, 1rem);
+    margin: 0;
+    padding: 1.6rem clamp(0.8rem, 1.8vw, 1.6rem) 1rem;
+    list-style: none;
+  }
+
+  .story-eq__channel {
+    --fill: 1;
+    --dance: 0;
+    --level: calc(var(--lvl) / 4 * var(--fill) * (1 - var(--dance) * 0.3));
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    justify-items: center;
+    gap: 0.55rem;
+  }
+
+  .story-eq__meter {
+    position: relative;
+    width: 100%;
+    max-width: 4.25rem;
+    height: clamp(7rem, 20vh, 13rem);
+    border: 1px solid var(--ink);
+    background: var(--paper-2);
+  }
+
+  // LED segment gaps drawn over the fill.
+  .story-eq__meter::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0 calc(25% - 3px), var(--paper) calc(25% - 3px) 25%);
+    pointer-events: none;
+  }
+
+  .story-eq__fill {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, var(--violet), var(--magenta) 45%, var(--orange) 72%, var(--acid));
+    clip-path: inset(calc((1 - var(--level)) * 100%) 0 0 0);
+  }
+
+  .story-eq__peak {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    pointer-events: none;
+    transform: translate3d(0, calc(var(--level) * -100% - var(--dance) * 1.2rem), 0);
+  }
+
+  .story-eq__peak::before {
+    content: "";
+    position: absolute;
+    right: -2px;
+    bottom: 3px;
+    left: -2px;
+    height: 4px;
+    background: var(--ink);
+  }
+
+  .story-eq__name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0.32rem 0.5rem;
+    border-radius: 999px;
+    color: var(--paper);
+    background: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .story-eq__level {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .story-eq__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.2rem;
+    margin: 0;
+    padding: 0.7rem 1rem;
+    border-top: 1px solid var(--ink);
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .story-catalog__body {
+    display: grid;
+    gap: 1.25rem;
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .story-catalog__count {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.75rem;
+    margin: 0;
+  }
+
+  .story-catalog__count b {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -0.08em;
+    line-height: 0.8;
+  }
+
+  .story-catalog__count span {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .story-catalog__live,
+  .story-stack.is-pinned .story-catalog__static {
+    display: none;
+  }
+
+  .story-stack.is-pinned .story-catalog__live {
+    display: inline;
+  }
+
+  .story-deck {
+    display: grid;
+    grid-template-columns: unquote("repeat(auto-fill, minmax(min(100%, 13rem), 1fr))");
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .story-deck__card {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 8.5rem;
+    grid-template-rows: auto 1fr auto;
+    gap: 0.6rem;
+    padding: 0.85rem 0.95rem;
+    overflow: hidden;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    background: var(--paper);
+    box-shadow: 0.22rem 0.22rem 0 var(--ink);
+  }
+
+  .story-deck__code {
+    color: var(--violet);
+    font-family: var(--font-mono);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+  }
+
+  .story-deck__card strong {
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 1.35vw, 1.3rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.04;
+  }
+
+  .story-deck__barcode {
+    display: block;
+    width: 100%;
+    max-width: 8.5rem;
+    height: 1.1rem;
+    background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px, var(--ink) 8px 11px, transparent 11px 13px);
+  }
+
+  .story-deck__stamp {
+    position: absolute;
+    right: 0.7rem;
+    bottom: 0.75rem;
+    padding: 0.22rem 0.4rem;
+    border: 2px solid var(--magenta);
+    border-radius: 0.2rem;
+    color: var(--magenta);
+    font-family: var(--font-mono);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    transform: rotate(-8deg);
+  }
+
+  .story-marquee-wrap {
+    display: grid;
+    width: 100vw;
+    gap: 0.1rem;
+    margin-left: calc(50% - 50vw);
+    padding-block: 0.35rem;
+  }
+
+  .story-marquee--courses {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.6vw, 3.3rem);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1.12;
+    text-transform: uppercase;
+  }
+
+  .story-marquee--courses span {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--paper);
+  }
+
+  .story-marquee--courses span:nth-child(4n + 1) {
+    color: var(--paper);
+    -webkit-text-stroke: 0;
+  }
+
+  .story-marquee--courses i { color: var(--acid); }
+
+  .story-marquee--alt span {
+    color: var(--acid);
+    -webkit-text-stroke: 0;
+  }
+
+  .story-marquee--alt span:nth-child(4n + 1) {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--acid);
+  }
+
+  .story-marquee--alt i { color: var(--paper); }
+
+  /* ---------- 04 · Next (static) ---------- */
+
+  .story-doors {
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid var(--ink);
+    list-style: none;
+  }
+
+  .story-doors > li {
+    border-top: 1px solid var(--ink);
+  }
+
+  .story-door {
+    --mx: 0;
+    --my: 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: clamp(0.6rem, 2vw, 1.5rem);
+    padding: clamp(0.75rem, 1.8vw, 1.35rem) clamp(0.25rem, 1vw, 1rem);
+    overflow: hidden;
+    isolation: isolate;
+    color: var(--ink);
+    transition: color 260ms ease;
+  }
+
+  .story-door__fill {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: var(--ink);
+    transform: scaleY(0);
+    transform-origin: 50% 100%;
+    transition: transform 420ms var(--ease-snap);
+  }
+
+  .story-door:hover,
+  .story-door:focus-visible {
+    color: var(--acid);
+  }
+
+  .story-door:hover .story-door__fill,
+  .story-door:focus-visible .story-door__fill {
+    transform: scaleY(1);
+  }
+
+  .story-door__index {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  // The font sizes (here and at <=760px) keep the widest label, "HEAR THE WORK" in Arial
+  // Black (8.52em with the tracking), on one line at every width from 320px up, with the
+  // path pill and arrow in place. Wrapping between words is only the fallback for an
+  // unexpectedly wide font or a narrower screen, so an exit is never cut off.
+  .story-door__label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-size: unquote("clamp(2rem, min(6.6vw, 10.5vh), 6.6rem)");
+    font-weight: 900;
+    letter-spacing: -0.075em;
+    line-height: 1;
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+    text-wrap: balance;
+    transform: translate3d(calc(var(--mx) * 1px), calc(var(--my) * 1px), 0);
+    transition: transform 520ms var(--ease-out);
+  }
+
+  .story-door__path {
+    padding: 0.3rem 0.55rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: translate3d(0.75rem, 0, 0);
+    transition: opacity 220ms ease, transform 420ms var(--ease-out);
+  }
+
+  .story-door:hover .story-door__path,
+  .story-door:focus-visible .story-door__path {
+    opacity: 1;
+    transform: none;
+  }
+
+  .story-door__arrow {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4.2vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1;
+    transform: translate3d(calc(var(--mx) * 1.7px), calc(var(--my) * 1.7px), 0);
+    transition: transform 520ms var(--ease-out), rotate 380ms var(--ease-out);
+  }
+
+  .story-door:hover .story-door__arrow,
+  .story-door:focus-visible .story-door__arrow {
+    rotate: 45deg;
+  }
+
+  .story-outro__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .story-outro__foot p {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0;
+  }
+
+  .story-outro__square {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    background: var(--ink);
+    animation: storyBlink 1.1s linear infinite;
+  }
+
+  .story-replay {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.95rem;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    color: var(--ink);
+    transition: color 200ms ease, background 200ms ease, transform 300ms var(--ease-out);
+  }
+
+  .story-replay:hover,
+  .story-replay:focus-visible {
+    color: var(--acid);
+    background: var(--ink);
+    transform: translate3d(-0.2rem, 0, 0);
+  }
+
+  /* ---------- Chapter rail + rewind overlay (JS only) ---------- */
+
+  .story-rail-dock,
+  .story-vhs {
+    display: none;
+  }
+
+  .story.is-live .story-rail-dock {
+    position: sticky;
+    z-index: 20;
+    top: 50vh;
+    top: 50svh;
+    display: block;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .story-rail {
+    --story-p: 0;
+    position: absolute;
+    top: 0;
+    right: clamp(0.35rem, 1vw, 1.1rem);
+    color: var(--paper);
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0.8rem, -50%, 0);
+    transition: opacity 260ms ease, transform 460ms var(--ease-out);
+  }
+
+  .story-rail.is-visible,
+  .story-rail:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, -50%, 0);
+  }
+
+  .story-rail ol {
+    display: grid;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0.45rem 0.3rem;
+    border: 1px solid var(--paper);
+    border-radius: 999px;
+    background: var(--ink);
+    box-shadow: 0.22rem 0.22rem 0 var(--acid);
+    list-style: none;
+  }
+
+  .story-rail__meter {
+    position: absolute;
+    z-index: 1;
+    top: 1.35rem;
+    bottom: 1.35rem;
+    left: 50%;
+    width: 1px;
+    margin-left: -0.5px;
+    pointer-events: none;
+  }
+
+  .story-rail__meter::before,
+  .story-rail__meter i {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .story-rail__meter::before {
+    background: var(--paper);
+    opacity: 0.3;
+  }
+
+  .story-rail__meter i {
+    display: block;
+    background: var(--acid);
+    transform: scaleY(var(--story-p));
+    transform-origin: 50% 0;
+  }
+
+  .story-rail a {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 1.9rem;
+    height: 1.9rem;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--paper);
+  }
+
+  .story-rail__dot {
+    display: block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border: 1px solid currentColor;
+    background: var(--ink);
+    transform: rotate(45deg);
+    transition: transform 320ms var(--ease-out), background 200ms ease, border-color 200ms ease;
+  }
+
+  .story-rail a:hover .story-rail__dot {
+    background: var(--paper);
+  }
+
+  .story-rail a.is-current .story-rail__dot {
+    border-color: var(--acid);
+    background: var(--acid);
+    transform: rotate(45deg) scale(1.45);
+  }
+
+  // Visually a tooltip, but always present for assistive tech.
+  .story-rail__label {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 0.65rem);
+    padding: 0.32rem 0.5rem;
+    border: 1px solid var(--paper);
+    color: var(--paper);
+    background: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1;
+    white-space: nowrap;
+    text-transform: uppercase;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0.4rem, -50%, 0);
+    transition: opacity 180ms ease, transform 280ms var(--ease-out);
+  }
+
+  .story-rail a:hover .story-rail__label,
+  .story-rail a:focus-visible .story-rail__label {
+    opacity: 1;
+    transform: translate3d(0, -50%, 0);
+  }
+
+  .story.is-rewinding .story-vhs {
+    position: fixed;
+    z-index: 30;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .story-vhs::before,
+  .story-vhs::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    left: 0;
+  }
+
+  .story-vhs::before {
+    top: -4px;
+    bottom: -4px;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.16) 0 2px, transparent 2px 4px);
+    animation: storyVhsRoll 0.35s steps(3) infinite;
+  }
+
+  .story-vhs::after {
+    top: -20vh;
+    height: 18vh;
+    background: linear-gradient(transparent, rgba(255, 255, 255, 0.14), transparent);
+    animation: storyVhsBand 1.1s linear infinite;
+  }
+
+  .story-vhs__label,
+  .story-vhs small {
+    position: absolute;
+    top: 6.4rem;
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-shadow: 0.14rem 0 var(--magenta), -0.14rem 0 var(--cyan), 0 0 0.8rem rgba(0, 0, 0, 0.65);
+  }
+
+  .story-vhs__label {
+    left: var(--page-pad);
+    font-size: clamp(1.5rem, 4vw, 3rem);
+    animation: storyBlink 0.9s linear infinite;
+  }
+
+  .story-vhs small {
+    right: calc(var(--page-pad) + 2.6rem);
+    font-size: clamp(0.8rem, 1.6vw, 1.1rem);
+  }
+
+  /* ======================================================================
+     Pinned (cinematic) layer · only for chapters home-story.js pins
+     ====================================================================== */
+
+  .story.is-live .story-marquee__track {
+    will-change: transform;
+  }
+
+  .story-chapter.is-pinned {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    height: calc((var(--len) + 200) * 1vh);
+    height: calc((var(--len) + 200) * 1svh);
+  }
+
+  .story-chapter--end.is-pinned {
+    height: calc((var(--len) + 100) * 1vh);
+    height: calc((var(--len) + 100) * 1svh);
+  }
+
+  // The next chapter slides over the last screen of a pinned one, like a window on top.
+  .story-chapter.is-pinned + .story-chapter {
+    margin-top: -100vh;
+    margin-top: -100svh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -1.2rem 3rem rgba(0, 0, 0, 0.32);
+  }
+
+  .story-chapter.is-pinned + .story-chapter .story-tab {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
+  .story-chapter.is-pinned .story-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  .story-chapter.is-pinned .story-title {
+    font-size: clamp(1.8rem, 3.4vw, 3.6rem);
+  }
+
+  .story-chapter.is-pinned .story-tab {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+  }
+
+  .story-chapter.is-pinned .story-stage__inner {
+    height: 100%;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-content: stretch;
+    gap: clamp(0.8rem, 2.2vh, 1.75rem);
+    padding: 5.9rem var(--page-pad) clamp(1rem, 3vh, 2.25rem);
+  }
+
+  // While the next chapter covers this one: recede and dim.
+  .story-chapter.is-pinned:not(.story-chapter--end) .story-stage__inner {
+    transform: translate3d(0, calc(var(--out) * -5vh), 0) scale(calc(1 - var(--out) * 0.08));
+    transform-origin: 50% 30%;
+  }
+
+  .story-chapter.is-pinned:not(.story-chapter--end) .story-stage::after {
+    content: "";
+    position: absolute;
+    z-index: 6;
+    inset: 0;
+    background: #000;
+    opacity: calc(var(--out) * 0.6);
+    pointer-events: none;
+  }
+
+  .story-chapter.is-pinned:not(.is-active) * {
+    animation-play-state: paused;
+  }
+
+  .story-chapter.is-pinned .story-layer {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .story-chapter.is-pinned .story-layer--parallax {
+    z-index: 1;
+  }
+
+  // Giant display word: opens from a slit as the chapter arrives, drifts while pinned,
+  // then shrinks and tips away as the next chapter covers it.
+  .story-chapter.is-pinned .story-mega {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    color: transparent;
+    font-family: var(--font-display);
+    font-size: clamp(7rem, 30vw, 34rem);
+    font-weight: 900;
+    letter-spacing: -0.09em;
+    line-height: 0.8;
+    white-space: nowrap;
+    opacity: 0.16;
+    -webkit-text-stroke: clamp(1px, 0.12vw, 2px) var(--paper);
+    clip-path: inset(calc((1 - var(--in)) * 48%) 0);
+    transform:
+      translate3d(-50%, -50%, 0)
+      translate3d(calc((0.5 - var(--p)) * 16vw), calc((1 - var(--in)) * 28vh - var(--out) * 16vh), 0)
+      rotate(calc((1 - var(--in)) * -10deg + var(--out) * 8deg))
+      scale(calc(1.45 - var(--in) * 0.45 - var(--out) * 0.25));
+  }
+
+  .story-work.is-pinned .story-mega {
+    opacity: 0.12;
+    -webkit-text-stroke-color: var(--ink);
+  }
+
+  .story-stack.is-pinned .story-mega {
+    opacity: 0.16;
+    -webkit-text-stroke-color: var(--acid);
+  }
+
+  .story-outro.is-pinned .story-mega {
+    opacity: 0.2;
+    -webkit-text-stroke-color: var(--ink);
+  }
+
+  .story-chapter.is-pinned.is-active .story-mega {
+    will-change: transform;
+  }
+
+  .story-chapter.is-pinned .story-glyph {
+    position: absolute;
+    top: calc(var(--gy) * 1%);
+    left: calc(var(--gx) * 1%);
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3vw, 3.2rem);
+    font-style: normal;
+    font-weight: 900;
+    line-height: 1;
+    opacity: 0.85;
+    transform:
+      translate3d(0, calc((0.5 - var(--p)) * var(--depth) * 40vh + (1 - var(--in)) * var(--depth) * 18vh), 0)
+      rotate(calc(var(--p) * var(--spin) * 360deg));
+  }
+
+  .story-chapter.is-pinned .story-glyph:nth-child(5n + 1) { color: var(--acid); }
+  .story-chapter.is-pinned .story-glyph:nth-child(5n + 2) { color: var(--cyan); }
+  .story-chapter.is-pinned .story-glyph:nth-child(5n + 3) { color: var(--magenta); }
+  .story-chapter.is-pinned .story-glyph:nth-child(5n + 4) { color: var(--orange); }
+  .story-chapter.is-pinned .story-glyph:nth-child(5n + 5) { color: var(--violet); }
+  .story-outro.is-pinned .story-glyph:nth-child(n) { color: var(--ink); }
+
+  // Measuring pass (home-story.js): park moving parts so transforms never skew the fit check.
+  .story.is-measuring .story-word,
+  .story.is-measuring .story-word > span,
+  .story.is-measuring .story-bio__frame,
+  .story.is-measuring .story-track,
+  .story.is-measuring .story-card__body,
+  .story.is-measuring .story-panel,
+  .story.is-measuring .story-eq__name,
+  .story.is-measuring .story-deck__card,
+  .story.is-measuring .story-door,
+  .story.is-measuring .story-stage__inner {
+    transform: none !important;
+  }
+
+  /* ---------- 01 · Bio (pinned) ---------- */
+
+  .story-bio.is-pinned .story-bio__frames {
+    align-self: center;
+    gap: 0;
+  }
+
+  // Each frame owns an equal slice of --p; the previous one lifts away as the next arrives.
+  .story-bio.is-pinned .story-bio__frame {
+    --q: clamp(0, var(--p) * var(--frames) - var(--f), 1);
+    --leave: clamp(0, (var(--p) * var(--frames) - var(--f) - 0.9) * 8, 1);
+    --on: clamp(0, (var(--p) * var(--frames) - var(--f) + 0.06) * 14, 1);
+    grid-row: 1;
+    grid-column: 1;
+    align-self: center;
+    opacity: calc(var(--on) * (1 - var(--leave)));
+    transform: translate3d(0, calc(var(--leave) * -12vh), 0) scale(calc(1 - var(--leave) * 0.1));
+    transform-origin: 50% 0;
+  }
+
+  .story-bio.is-pinned .story-bio__frame:first-child { --on: 1; }
+  .story-bio.is-pinned .story-bio__frame:last-child { --leave: 0; }
+
+  .story-bio.is-pinned .story-bio__label {
+    margin-bottom: clamp(0.75rem, 2vh, 1.4rem);
+  }
+
+  .story-bio.is-pinned .story-words {
+    max-width: 23em;
+    font-size: 1.5rem;
+    font-size: unquote("clamp(1.3rem, min(3.7vw, 6.3vh), 3.9rem)");
+    line-height: 1.06;
+  }
+
+  // Word i flies in over its own 1/12 of the frame, starting at --s (set in Liquid).
+  .story-bio.is-pinned .story-word {
+    --t: clamp(0, (var(--q) - var(--s)) * 12, 1);
+    --u: calc(1 - var(--t));
+    --flash: calc(var(--t) * var(--u) * 4);
+  }
+
+  // A faint redaction bar holds each word's place until it lands.
+  .story-bio.is-pinned .story-word::before {
+    display: block;
+    inset: 0.2em 0.02em 0.12em;
+    border-radius: 0.06em;
+    background: currentColor;
+    opacity: calc(var(--u) * 0.13);
+  }
+
+  .story-bio.is-pinned .story-word::after {
+    transform: scaleX(var(--flash));
+  }
+
+  .story-bio.is-pinned .story-word.is-key {
+    --bump: calc(var(--t) * var(--u) * 4);
+    z-index: 1;
+    transform: scale(calc(1 + var(--bump) * 0.3 + var(--t) * 0.04));
+  }
+
+  .story-bio.is-pinned .story-word.is-key::after {
+    transform: scaleX(var(--t));
+  }
+
+  .story-bio.is-pinned .story-word > span {
+    --o: clamp(0, var(--t) * 2.6 - 0.35, 1);
+    opacity: var(--o);
+    // 2D on purpose: ~80 words must not each become a compositor layer.
+    transform:
+      translate(calc(var(--dx) * var(--u) * 0.42em), calc((var(--dy) * 0.3 + 1.1) * var(--u) * 1em))
+      rotate(calc(var(--dr) * var(--u) * 5deg))
+      scale(calc(1 + var(--u) * 0.55));
+  }
+
+  .story-bio.is-pinned .story-bio__meter {
+    display: grid;
+    grid-template-columns: auto minmax(3rem, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .story-bio__cue,
+  .story-bio__count {
+    grid-row: 1;
+    grid-column: 1;
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  .story-bio__cue {
+    color: var(--acid);
+    opacity: calc(1 - var(--p) * 14);
+  }
+
+  .story-bio__count {
+    opacity: calc(var(--p) * 14);
+  }
+
+  .story-bio__count b {
+    color: var(--acid);
+    font-weight: 800;
+  }
+
+  .story-bio__progress {
+    position: relative;
+    height: 3px;
+  }
+
+  .story-bio__progress::before,
+  .story-bio__progress i {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .story-bio__progress::before {
+    background: currentColor;
+    opacity: 0.22;
+  }
+
+  .story-bio__progress i {
+    display: block;
+    background: var(--acid);
+    transform: scaleX(var(--p));
+    transform-origin: 0 50%;
+  }
+
+  .story-bio__keys {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .story-bio__keys li {
+    padding: 0.32rem 0.55rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    opacity: 0.42;
+    transition: opacity 200ms ease, color 200ms ease, background 200ms ease, border-color 200ms ease;
+  }
+
+  .story-bio__keys li.is-found {
+    border-color: var(--acid);
+    color: var(--ink);
+    background: var(--acid);
+    opacity: 1;
+    animation: storyKeyFound 480ms var(--ease-out);
+  }
+
+  // All four found: the row does one victory wave (its own keyframes so every tag replays).
+  .story-bio.has-all-keys .story-bio__keys li {
+    animation: storyKeyWave 560ms var(--ease-out) both;
+  }
+
+  .story-bio.has-all-keys .story-bio__keys li:nth-child(2) { animation-delay: 60ms; }
+  .story-bio.has-all-keys .story-bio__keys li:nth-child(3) { animation-delay: 120ms; }
+  .story-bio.has-all-keys .story-bio__keys li:nth-child(4) { animation-delay: 180ms; }
+
+  /* ---------- 02 · Experience (pinned) ---------- */
+
+  .story-work.is-pinned {
+    --shift: 0;
+    --vp: 1000;
+    --line: 1000;
+    --draw: clamp(0, (var(--p) * var(--shift) + var(--vp) * 0.6) / var(--line), 1);
+  }
+
+  .story-work.is-pinned .story-stage__inner {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .story-work.is-pinned .story-work__head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .story-work.is-pinned .story-work__readout {
+    display: grid;
+    min-width: 0;
+    justify-items: end;
+    gap: 0.45rem;
+  }
+
+  .story-odo {
+    display: flex;
+    font-family: var(--font-display);
+    font-size: clamp(2.6rem, 7vw, 6.8rem);
+    font-weight: 900;
+    letter-spacing: -0.06em;
+    line-height: 1;
+  }
+
+  .story-odo__digit {
+    display: block;
+    height: 1.05em;
+    overflow: hidden;
+  }
+
+  // Each digit is a 0-9 strip; the year rolls with a mechanical overshoot.
+  .story-odo__strip {
+    display: block;
+    transform: translate3d(0, calc(var(--digit) * -1.05em), 0);
+    transition: transform 900ms cubic-bezier(0.3, 1.45, 0.5, 1);
+  }
+
+  .story-odo__strip > span {
+    display: block;
+    height: 1.05em;
+    line-height: 1.05;
+    text-align: center;
+  }
+
+  .story-odo__digit:nth-child(2) .story-odo__strip { transition-delay: 40ms; }
+  .story-odo__digit:nth-child(3) .story-odo__strip { transition-delay: 80ms; }
+  .story-odo__digit:nth-child(4) .story-odo__strip { transition-delay: 120ms; }
+
+  .story-work.is-finale .story-odo {
+    color: var(--violet);
+  }
+
+  .story-work__status {
+    display: flex;
+    max-width: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem 0.9rem;
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .story-work__status > span:first-child {
+    flex: none;
+    padding: 0.22rem 0.42rem;
+    color: var(--paper);
+    background: var(--ink);
+  }
+
+  .story-work__prompt {
+    min-width: 0;
+    max-width: 24rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .story-work__prompt b {
+    font-weight: 800;
+  }
+
+  .story-caret {
+    display: inline-block;
+    width: 0.55em;
+    height: 1em;
+    margin-left: 0.15em;
+    vertical-align: -0.15em;
+    background: currentColor;
+    animation: storyBlink 1s linear infinite;
+  }
+
+  .story-work.is-pinned .story-work__viewport {
+    min-height: 0;
+  }
+
+  // Card i is at --x along the track; it lands as the moving viewport reaches it.
+  .story-work.is-pinned .story-card {
+    --x: 0;
+    --t: clamp(0, (var(--p) * var(--shift) + var(--vp) * 0.85 - var(--x)) / (var(--vp) * 0.3), 1);
+    --u: calc(1 - var(--t));
+    --o: clamp(0, var(--t) * 1.6, 1);
+    --node: clamp(0, (var(--t) - 0.55) * 2.5, 1);
+  }
+
+  .story-work.is-pinned .story-card.is-current {
+    z-index: 2;
+  }
+
+  .story-work.is-pinned .story-card__body {
+    opacity: var(--o);
+    transition: box-shadow 260ms ease;
+  }
+
+  .story-work.is-pinned .story-card.is-current .story-card__body {
+    box-shadow: 0.5rem 0.5rem 0 var(--acid), 0.5rem 0.5rem 0 1px var(--ink);
+  }
+
+  .story-work.is-pinned .story-card--finale.is-current .story-card__body {
+    box-shadow: 0.5rem 0.5rem 0 var(--magenta), 0.5rem 0.5rem 0 1px var(--ink);
+  }
+
+  .story-work.is-pinned .story-card.is-current:not(.story-card--finale) .story-card__bar {
+    --ink: var(--story-on-acid);
+    color: var(--ink);
+    background: var(--acid);
+  }
+
+  .story-work.is-pinned .story-card__node {
+    position: absolute;
+    z-index: 2;
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    margin: -0.5rem 0 0 -0.5rem;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    transform: rotate(45deg) scale(var(--node));
+  }
+
+  .story-work.is-pinned .story-card.is-current .story-card__node {
+    background: var(--acid);
+  }
+
+  .story-work.is-pinned .story-track__line,
+  .story-work.is-pinned .story-track__pen {
+    position: absolute;
+    display: block;
+  }
+
+  .story-work.is-pinned .story-track__line::before,
+  .story-work.is-pinned .story-track__line i {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  .story-work.is-pinned .story-track__line::before {
+    opacity: 0.3;
+  }
+
+  .story-work.is-pinned .story-track__line i {
+    display: block;
+    background: var(--ink);
+  }
+
+  .story-work.is-pinned .story-track__pen {
+    z-index: 3;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: -0.575rem 0 0 -0.575rem;
+    border: 2px solid var(--ink);
+    background: var(--acid);
+  }
+
+  .story-work.is-pinned .story-track__pen::after {
+    content: "";
+    position: absolute;
+    inset: -0.45rem;
+    border: 2px solid var(--acid);
+    animation: storyPulse 1.4s var(--ease-out) infinite;
+  }
+
+  // Finale: the last node detonates, the stage flashes, the card pops.
+  .story-work.is-pinned .story-burst {
+    position: absolute;
+    z-index: 4;
+    display: block;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .story-burst::before,
+  .story-burst::after {
+    content: "";
+    position: absolute;
+    top: -3rem;
+    left: -3rem;
+    width: 6rem;
+    height: 6rem;
+    border: 3px solid var(--acid);
+    border-radius: 50%;
+    opacity: 0;
+  }
+
+  .story-burst::after {
+    border-color: var(--magenta);
+  }
+
+  .story-burst i {
+    position: absolute;
+    top: -0.3rem;
+    left: -0.3rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border: 1px solid var(--ink);
+    background: var(--acid);
+    opacity: 0;
+  }
+
+  .story-burst i:nth-child(4n + 2) { background: var(--cyan); }
+  .story-burst i:nth-child(4n + 3) { background: var(--magenta); }
+  .story-burst i:nth-child(4n + 4) { background: var(--violet); }
+
+  .story-work.is-finale .story-burst i {
+    animation: storyBurst 1.2s var(--ease-out) both;
+    animation-delay: calc(var(--d) * 45ms);
+  }
+
+  .story-work.is-finale .story-burst::before {
+    animation: storyRing 900ms var(--ease-out) both;
+  }
+
+  .story-work.is-finale .story-burst::after {
+    animation: storyRing 1100ms var(--ease-out) 160ms both;
+  }
+
+  .story-work.is-pinned.is-finale .story-stage::before {
+    content: "";
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    background: var(--acid);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    animation: storyFlash 900ms var(--ease-out) both;
+  }
+
+  .story-work.is-finale .story-card--finale .story-card__body {
+    animation: storyPop 700ms var(--ease-out) both;
+  }
+
+  .story-work.is-pinned .story-card__stamp {
+    opacity: 0;
+    transform: rotate(-9deg) scale(2.2);
+    transition: opacity 200ms ease 250ms, transform 420ms cubic-bezier(0.3, 1.6, 0.5, 1) 250ms;
+  }
+
+  .story-work.is-pinned.is-finale .story-card__stamp {
+    opacity: 1;
+    transform: rotate(-9deg) scale(1);
+  }
+
+  .story-work.is-pinned.is-active .story-track {
+    will-change: transform;
+  }
+
+  // Wide screens: a horizontal track driven by vertical scroll.
+  @media (min-width: 761px) {
+    .story-work.is-pinned {
+      --card-w: clamp(15rem, 22vw, 21.5rem);
+      --line-y: calc(100% - 1.6rem);
+      --card-gap: 1.25rem;
+    }
+
+    .story-work.is-pinned.is-zigzag {
+      --line-y: 50%;
+      --card-gap: calc(var(--card-w) * -0.32);
+    }
+
+    .story-work.is-pinned .story-work__viewport {
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+    }
+
+    .story-work.is-pinned .story-track {
+      display: flex;
+      width: max-content;
+      height: 100%;
+      padding: 0 32vw 0 55vw;
+      transform: translate3d(calc(var(--p) * var(--shift) * -1px), 0, 0) skewX(calc(var(--vel) * -5deg));
+    }
+
+    .story-work.is-pinned .story-track__line {
+      top: var(--line-y);
+      right: 32vw;
+      left: 0;
+      height: 3px;
+      margin-top: -1.5px;
+    }
+
+    .story-work.is-pinned .story-track__line::before {
+      background: repeating-linear-gradient(90deg, currentColor 0 0.5rem, transparent 0.5rem 0.95rem);
+    }
+
+    .story-work.is-pinned .story-track__line i {
+      transform: scaleX(var(--draw));
+      transform-origin: 0 50%;
+    }
+
+    .story-work.is-pinned .story-track__pen {
+      top: var(--line-y);
+      left: 0;
+      transform: translate3d(calc(var(--draw) * var(--line) * 1px), 0, 0) rotate(45deg);
+    }
+
+    .story-work.is-pinned .story-track__list {
+      display: flex;
+      height: 100%;
+    }
+
+    .story-work.is-pinned .story-card {
+      flex: none;
+      width: var(--card-w);
+      height: 100%;
+      margin-right: var(--card-gap);
+    }
+
+    .story-work.is-pinned .story-card:last-child {
+      margin-right: 0;
+    }
+
+    .story-work.is-pinned .story-card__body {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% - var(--line-y) + 1.75rem);
+      left: 0;
+      height: auto;
+      transform:
+        translate3d(calc(var(--u) * 8rem), calc(var(--u) * var(--side) * 3rem), 0)
+        rotate(calc(var(--u) * var(--side) * -14deg))
+        scale(calc(0.8 + var(--t) * 0.2));
+      transform-origin: 1.4rem 100%;
+    }
+
+    .story-work.is-pinned .story-card__node,
+    .story-work.is-pinned .story-burst {
+      top: var(--line-y);
+      left: 1.4rem;
+    }
+
+    .story-work.is-pinned .story-card__stem {
+      position: absolute;
+      bottom: calc(100% - var(--line-y));
+      left: 1.4rem;
+      display: block;
+      width: 2px;
+      height: 1.75rem;
+      margin-left: -1px;
+      background: var(--ink);
+      transform: scaleY(var(--node));
+      transform-origin: 50% 100%;
+    }
+
+    .story-work.is-pinned.is-zigzag .story-card:nth-child(even) .story-card__body {
+      top: calc(var(--line-y) + 1.75rem);
+      bottom: auto;
+      transform-origin: 1.4rem 0;
+    }
+
+    .story-work.is-pinned.is-zigzag .story-card:nth-child(even) .story-card__stem {
+      top: var(--line-y);
+      bottom: auto;
+      transform-origin: 50% 0;
+    }
+  }
+
+  /* ---------- 03 · Stack (pinned) ---------- */
+
+  // Phase A: the equaliser. Phase B (after --swap): the course catalog shuffles.
+  .story-stack.is-pinned {
+    --swap: clamp(0, (var(--p) - 0.42) * 9, 1);
+    --deck-start: 0.52;
+    --deck-span: 0.43;
+  }
+
+  .story-stack.is-pinned .story-stack__panels {
+    grid-template-columns: minmax(0, 1fr);
+    align-self: center;
+    align-items: center;
+  }
+
+  .story-stack.is-pinned .story-panel {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .story-stack.is-pinned .story-eq {
+    opacity: calc(1 - var(--swap));
+    transform: translate3d(0, calc(var(--swap) * -9vh), 0) scale(calc(1 - var(--swap) * 0.1)) rotate(calc(var(--swap) * -2.5deg));
+  }
+
+  .story-stack.is-pinned .story-catalog {
+    width: 100%;
+    max-width: 58rem;
+    justify-self: center;
+    opacity: var(--swap);
+    transform: translate3d(0, calc((1 - var(--swap)) * 14vh), 0) rotate(calc((1 - var(--swap)) * 3deg));
+  }
+
+  // Chips fly into formation while the chapter arrives; bars fill in step with --p;
+  // scroll speed makes the whole meter dance.
+  .story-stack.is-pinned .story-eq__channel {
+    --fly: clamp(0, (var(--in) + var(--p) - 0.5 - var(--k) * 0.05) * 3, 1);
+    --fill: clamp(0, (var(--p) - 0.02 - var(--k) * 0.022) * 6, 1);
+    --dance: calc(var(--speed) * var(--amp) / 7);
+  }
+
+  .story-stack.is-pinned .story-eq__name {
+    opacity: var(--fly);
+    transform:
+      translate3d(calc((1 - var(--fly)) * var(--dx) * 1.5rem), calc((1 - var(--fly)) * (var(--dy) * 1.2rem - 3rem)), 0)
+      rotate(calc((1 - var(--fly)) * var(--dr) * 10deg))
+      scale(calc(1 + (1 - var(--fly)) * 0.6));
+  }
+
+  .story-stack.is-pinned .story-eq__level {
+    opacity: calc((var(--fill) - 0.75) * 4);
+  }
+
+  .story-stack.is-pinned .story-catalog__count b {
+    font-size: clamp(3.5rem, 8vw, 7rem);
+  }
+
+  .story-stack.is-pinned .story-deck {
+    --c: calc(clamp(0, (var(--p) - var(--deck-start)) / var(--deck-span), 1) * (var(--n) - 1));
+    position: relative;
+    display: block;
+    height: clamp(10.5rem, 27vh, 13.5rem);
+  }
+
+  // Card k: --gone as it is flicked away, --behind while it waits in the pile.
+  .story-stack.is-pinned .story-deck__card {
+    --gone: clamp(0, var(--c) - var(--k), 1);
+    --behind: clamp(0, var(--k) - var(--c), 4);
+    --o: calc((1 - var(--gone)) * clamp(0, 3.4 - var(--behind), 1));
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: calc(100% - 2.3rem);
+    min-height: 0;
+    opacity: var(--o);
+    transform:
+      translate3d(calc(var(--gone) * -118% + var(--behind) * 0.55rem), calc(var(--behind) * -0.72rem + var(--gone) * 2rem), 0)
+      rotate(calc(var(--gone) * -14deg + var(--behind) * 1.6deg + var(--rr) * 1deg))
+      scale(calc(1 - var(--behind) * 0.04));
+    transform-origin: 50% 100%;
+  }
+
+  .story-stack.is-pinned .story-deck__card strong {
+    font-size: clamp(1.3rem, 2.4vw, 2.2rem);
+  }
+
+  /* ---------- 04 · Next (pinned) ---------- */
+
+  .story-outro.is-pinned .story-doors {
+    align-self: center;
+  }
+
+  .story-outro.is-pinned .story-door {
+    --t: clamp(0, (var(--in) + var(--p) - 0.5 - var(--k) * 0.14) * 2.6, 1);
+    --u: calc(1 - var(--t));
+    opacity: var(--t);
+    transform: translate3d(calc(var(--u) * var(--side) * 38vw), 0, 0) rotate(calc(var(--u) * var(--side) * -5deg));
+  }
+
+  .story-outro.is-pinned .story-door:focus-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .story-outro.is-pinned .story-outro__foot {
+    opacity: calc((var(--in) + var(--p) - 1) * 5);
+  }
+
+  .story-outro.is-pinned .story-outro__foot:focus-within {
+    opacity: 1;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  @media (max-width: 1080px) {
+    .story-chapter.is-pinned .story-stage__inner {
+      padding-top: 5.3rem;
+    }
+  }
+
+  @media (min-width: 1300px) {
+    .story-stack:not(.is-pinned) .story-stack__panels {
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    }
+  }
+
+  @media (min-width: 761px) {
+    .story-chapter.is-pinned .story-stage__inner {
+      padding-right: unquote("max(var(--page-pad), 3.4rem)");
+    }
+
+    .story-stack.is-pinned .story-catalog__body {
+      grid-template-columns: minmax(8rem, 0.32fr) minmax(0, 1fr);
+      align-items: end;
+    }
+
+    .story-stack.is-pinned .story-catalog__count {
+      display: grid;
+      gap: 0.5rem;
+    }
+  }
+
+  @media (max-height: 820px) {
+    .story-chapter.is-pinned .story-marquee--alt {
+      display: none;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .story-tab {
+      font-size: 0.58rem;
+    }
+
+    .story-chapter.is-pinned .story-stage__inner {
+      padding: 5.1rem calc(var(--page-pad) + 1.3rem) 0.9rem var(--page-pad);
+    }
+
+    .story-rail {
+      right: 0.2rem;
+    }
+
+    .story-rail ol {
+      padding: 0.3rem 0.15rem;
+      box-shadow: 0.15rem 0.15rem 0 var(--acid);
+    }
+
+    .story-rail a {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .story-rail__dot {
+      width: 0.42rem;
+      height: 0.42rem;
+    }
+
+    .story-rail__meter {
+      top: 1rem;
+      bottom: 1rem;
+    }
+
+    .story-chapter.is-pinned .story-glyph:nth-child(n + 3) {
+      display: none;
+    }
+
+    .story-bio.is-pinned {
+      --len: 220;
+    }
+
+    .story-bio.is-pinned .story-words {
+      font-size: 1.2rem;
+      font-size: unquote("clamp(1.05rem, min(5.6vw, 3.5vh), 2.1rem)");
+      font-size: unquote("clamp(1.05rem, min(5.6vw, 3.5svh), 2.1rem)");
+      line-height: 1.1;
+    }
+
+    .story-bio.is-pinned .story-bio__meter {
+      grid-template-columns: auto minmax(2rem, 1fr);
+      font-size: 0.56rem;
+    }
+
+    .story-bio__keys {
+      grid-column: 1 / -1;
+      justify-content: flex-start;
+      gap: 0.25rem;
+    }
+
+    .story-bio__keys li {
+      padding: 0.26rem 0.42rem;
+    }
+
+    .story-work.is-pinned {
+      --len: calc(var(--n) * 26);
+    }
+
+    .story-work.is-pinned .story-work__head {
+      align-items: end;
+      gap: 0.6rem 1rem;
+    }
+
+    .story-odo {
+      font-size: clamp(2.1rem, 11vw, 3rem);
+    }
+
+    .story-work__status {
+      font-size: 0.56rem;
+    }
+
+    .story-work__prompt {
+      display: none;
+    }
+
+    // Phones: the track turns vertical and the line draws down the left edge.
+    .story-work.is-pinned .story-work__viewport {
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(180deg, transparent, #000 1.25rem, #000 calc(100% - 2rem), transparent);
+      mask-image: linear-gradient(180deg, transparent, #000 1.25rem, #000 calc(100% - 2rem), transparent);
+    }
+
+    .story-work.is-pinned .story-track {
+      padding: 17vh 0 30vh;
+      padding: 17svh 0 30svh;
+      transform: translate3d(0, calc(var(--p) * var(--shift) * -1px), 0) skewY(calc(var(--vel) * 1.5deg));
+    }
+
+    .story-work.is-pinned .story-track__line {
+      top: 0;
+      bottom: 30vh;
+      bottom: 30svh;
+      left: 0.95rem;
+      width: 3px;
+      margin-left: -1.5px;
+    }
+
+    .story-work.is-pinned .story-track__line::before {
+      background: repeating-linear-gradient(180deg, currentColor 0 0.5rem, transparent 0.5rem 0.95rem);
+    }
+
+    .story-work.is-pinned .story-track__line i {
+      transform: scaleY(var(--draw));
+      transform-origin: 50% 0;
+    }
+
+    .story-work.is-pinned .story-track__pen {
+      top: 0;
+      left: 0.95rem;
+      transform: translate3d(0, calc(var(--draw) * var(--line) * 1px), 0) rotate(45deg);
+    }
+
+    .story-work.is-pinned .story-track__list {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.85rem;
+    }
+
+    .story-work.is-pinned .story-card {
+      padding-left: 2.35rem;
+    }
+
+    .story-work.is-pinned .story-card__node,
+    .story-work.is-pinned .story-burst {
+      top: 1.3rem;
+      left: 0.95rem;
+    }
+
+    .story-work.is-pinned .story-card__body {
+      transform:
+        translate3d(calc(var(--u) * 3.5rem), calc(var(--u) * 1.25rem), 0)
+        rotate(calc(var(--u) * 6deg))
+        scale(calc(0.86 + var(--t) * 0.14));
+      transform-origin: 0 50%;
+    }
+
+    .story-work.is-pinned .story-card__content {
+      gap: 0.35rem;
+      padding: 0.75rem 0.9rem 0.9rem;
+    }
+
+    .story-work.is-pinned .story-card--finale .story-card__content {
+      padding-bottom: 2.6rem;
+    }
+
+    .story-work.is-pinned .story-card h3 {
+      font-size: 1.15rem;
+    }
+
+    .story-work.is-pinned .story-card__role {
+      font-size: 0.8rem;
+    }
+
+    .story-eq__channels {
+      grid-auto-flow: row;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.3rem;
+      padding: 0.7rem 0.9rem;
+    }
+
+    .story-eq__channel {
+      grid-template-columns: 5.4rem minmax(0, 1fr) 4.4rem;
+      align-items: center;
+      justify-items: stretch;
+      gap: 0.6rem;
+    }
+
+    .story-eq__name {
+      order: 1;
+      justify-self: start;
+    }
+
+    .story-eq__meter {
+      order: 2;
+      max-width: none;
+      height: 1rem;
+    }
+
+    .story-eq__level {
+      order: 3;
+      text-align: right;
+    }
+
+    .story-eq__meter::after {
+      background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 3px), var(--paper) calc(25% - 3px) 25%);
+    }
+
+    .story-eq__fill {
+      background: linear-gradient(90deg, var(--violet), var(--magenta) 45%, var(--orange) 72%, var(--acid));
+      clip-path: inset(0 calc((1 - var(--level)) * 100%) 0 0);
+    }
+
+    .story-eq__peak {
+      transform: translate3d(calc(var(--level) * 100% + var(--dance) * 0.9rem), 0, 0);
+    }
+
+    .story-eq__peak::before {
+      top: -2px;
+      right: auto;
+      bottom: -2px;
+      left: -7px;
+      width: 4px;
+      height: auto;
+    }
+
+    .story-eq__legend {
+      padding: 0.55rem 0.9rem;
+    }
+
+    .story-stack.is-pinned .story-deck {
+      height: 10rem;
+    }
+
+    .story-stack.is-pinned .story-deck__card strong {
+      font-size: 1.2rem;
+    }
+
+    .story-stack.is-pinned .story-catalog__count b {
+      font-size: 2.6rem;
+    }
+
+    .story-marquee--courses {
+      font-size: 1.45rem;
+    }
+
+    .story-chapter .story-marquee--alt {
+      display: none;
+    }
+
+    .story-door {
+      grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+      gap: 0.6rem;
+    }
+
+    // The label column is the viewport minus ~8.6rem of fixed chrome (page padding, the
+    // pinned layout's rail gutter, index, arrow and gaps) below 440px, where it is
+    // tightest. Dividing (100vw - 9rem) by 9 fits a 9em line into it; the cap takes over
+    // from ~550px, where the column has room to spare.
+    .story-door__label {
+      font-size: 1.25rem;
+      font-size: unquote("clamp(1.25rem, min((100vw - 9rem) / 9, 7vh), 2.8rem)");
+      font-size: unquote("clamp(1.25rem, min((100vw - 9rem) / 9, 7svh), 2.8rem)");
+    }
+
+    .story-door__path {
+      display: none;
+    }
+
+    .story-vhs small {
+      top: 9.2rem;
+      right: auto;
+      left: var(--page-pad);
+    }
+  }
+}
+
+/* Keyframes (names are prefixed; keyframes cannot be scoped) */
+@keyframes storyBurst {
+  0% { opacity: 1; transform: rotate(var(--a)) translate3d(0, 0, 0) scale(0.3); }
+  65% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--a)) translate3d(0, calc(var(--d) * -3.2rem - 3.5rem), 0) rotate(160deg) scale(1); }
+}
+
+@keyframes storyRing {
+  0% { opacity: 1; transform: scale(0.2); }
+  100% { opacity: 0; transform: scale(3.4); }
+}
+
+@keyframes storyFlash {
+  0% { opacity: 0; }
+  18% { opacity: 0.45; }
+  100% { opacity: 0; }
+}
+
+@keyframes storyPop {
+  0% { scale: 1; }
+  35% { scale: 1.07; }
+  100% { scale: 1; }
+}
+
+@keyframes storyBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes storyPulse {
+  0% { opacity: 0.75; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.8); }
+}
+
+@keyframes storyKeyFound {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.16) rotate(-3deg); }
+  100% { transform: scale(1); }
+}
+
+@keyframes storyKeyWave {
+  0% { transform: translate3d(0, 0, 0); }
+  40% { transform: translate3d(0, -0.45rem, 0) rotate(-4deg) scale(1.12); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes storyVhsRoll {
+  to { transform: translate3d(0, 4px, 0); }
+}
+
+@keyframes storyVhsBand {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, 140vh, 0); }
+}

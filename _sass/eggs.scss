@@ -1,0 +1,1205 @@
+/* =========================================================================
+   JB//OS easter eggs (assets/js/eggs.js) and the 404 page.
+   -------------------------------------------------------------------------
+   Everything here is opt-in: classes only appear while an effect runs, so
+   the default look of every page is untouched. Colours come from the site
+   tokens. Overlays that sit outside the page (top layer) use the theme
+   module's band tokens when present, so they stay light-on-dark in every
+   theme: --band-ink / --band-text / --on-accent, falling back to the
+   default palette.
+   ========================================================================= */
+
+/* ---------- Top-layer host ----------
+   One host holds every overlay and the achievement card, so the card can
+   never end up underneath an effect (it sits above them via z-index). */
+.egg-fx {
+  --egg-night: var(--band-ink, var(--midnight));
+  --egg-light: var(--band-text, var(--paper));
+  --egg-on-acid: var(--on-accent, #11110f);
+  position: fixed;
+  z-index: 9995;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: var(--egg-light);
+  background: transparent;
+  pointer-events: none;
+}
+
+.egg-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: opacity 340ms ease;
+}
+
+.egg-canvas--solid {
+  background: #030503;
+  pointer-events: auto;
+  cursor: none;
+}
+
+.egg-canvas.is-fading,
+.egg-matrix-msg.is-fading {
+  opacity: 0;
+}
+
+/* ---------- Name burst ---------- */
+.egg-title-hidden {
+  opacity: 0 !important;
+}
+
+.egg-burst {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.egg-burst__char {
+  position: absolute;
+  display: block;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  white-space: pre;
+  will-change: transform;
+}
+
+/* ---------- Snow, hello bubble, orb, hint key ---------- */
+.egg-snow-tint {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(17, 21, 40, 0.34), rgba(17, 21, 40, 0) 70%),
+    linear-gradient(180deg, rgba(160, 190, 230, 0.16), rgba(17, 21, 40, 0.2));
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.egg-snow-tint.is-visible {
+  opacity: 1;
+}
+
+.egg-bubble {
+  --egg-tail: 1.2rem;
+  position: fixed;
+  z-index: 1200;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--ink);
+  border-radius: 0.6rem;
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  box-shadow: 0.2rem 0.2rem 0 var(--ink);
+  font: 800 0.72rem var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: var(--egg-tail) 0;
+  animation: eggBubbleIn 420ms var(--ease-out) both;
+}
+
+.egg-bubble::before {
+  content: "";
+  position: absolute;
+  top: -0.42rem;
+  left: var(--egg-tail);
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-left: -0.35rem;
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  background: var(--acid);
+  transform: rotate(45deg);
+}
+
+.egg-bubble.is-leaving {
+  animation: eggBubbleOut 360ms ease forwards;
+}
+
+/* Press-and-hold on touch screens: the orb winds up over the 1.1s hold. */
+.chrome-orb.egg-orb-pressing span {
+  filter: saturate(1.4) contrast(1.08) brightness(1.12);
+  transform: rotate(160deg) scale(1.1);
+  transition: transform 1100ms linear, filter 1100ms linear;
+}
+
+@media (hover: none) {
+  .chrome-orb {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+.chrome-orb.egg-orb-charged {
+  animation: floatOrb 6s ease-in-out infinite, eggOrbGlow 700ms ease-in-out 3 alternate;
+}
+
+.chrome-orb.egg-orb-charged span {
+  filter: saturate(1.45) brightness(1.15);
+  transform: rotate(540deg) scale(1.12);
+  transition-duration: 1.4s;
+}
+
+body:not(.cursor-ready) .egg-clickable {
+  cursor: pointer;
+}
+
+/* ---------- Page-level effects ---------- */
+.egg-wobble #main-content,
+.egg-wobble .site-header {
+  animation: eggWobble 760ms var(--ease-out);
+}
+
+.egg-party .site-header .brand-mark,
+.egg-party #main-content h1,
+.egg-party #main-content h2,
+.egg-party .cta {
+  animation: eggBeat 484ms ease-in-out infinite;
+}
+
+.egg-glitching #main-content,
+.egg-glitching .site-header,
+.egg-glitching .site-footer {
+  animation: eggShake 180ms steps(2, end) infinite;
+}
+
+.egg-glitching #main-content {
+  text-shadow: 0.12rem 0 var(--magenta), -0.12rem 0 var(--cyan);
+}
+
+.egg-deleted {
+  animation: eggDelete 300ms steps(3, end) forwards !important;
+}
+
+/* ---------- Party ---------- */
+.egg-disco {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.egg-disco.is-visible {
+  opacity: 1;
+}
+
+.egg-disco__wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 88, 200, 0.24), rgba(53, 230, 223, 0.2), rgba(217, 255, 67, 0.2), rgba(115, 87, 255, 0.24), rgba(255, 88, 200, 0.24));
+  background-size: 400% 400%;
+  mix-blend-mode: multiply;
+  animation: eggWash 1936ms linear infinite;
+}
+
+.egg-disco__lights i {
+  --beam-from: -28deg;
+  --beam-to: 22deg;
+  --beam: rgba(255, 88, 200, 0.5);
+  position: absolute;
+  top: -8vh;
+  left: 50%;
+  width: 34vmax;
+  height: 130vh;
+  margin-left: -17vmax;
+  background: linear-gradient(180deg, var(--beam), rgba(255, 255, 255, 0));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  opacity: 0.55;
+  transform-origin: 50% 0;
+  animation: eggBeam 1936ms ease-in-out infinite alternate;
+}
+
+.egg-disco__lights i:nth-child(2) { --beam-from: 30deg; --beam-to: -18deg; --beam: rgba(53, 230, 223, 0.5); animation-duration: 1452ms; }
+.egg-disco__lights i:nth-child(3) { --beam-from: -12deg; --beam-to: 40deg; --beam: rgba(217, 255, 67, 0.45); animation-duration: 968ms; }
+.egg-disco__lights i:nth-child(4) { --beam-from: 45deg; --beam-to: 5deg; --beam: rgba(115, 87, 255, 0.5); animation-duration: 2420ms; }
+.egg-disco__lights i:nth-child(5) { --beam-from: -45deg; --beam-to: -5deg; --beam: rgba(255, 103, 64, 0.45); animation-duration: 1210ms; }
+.egg-disco__lights i:nth-child(6) { --beam-from: 8deg; --beam-to: -38deg; --beam: rgba(255, 255, 255, 0.35); animation-duration: 1694ms; }
+
+.egg-disco__ball {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 16vh;
+  margin-left: -1px;
+  background: var(--egg-light);
+  animation: eggDrop 800ms var(--ease-out) both;
+}
+
+.egg-disco__ball span {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: clamp(4.2rem, 9vw, 7rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0 6%, rgba(255, 255, 255, 0) 20%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 1px, rgba(0, 0, 0, 0) 1px 12.5%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, rgba(0, 0, 0, 0) 1px 12.5%),
+    conic-gradient(from 0deg, var(--acid), var(--cyan), var(--magenta), var(--orange), var(--violet), var(--acid));
+  background-size: 100% 100%, 200% 100%, 100% 100%, 100% 100%;
+  box-shadow: 0 0 2.5rem rgba(255, 255, 255, 0.55), inset -0.8rem -0.8rem 1.4rem rgba(0, 0, 0, 0.45);
+  translate: -50% 0;
+  animation: eggBallSpin 1.2s linear infinite;
+}
+
+/* ---------- Matrix ---------- */
+.egg-matrix-msg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  color: var(--acid);
+  font: 700 clamp(1.1rem, 3vw, 2rem)/1.3 var(--font-mono);
+  text-align: center;
+  text-shadow: 0 0 1rem var(--acid);
+  white-space: pre-wrap;
+  translate: -50% -50%;
+  transition: opacity 340ms ease;
+}
+
+.egg-matrix-msg:not(:empty)::after {
+  content: "_";
+  animation: eggCaret 900ms steps(1, end) infinite;
+}
+
+/* ---------- Screensaver ---------- */
+.egg-saver {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 120%, rgba(115, 87, 255, 0.28), rgba(115, 87, 255, 0) 60%),
+    var(--egg-night);
+  opacity: 0;
+  pointer-events: auto;
+  cursor: none;
+  transition: opacity 600ms ease;
+}
+
+.egg-saver.is-visible {
+  opacity: 1;
+}
+
+.egg-saver__logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1.2rem 0.8rem;
+  border: 2px solid var(--saver-color, var(--acid));
+  border-radius: 0.6rem;
+  color: var(--saver-color, var(--acid));
+  box-shadow: 0 0 2.4rem rgba(0, 0, 0, 0.35), inset 0 0 1.2rem rgba(255, 255, 255, 0.05);
+  text-transform: uppercase;
+  will-change: transform;
+  transition: color 220ms ease, border-color 220ms ease;
+}
+
+.egg-saver__logo strong {
+  font: 900 clamp(2rem, 6vw, 4rem)/0.85 var(--font-display);
+  letter-spacing: -0.06em;
+}
+
+.egg-saver__logo small {
+  font: 700 0.66rem var(--font-mono);
+  letter-spacing: 0.24em;
+}
+
+.egg-saver__clock,
+.egg-saver__hint {
+  position: absolute;
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding-inline: 1rem;
+  color: var(--egg-light);
+  font-family: var(--font-mono);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.egg-saver__clock {
+  bottom: 2.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  opacity: 0.75;
+}
+
+.egg-saver__hint {
+  bottom: 1.1rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  opacity: 0.45;
+}
+
+.egg-saver__corner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  color: var(--acid);
+  font: 900 clamp(3rem, 12vw, 9rem)/1 var(--font-display);
+  letter-spacing: -0.06em;
+  opacity: 0;
+  translate: -50% -50%;
+}
+
+.egg-saver__corner.is-visible {
+  animation: eggCorner 1.4s var(--ease-out) forwards;
+}
+
+/* ---------- Boot replay ---------- */
+.egg-boot {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--egg-light);
+  background: var(--egg-night);
+  pointer-events: auto;
+  cursor: progress;
+  animation: eggFadeIn 180ms ease both;
+}
+
+.egg-boot.is-exiting {
+  animation: eggWipe 600ms var(--ease-snap) forwards;
+}
+
+.egg-boot__card {
+  display: flex;
+  width: 88vw;
+  max-width: 32rem;
+  align-items: flex-start;
+  gap: 1.2rem;
+  padding: 1.25rem;
+  border: 1px solid var(--egg-light);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono);
+}
+
+.egg-boot__card img {
+  flex: none;
+  width: 4.4rem;
+  height: auto;
+  border-radius: 0.5rem;
+  background: var(--acid);
+}
+
+.egg-boot__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.egg-boot__title {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.egg-boot__title span {
+  opacity: 0.7;
+}
+
+.egg-boot__meter {
+  height: 0.55rem;
+  border: 1px solid currentColor;
+}
+
+.egg-boot__meter i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--acid);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: eggMeter 1.5s steps(10, end) 100ms forwards;
+}
+
+.egg-boot__log {
+  margin: 0.8rem 0 0;
+  padding: 0;
+  font-size: 0.62rem;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  list-style: none;
+}
+
+.egg-boot__log li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: eggLineIn 220ms steps(3, end) both;
+}
+
+/* ---------- rm -rf / ---------- */
+.egg-rmlog {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1rem;
+  width: calc(100vw - 2rem);
+  max-width: 34rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--egg-light);
+  color: var(--egg-light);
+  background: var(--egg-night);
+  box-shadow: 0.4rem 0.4rem 0 var(--magenta);
+  font: 0.68rem/1.5 var(--font-mono);
+}
+
+.egg-rmlog p {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.egg-panic {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  padding: var(--page-pad);
+  color: #e8e8e8;
+  background: #000;
+  pointer-events: auto;
+  cursor: none;
+  animation: eggFlicker 260ms steps(2, end) 1;
+}
+
+.egg-panic pre {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  font: clamp(0.6rem, 1.4vw, 0.95rem)/1.5 var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.egg-panic__countdown {
+  margin: 1.5rem 0 0;
+  color: var(--acid);
+  font: 800 clamp(0.8rem, 2vw, 1.1rem) var(--font-mono);
+}
+
+.egg-panic.is-leaving {
+  animation: eggFadeOut 520ms ease forwards;
+}
+
+.egg-stamp {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+  padding: 1.2rem 1.6rem;
+  border: 0.3rem solid var(--acid);
+  color: var(--acid);
+  background: var(--egg-night);
+  box-shadow: 0.7rem 0.7rem 0 var(--magenta);
+  text-align: center;
+  translate: -50% -50%;
+  rotate: -4deg;
+  animation: eggStamp 520ms var(--ease-out) both;
+}
+
+.egg-stamp strong {
+  font: 900 clamp(2.2rem, 8vw, 6rem)/0.9 var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.egg-stamp small {
+  color: var(--egg-light);
+  font: 700 0.66rem var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* ---------- Terminal output ---------- */
+.terminal-body .egg-pre {
+  max-width: 100%;
+  margin: 0.2rem 0 0.6rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  line-height: 1.28;
+  white-space: pre;
+  scrollbar-width: thin;
+}
+
+.terminal-body .egg-dim { opacity: 0.62; }
+.terminal-body .egg-ok { color: var(--acid); }
+.terminal-body .egg-warn { color: var(--orange); }
+.terminal-body .egg-err { color: var(--magenta); }
+.terminal-body .egg-cow,
+.terminal-body .egg-vim-echo { color: var(--paper); }
+.terminal-body .egg-vim { color: var(--cyan); }
+.terminal-body .egg-neofetch { color: var(--acid); }
+
+.terminal-body .egg-progress {
+  color: var(--cyan);
+  white-space: pre-wrap;
+}
+
+.terminal-body .egg-banner {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.5rem 0 0.7rem;
+  padding: 0.3rem 0.6rem 0.2rem;
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  font: 900 clamp(1.4rem, 5vw, 2.4rem)/1 var(--font-display);
+  letter-spacing: -0.04em;
+  animation: eggBannerIn 520ms steps(4, end) both;
+}
+
+.terminal-body .egg-banner--small {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.terminal-body .egg-link-line {
+  margin-top: 0.3rem;
+}
+
+.terminal-body .egg-term-link {
+  color: var(--acid);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  word-break: break-all;
+}
+
+.terminal-body .egg-term-link:hover,
+.terminal-body .egg-term-link:focus-visible {
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  text-decoration: none;
+}
+
+.terminal-body .egg-hack {
+  margin: 0 0 0.05rem;
+  color: var(--acid);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+  opacity: 0.92;
+}
+
+.terminal.egg-hacking {
+  box-shadow: 1rem 1rem 0 var(--acid), 0 0 3rem rgba(217, 255, 67, 0.25);
+}
+
+.terminal.egg-hacking .terminal-body {
+  text-shadow: 0 0 0.35rem currentColor;
+}
+
+.terminal-body .egg-swatches {
+  display: flex;
+  margin: 0.1rem 0 0.8rem;
+}
+
+.terminal-body .egg-swatches span {
+  width: 1.7rem;
+  height: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- Snake ---------- */
+.egg-snake {
+  margin: 0.6rem 0 0.8rem;
+  outline: 0;
+}
+
+.terminal-body .egg-snake__hud {
+  margin: 0 0 0.45rem;
+  color: var(--cyan);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+}
+
+.egg-snake__board {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0.35rem 0.35rem 0 var(--violet);
+  touch-action: none;
+}
+
+.egg-snake__pad {
+  display: grid;
+  max-width: 19rem;
+  grid-template-columns: repeat(3, 2.75rem) minmax(0, 1fr);
+  grid-template-areas:
+    ". up . pause"
+    "left down right quit";
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+}
+
+.egg-snake__key {
+  min-height: 2.5rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--paper);
+  border-radius: 0.35rem;
+  color: var(--paper);
+  background: transparent;
+  font: 800 0.78rem var(--font-mono);
+  letter-spacing: 0.04em;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
+}
+
+.egg-snake__key:hover,
+.egg-snake__key:focus-visible,
+.egg-snake__key:active {
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+}
+
+.egg-snake__key--up { grid-area: up; }
+.egg-snake__key--down { grid-area: down; }
+.egg-snake__key--left { grid-area: left; }
+.egg-snake__key--right { grid-area: right; }
+.egg-snake__key--pause { grid-area: pause; }
+.egg-snake__key--quit { grid-area: quit; }
+
+.terminal-body .egg-snake__status {
+  min-height: 1.3em;
+  margin: 0.55rem 0 0;
+  color: var(--acid);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.egg-snake.is-ended .egg-snake__board {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .egg-snake__pad {
+    grid-template-columns: repeat(2, auto);
+    grid-template-areas: "pause quit";
+    justify-content: start;
+  }
+
+  .egg-snake__key--up,
+  .egg-snake__key--down,
+  .egg-snake__key--left,
+  .egg-snake__key--right {
+    display: none;
+  }
+}
+
+/* =========================================================================
+   404 · FILE NOT FOUND
+   ========================================================================= */
+.egg-404 {
+  padding-block: clamp(2rem, 5vw, 4.5rem) clamp(4rem, 8vw, 7rem);
+}
+
+.egg-404__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-bottom: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.egg-404__meta p {
+  margin: 0;
+}
+
+.egg-404__led {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 0 0.25rem rgba(255, 103, 64, 0.2);
+  animation: eggBlink 1s steps(2, end) infinite;
+}
+
+.egg-404__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.4rem, 3vw, 2.75rem);
+}
+
+.egg-404__grid > * {
+  min-width: 0;
+}
+
+.egg-404__crash {
+  rotate: -0.6deg;
+  transform-origin: 30% 10%;
+}
+
+.egg-404__crash.is-shaking {
+  animation: eggShakeX 440ms ease;
+}
+
+.egg-404__crash .window-bar span,
+.egg-404__toy .window-bar span {
+  font-variant-numeric: tabular-nums;
+}
+
+.egg-404__body {
+  padding: clamp(1.25rem, 3vw, 2.4rem);
+}
+
+.egg-404__code {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 0.8;
+  text-transform: uppercase;
+}
+
+.egg-404__digits {
+  position: relative;
+  z-index: 0;
+  display: block;
+  width: fit-content;
+  font-size: clamp(5.5rem, 21vw, 14rem);
+  letter-spacing: -0.08em;
+  isolation: isolate;
+}
+
+.egg-404__digits::before,
+.egg-404__digits::after {
+  content: attr(data-text);
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+}
+
+.egg-404__digits::before {
+  color: var(--cyan);
+  clip-path: inset(0 0 62% 0);
+  translate: -0.035em 0;
+  animation: eggGlitchA 2.6s steps(1, end) infinite;
+}
+
+.egg-404__digits::after {
+  color: var(--magenta);
+  clip-path: inset(55% 0 0 0);
+  translate: 0.04em 0;
+  animation: eggGlitchB 3.1s steps(1, end) infinite;
+}
+
+.egg-404__headline {
+  display: block;
+  margin-top: 0.7rem;
+  font-size: clamp(1.8rem, 5vw, 3.4rem);
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+}
+
+.egg-404__copy {
+  max-width: 46ch;
+  margin: 1.4rem 0 0;
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+  line-height: 1.5;
+}
+
+.egg-404__copy code {
+  padding: 0.08em 0.35em;
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  font: 700 0.86em var(--font-mono);
+  word-break: break-all;
+}
+
+.egg-404__suggest {
+  margin: 0.8rem 0 0;
+  font: 700 0.76rem var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.egg-404__suggest a {
+  border-bottom: 2px solid var(--acid);
+}
+
+.egg-404__suggest a:hover {
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+}
+
+.egg-404__trace {
+  max-width: 100%;
+  margin: 1.5rem 0 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  color: var(--band-text, var(--paper));
+  background: var(--band-ink, var(--midnight));
+  font: 0.72rem/1.65 var(--font-mono);
+  white-space: pre;
+  scrollbar-width: thin;
+}
+
+.egg-404__trace-error {
+  color: var(--magenta);
+  font-weight: 700;
+}
+
+.egg-404__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.6rem;
+}
+
+.egg-404__actions .cta {
+  gap: 1.25rem;
+}
+
+.egg-404__retry-status {
+  min-height: 1.4em;
+  margin: 0.9rem 0 0;
+  color: var(--muted);
+  font: 700 0.7rem var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.egg-404__toy {
+  rotate: 0.8deg;
+}
+
+.egg-404__arena {
+  position: relative;
+  height: clamp(16rem, 40vh, 22rem);
+  overflow: hidden;
+  border-bottom: 1px solid var(--ink);
+  background:
+    radial-gradient(circle, var(--line-soft) 1px, rgba(0, 0, 0, 0) 1.5px) 0 0 / 1.1rem 1.1rem,
+    var(--paper);
+  touch-action: manipulation;
+}
+
+.egg-404__file {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 5.6rem;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.4rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: transparent;
+  font: 700 0.62rem var(--font-mono);
+  visibility: hidden;
+  transition: translate 190ms var(--ease-out), background 160ms ease, color 160ms ease;
+}
+
+.egg-404__arena.is-ready .egg-404__file {
+  visibility: visible;
+}
+
+.egg-404__file:hover,
+.egg-404__file:focus-visible {
+  border-color: var(--ink);
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+}
+
+.egg-404__file.is-tired {
+  animation: eggTired 500ms ease-in-out infinite alternate;
+}
+
+.egg-404__file small {
+  font-size: 0.62rem;
+  white-space: nowrap;
+}
+
+.egg-404__file-icon {
+  position: relative;
+  display: block;
+  width: 2.6rem;
+  height: 3.2rem;
+  border: 2px solid currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 20% 40% / 60% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 20% 58% / 60% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 20% 76% / 40% 2px no-repeat,
+    var(--paper-2);
+  clip-path: polygon(0 0, 68% 0, 100% 24%, 100% 100%, 0 100%);
+}
+
+.egg-404__file-icon::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 36%;
+  height: 26%;
+  background: currentColor;
+  clip-path: polygon(0 0, 0 100%, 100% 100%);
+}
+
+.egg-404__win {
+  --ink: var(--on-accent, #11110f);
+  --paper: var(--band-text, #f7f5ee);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.1rem;
+  padding: 1rem;
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  text-align: center;
+  animation: eggFadeIn 320ms ease both;
+}
+
+.egg-404__win[hidden] {
+  display: none;
+}
+
+.egg-404__win p {
+  margin: 0;
+  font: 900 clamp(2rem, 6vw, 3.4rem)/0.9 var(--font-display);
+  letter-spacing: -0.05em;
+}
+
+.egg-404__status {
+  min-height: 3.4em;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  font: 700 0.68rem/1.5 var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .egg-404__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .egg-404__crash,
+  .egg-404__toy {
+    rotate: 0deg;
+  }
+}
+
+@media (max-width: 620px) {
+  .egg-404__trace {
+    font-size: 0.64rem;
+  }
+
+  .egg-404__actions .cta {
+    flex: 1 1 auto;
+  }
+
+}
+
+/* ---------- Reduced motion: effects already swap to toasts in JS ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .egg-404__digits::before,
+  .egg-404__digits::after,
+  .egg-404__led,
+  .egg-404__file.is-tired {
+    animation: none;
+  }
+
+  .egg-404__file {
+    transition: none;
+  }
+
+  .chrome-orb.egg-orb-pressing span {
+    transform: none;
+    transition: filter 1100ms linear;
+  }
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes eggSpinIn {
+  from { transform: rotate(-200deg) scale(0.3); }
+  to { transform: rotate(0) scale(1); }
+}
+
+@keyframes eggBubbleIn {
+  from { opacity: 0; transform: translateY(-0.4rem) scale(0.6); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes eggBubbleOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-0.4rem) scale(0.9); }
+}
+
+@keyframes eggOrbGlow {
+  from { filter: drop-shadow(0.8rem 1rem 0 rgba(17, 17, 15, 0.17)); }
+  to { filter: drop-shadow(0 0 1.6rem var(--acid)) drop-shadow(0.8rem 1rem 0 rgba(17, 17, 15, 0.17)); }
+}
+
+@keyframes eggWobble {
+  0%, 100% { rotate: 0deg; translate: 0 0; }
+  15% { rotate: -1.6deg; translate: -0.6rem 0; }
+  30% { rotate: 1.3deg; translate: 0.5rem 0; }
+  45% { rotate: -0.9deg; translate: -0.3rem 0; }
+  60% { rotate: 0.6deg; translate: 0.2rem 0; }
+  75% { rotate: -0.3deg; translate: -0.1rem 0; }
+}
+
+@keyframes eggBeat {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.035; }
+}
+
+@keyframes eggShake {
+  0% { translate: 0 0; }
+  25% { translate: -0.35rem 0.15rem; }
+  50% { translate: 0.3rem -0.2rem; }
+  75% { translate: -0.2rem -0.1rem; }
+  100% { translate: 0.25rem 0.2rem; }
+}
+
+@keyframes eggShakeX {
+  0%, 100% { translate: 0 0; }
+  20% { translate: -0.7rem 0; }
+  40% { translate: 0.6rem 0; }
+  60% { translate: -0.4rem 0; }
+  80% { translate: 0.25rem 0; }
+}
+
+@keyframes eggDelete {
+  0% { opacity: 1; filter: invert(1); }
+  50% { opacity: 0.6; clip-path: inset(0 0 50% 0); }
+  100% { opacity: 0; clip-path: inset(0 0 100% 0); visibility: hidden; }
+}
+
+@keyframes eggWash {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes eggBeam {
+  from { rotate: var(--beam-from); }
+  to { rotate: var(--beam-to); }
+}
+
+@keyframes eggDrop {
+  from { translate: 0 -120%; }
+  to { translate: 0 0; }
+}
+
+@keyframes eggBallSpin {
+  from { background-position: 0 0, 0 0, 0 0, 0 0; filter: hue-rotate(0deg); }
+  to { background-position: 0 0, -200% 0, 0 0, 0 0; filter: hue-rotate(360deg); }
+}
+
+@keyframes eggCaret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes eggCorner {
+  0% { opacity: 0; scale: 0.4; }
+  20% { opacity: 1; scale: 1.1; }
+  70% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.05; }
+}
+
+@keyframes eggFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes eggFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes eggWipe {
+  from { clip-path: inset(0 0 0 0); }
+  to { clip-path: inset(0 0 100% 0); }
+}
+
+@keyframes eggMeter {
+  to { transform: scaleX(1); }
+}
+
+@keyframes eggLineIn {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes eggFlicker {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  75% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+@keyframes eggStamp {
+  from { opacity: 0; scale: 2.4; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes eggBannerIn {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes eggGlitchA {
+  0%, 84%, 100% { clip-path: inset(0 0 62% 0); translate: -0.035em 0; }
+  87% { clip-path: inset(18% 0 50% 0); translate: -0.09em 0.02em; }
+  91% { clip-path: inset(60% 0 8% 0); translate: 0.06em 0; }
+  95% { clip-path: inset(30% 0 40% 0); translate: -0.05em -0.02em; }
+}
+
+@keyframes eggGlitchB {
+  0%, 80%, 100% { clip-path: inset(55% 0 0 0); translate: 0.04em 0; }
+  83% { clip-path: inset(10% 0 70% 0); translate: 0.1em -0.02em; }
+  88% { clip-path: inset(70% 0 5% 0); translate: -0.06em 0.01em; }
+  93% { clip-path: inset(40% 0 30% 0); translate: 0.07em 0; }
+}
+
+@keyframes eggBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.25; }
+}
+
+@keyframes eggTired {
+  from { rotate: -6deg; }
+  to { rotate: 6deg; }
+}

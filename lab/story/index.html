@@ -1,0 +1,314 @@
+---
+layout: default
+title: "Home concept · Scroll Story | Jake Berko"
+section: home
+noindex: true
+---
+
+<div class="page-shell home-page home-story">
+  {% include home-hero.html %}
+
+  <!-- Scroll Story concept: content below the hero is built from _data/profile.yml.
+       assets/js/home-story.js turns scroll position into CSS custom properties; without it
+       (or with reduced motion) every chapter renders as a calm static section. -->
+  {%- assign story_profile = site.data.profile -%}
+  {%- assign story_bio_count = story_profile.bio | size -%}
+  {%- assign story_timeline = story_profile.experience | reverse -%}
+  {%- assign story_roles = story_timeline | size -%}
+  {%- assign story_roles2 = story_roles | prepend: "0" | slice: -2, 2 -%}
+  {%- assign story_first = story_timeline | first -%}
+  {%- assign story_last = story_timeline | last -%}
+  {%- assign story_start_year = story_first.year | append: "" -%}
+  {%- assign story_langs = story_profile.languages | size -%}
+  {%- assign story_courses = story_profile.coursework | size -%}
+  {%- assign story_courses2 = story_courses | prepend: "0" | slice: -2, 2 -%}
+  {%- assign story_links = story_profile.links | size -%}
+  {%- assign story_full_circle = "" -%}
+  {%- if story_first.org contains "Google" and story_last.org contains "Google" and story_roles > 1 -%}
+    {%- capture story_full_circle -%}ACHIEVEMENT · FULL CIRCLE: GOOGLE {{ story_first.year }} → GOOGLE {{ story_last.year }}{%- endcapture -%}
+  {%- endif %}
+
+  <div class="story" data-story{% if story_full_circle != "" %} data-full-circle="{{ story_full_circle | escape }}"{% endif %}>
+    <div class="story-intro" aria-hidden="true">
+      <div class="story-marquee" data-story-marquee data-speed="48" data-dir="1">
+        <div class="story-marquee__track">
+          {%- for copy in (1..2) -%}
+          <span class="story-marquee__group">
+            {%- for rep in (1..3) -%}
+            <b>&#9654;&#xFE0E; NOW PLAYING</b><span>JAKE BERKO: THE SCROLL STORY</span><i>&#10035;&#xFE0E;</i><span>01 BIO</span><i>&#10035;&#xFE0E;</i><span>02 EXPERIENCE</span><i>&#10035;&#xFE0E;</i><span>03 STACK</span><i>&#10035;&#xFE0E;</i><span>04 NEXT</span><i>&#10035;&#xFE0E;</i><span>SCROLL TO PLAY &#8595;&#xFE0E;</span><i>&#10035;&#xFE0E;</i>
+            {%- endfor -%}
+          </span>
+          {%- endfor -%}
+        </div>
+      </div>
+    </div>
+
+    <div class="story-vhs" aria-hidden="true">
+      <span class="story-vhs__label">&#9664;&#xFE0E;&#9664;&#xFE0E; REWIND</span>
+      <small data-story-vhs>SP 0:00:00</small>
+    </div>
+
+    <div class="story-rail-dock">
+      <nav class="story-rail" aria-label="Story chapters" data-story-rail data-theme-scope="band">
+        <span class="story-rail__meter" aria-hidden="true"><i></i></span>
+        <ol>
+          <li><a href="#story-bio" data-story-jump="0" data-cursor="JUMP"><span class="story-rail__dot" aria-hidden="true"></span><span class="story-rail__label">01 · Bio</span></a></li>
+          <li><a href="#story-work" data-story-jump="1" data-cursor="JUMP"><span class="story-rail__dot" aria-hidden="true"></span><span class="story-rail__label">02 · Experience</span></a></li>
+          <li><a href="#story-stack" data-story-jump="2" data-cursor="JUMP"><span class="story-rail__dot" aria-hidden="true"></span><span class="story-rail__label">03 · Stack</span></a></li>
+          <li><a href="#story-next" data-story-jump="3" data-cursor="JUMP"><span class="story-rail__dot" aria-hidden="true"></span><span class="story-rail__label">04 · Next</span></a></li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- 01 · BIO: kinetic type that assembles word by word -->
+    <section class="story-chapter story-bio" id="story-bio" data-story-chapter="bio" data-cursor-tone="dark" aria-labelledby="story-bio-title">
+      <div class="story-stage">
+        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>01_BIO.TXT</span><span>{{ story_bio_count }} BLOCKS</span></div>
+        <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">HELLO</span></div>
+        <div class="story-layer story-layer--parallax" aria-hidden="true">
+          <i class="story-glyph" style="--gx: 5; --gy: 24; --depth: 1.2; --spin: 0.5">&#10035;&#xFE0E;</i>
+          <i class="story-glyph" style="--gx: 90; --gy: 18; --depth: -0.8; --spin: -0.35">&#9670;</i>
+          <i class="story-glyph" style="--gx: 93; --gy: 72; --depth: 1.6; --spin: 0.2">//</i>
+          <i class="story-glyph" style="--gx: 3; --gy: 80; --depth: -1.1; --spin: 0.4">&#9679;</i>
+          <i class="story-glyph" style="--gx: 60; --gy: 91; --depth: 0.7; --spin: -0.6">&#9650;</i>
+        </div>
+        <div class="story-stage__inner">
+          <header class="story-head">
+            <p class="story-kicker">[ 01 / BIO.TXT ]</p>
+            <h2 class="story-title" id="story-bio-title">The short version<span>.</span></h2>
+          </header>
+
+          <div class="story-bio__frames" style="--frames: {{ story_bio_count }}">
+            {%- for block in story_profile.bio %}
+            {%- assign story_words = block.text | split: " " -%}
+            {%- assign story_wn = story_words | size %}
+            <div class="story-bio__frame" style="--f: {{ forloop.index0 }}">
+              <p class="story-bio__label">{{ block.label }}</p>
+              <p class="story-sr">{{ block.text }}</p>
+              <p class="story-words" aria-hidden="true">
+                {%- for word in story_words -%}
+                  {%- assign story_i = forloop.index0 -%}
+                  {%- assign story_s = story_i | times: 0.6 | divided_by: story_wn | plus: 0.02 | round: 4 -%}
+                  {%- assign story_dx = story_i | times: 37 | modulo: 11 | minus: 5 -%}
+                  {%- assign story_dy = story_i | times: 53 | modulo: 9 | minus: 4 -%}
+                  {%- assign story_dr = story_i | times: 29 | modulo: 13 | minus: 6 -%}
+                  {%- assign story_clean = word | remove: "," | remove: "." | remove: ";" | remove: ":" -%}
+                  {%- assign story_key = "" -%}
+                  {%- case story_clean -%}
+                    {%- when "Cornell", "University" -%}{%- assign story_key = "cornell" -%}
+                    {%- when "Kappa", "Theta", "Pi" -%}{%- assign story_key = "ktp" -%}
+                    {%- when "Throttle", "AI" -%}{%- assign story_key = "throttle" -%}
+                    {%- when "Google" -%}{%- assign story_key = "google" -%}
+                  {%- endcase -%}
+                  {%- assign story_num = story_clean | plus: 0 -%}
+                  <span class="story-word{% if story_key != "" %} is-key{% endif %}{% if story_num > 1900 and story_num < 2100 %} is-num{% endif %}"{% if story_key != "" %} data-key="{{ story_key }}"{% endif %} style="--s: {{ story_s }}; --dx: {{ story_dx }}; --dy: {{ story_dy }}; --dr: {{ story_dr }}"><span>{{ word }}</span></span>
+                  {%- unless forloop.last %} {% endunless -%}
+                {%- endfor -%}
+              </p>
+            </div>
+            {%- endfor %}
+          </div>
+
+          <div class="story-bio__meter" aria-hidden="true">
+            <p class="story-bio__cue">&#9660;&#xFE0E; Keep scrolling to assemble</p>
+            <p class="story-bio__count">Words <b data-story-words>000</b> / <span data-story-words-total>000</span></p>
+            <span class="story-bio__progress"><i></i></span>
+            <ul class="story-bio__keys">
+              <li data-story-key="cornell">Cornell</li>
+              <li data-story-key="throttle">Throttle AI</li>
+              <li data-story-key="ktp">Kappa Theta Pi</li>
+              <li data-story-key="google">Google</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 · EXPERIENCE: a pinned timeline driven by vertical scroll -->
+    <section class="story-chapter story-work" id="story-work" data-story-chapter="work" data-story-velocity aria-labelledby="story-work-title" style="--n: {{ story_roles }}">
+      <div class="story-stage">
+        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>02_EXPERIENCE.LOG</span><span>{{ story_roles }} ENTRIES</span></div>
+        <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">WORK</span></div>
+        <div class="story-stage__inner">
+          <header class="story-head story-work__head">
+            <div class="story-work__heading">
+              <p class="story-kicker">[ 02 / EXPERIENCE.LOG ]</p>
+              <h2 class="story-title" id="story-work-title">The timeline<span>.</span></h2>
+            </div>
+            <div class="story-work__readout" aria-hidden="true">
+              <div class="story-odo">
+                {%- for d in (0..3) -%}
+                {%- assign story_digit = story_start_year | slice: d -%}
+                <span class="story-odo__digit" style="--digit: {{ story_digit | default: 0 }}"><span class="story-odo__strip"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span></span></span>
+                {%- endfor -%}
+              </div>
+              <p class="story-work__status"><span data-story-count>01 / {{ story_roles2 }}</span><span class="story-work__prompt">&gt; <b data-story-status>{{ story_first.org }}</b><i class="story-caret"></i></span></p>
+            </div>
+          </header>
+
+          <div class="story-work__viewport" data-story-viewport>
+            <div class="story-track" data-story-track>
+              <span class="story-track__line" data-story-line aria-hidden="true"><i></i></span>
+              <span class="story-track__pen" aria-hidden="true"></span>
+              <ol class="story-track__list">
+                {%- for item in story_timeline %}
+                {%- assign story_side = forloop.index0 | modulo: 2 -%}
+                {%- assign story_idx = forloop.index | prepend: "0" | slice: -2, 2 %}
+                <li class="story-card{% if forloop.last %} story-card--finale{% endif %}" style="--k: {{ forloop.index0 }}; --side: {% if story_side == 0 %}-1{% else %}1{% endif %}" data-story-card data-year="{{ item.year }}" data-org="{{ item.org | escape }}">
+                  <span class="story-card__stem" aria-hidden="true"></span>
+                  <span class="story-card__node" aria-hidden="true"></span>
+                  <div class="story-card__body">
+                    <div class="story-card__bar" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>LOG_{{ story_idx }}.TXT</span><span>{{ story_idx }}/{{ story_roles2 }}</span></div>
+                    <div class="story-card__content">
+                      <p class="story-card__year"><time>{{ item.year }}</time></p>
+                      <h3>{{ item.org }}</h3>
+                      <p class="story-card__role">{{ item.role }}</p>
+                    </div>
+                    {%- if forloop.last %}
+                    <span class="story-card__badge" aria-hidden="true">Now</span>
+                    {%- if story_full_circle != "" %}
+                    <span class="story-card__stamp" aria-hidden="true">Full circle</span>
+                    {%- endif %}
+                    {%- endif %}
+                  </div>
+                  {%- if forloop.last %}
+                  <span class="story-burst" aria-hidden="true">{% for ray in (1..16) %}<i style="--a: {{ ray | times: 22.5 }}deg; --d: {{ ray | modulo: 3 | plus: 1 }}"></i>{% endfor %}</span>
+                  {%- endif %}
+                </li>
+                {%- endfor %}
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · STACK: languages equaliser, then a shuffling course catalog -->
+    <section class="story-chapter story-stack" id="story-stack" data-story-chapter="stack" data-story-velocity data-cursor-tone="dark" aria-labelledby="story-stack-title">
+      <div class="story-stage">
+        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>03_STACK.SYS</span><span>{{ story_langs }} LANG · {{ story_courses }} REC</span></div>
+        <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">STACK</span></div>
+        <div class="story-layer story-layer--parallax" aria-hidden="true">
+          <i class="story-glyph" style="--gx: 4; --gy: 20; --depth: -1.3; --spin: 0.3">{ }</i>
+          <i class="story-glyph" style="--gx: 91; --gy: 26; --depth: 1.1; --spin: -0.4">&lt;/&gt;</i>
+          <i class="story-glyph" style="--gx: 88; --gy: 76; --depth: -0.7; --spin: 0.25">&#955;</i>
+          <i class="story-glyph" style="--gx: 7; --gy: 70; --depth: 1.5; --spin: -0.2">01</i>
+        </div>
+        <div class="story-stage__inner">
+          <header class="story-head">
+            <p class="story-kicker">[ 03 / STACK.SYS ]</p>
+            <h2 class="story-title" id="story-stack-title">Languages <span>&amp;</span> coursework.</h2>
+          </header>
+
+          <div class="story-stack__panels">
+            <div class="story-panel story-eq window" role="group" aria-label="Programming languages and proficiency">
+              <div class="window-bar">
+                <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+                <p>LANGUAGES.SYS</p>
+                <span aria-hidden="true">{{ story_langs }} CH</span>
+              </div>
+              <ul class="story-eq__channels">
+                {%- for lang in story_profile.languages %}
+                {%- assign story_i = forloop.index0 -%}
+                {%- assign story_amp = story_i | times: 3 | modulo: 5 | plus: 3 -%}
+                {%- assign story_dx = story_i | times: 37 | modulo: 11 | minus: 5 -%}
+                {%- assign story_dy = story_i | times: 53 | modulo: 9 | minus: 4 -%}
+                {%- assign story_dr = story_i | times: 29 | modulo: 13 | minus: 6 %}
+                <li class="story-eq__channel" style="--k: {{ story_i }}; --lvl: {{ lang.level }}; --amp: {{ story_amp }}; --dx: {{ story_dx }}; --dy: {{ story_dy }}; --dr: {{ story_dr }}">
+                  <span class="story-eq__meter" aria-hidden="true"><span class="story-eq__fill"></span><span class="story-eq__peak"></span></span>
+                  <span class="story-eq__name">{{ lang.name }}</span>
+                  <span class="story-eq__level"><span class="story-sr">: </span>{{ lang.label }}</span>
+                </li>
+                {%- endfor %}
+              </ul>
+              <p class="story-eq__legend" aria-hidden="true"><span>&#9608;&#9608;&#9608;&#9608; Proficient</span><span>&#9608;&#9608;&#9608; Intermediate</span><span>&#9608;&#9608; Beginner</span></p>
+            </div>
+
+            <div class="story-panel story-catalog window" role="group" aria-label="Coursework">
+              <div class="window-bar">
+                <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+                <p>COURSEWORK.DB</p>
+                <span aria-hidden="true">{{ story_courses }} REC</span>
+              </div>
+              <div class="story-catalog__body">
+                <p class="story-catalog__count" aria-hidden="true"><b data-story-rec data-static="{{ story_courses2 }}">{{ story_courses2 }}</b><span class="story-catalog__static">records on file</span><span class="story-catalog__live">/ {{ story_courses2 }} · now reading</span></p>
+                <ol class="story-deck" style="--n: {{ story_courses }}">
+                  {%- for course in story_profile.coursework %}
+                  {%- assign story_i = forloop.index0 -%}
+                  {%- assign story_rr = story_i | times: 7 | modulo: 5 | minus: 2 -%}
+                  {%- assign story_idx = forloop.index | prepend: "0" | slice: -2, 2 %}
+                  <li class="story-deck__card" style="--k: {{ story_i }}; --rr: {{ story_rr }}; z-index: {{ story_courses | minus: story_i }}">
+                    <span class="story-deck__code" aria-hidden="true">REC {{ story_idx }} / {{ story_courses2 }}</span>
+                    <strong>{{ course }}</strong>
+                    <span class="story-deck__barcode" aria-hidden="true"></span>
+                    <span class="story-deck__stamp" aria-hidden="true">Logged</span>
+                  </li>
+                  {%- endfor %}
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="story-marquee-wrap" aria-hidden="true">
+            <div class="story-marquee story-marquee--courses" data-story-marquee data-speed="42" data-dir="-1">
+              <div class="story-marquee__track">
+                {%- for copy in (1..2) -%}
+                <span class="story-marquee__group">{% for course in story_profile.coursework %}<span>{{ course }}</span><i>&#10035;&#xFE0E;</i>{% endfor %}</span>
+                {%- endfor -%}
+              </div>
+            </div>
+            <div class="story-marquee story-marquee--courses story-marquee--alt" data-story-marquee data-speed="30" data-dir="1">
+              <div class="story-marquee__track">
+                {%- assign story_courses_rev = story_profile.coursework | reverse -%}
+                {%- for copy in (1..2) -%}
+                <span class="story-marquee__group">{% for course in story_courses_rev %}<span>{{ course }}</span><i>/</i>{% endfor %}</span>
+                {%- endfor -%}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · NEXT: big magnetic exits -->
+    <section class="story-chapter story-outro story-chapter--end" id="story-next" data-story-chapter="next" aria-labelledby="story-next-title">
+      <div class="story-stage">
+        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>04_NEXT.EXE</span><span>{{ story_links }} EXITS</span></div>
+        <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">NEXT</span></div>
+        <div class="story-layer story-layer--parallax" aria-hidden="true">
+          <i class="story-glyph" style="--gx: 86; --gy: 14; --depth: 0.9; --spin: 0.3">&#8599;&#xFE0E;</i>
+          <i class="story-glyph" style="--gx: 3; --gy: 86; --depth: -1; --spin: -0.25">&#10035;&#xFE0E;</i>
+        </div>
+        <div class="story-stage__inner">
+          <header class="story-head">
+            <p class="story-kicker">[ 04 / NEXT.EXE ]</p>
+            <h2 class="story-title" id="story-next-title">Where to next<span>?</span></h2>
+          </header>
+
+          <ul class="story-doors">
+            {%- for link in story_profile.links %}
+            {%- assign story_side = forloop.index0 | modulo: 2 -%}
+            {%- assign story_idx = forloop.index | prepend: "0" | slice: -2, 2 %}
+            <li style="--k: {{ forloop.index0 }}; --side: {% if story_side == 0 %}-1{% else %}1{% endif %}">
+              <a class="story-door" href="{{ link.href | relative_url }}" data-story-door data-cursor="GO" data-transition-link>
+                <span class="story-door__fill" aria-hidden="true"></span>
+                <span class="story-door__index" aria-hidden="true">{{ story_idx }}</span>
+                <span class="story-door__label">{{ link.label }}</span>
+                <span class="story-door__path" aria-hidden="true">{{ link.href }}</span>
+                <span class="story-door__arrow" aria-hidden="true">&#8599;&#xFE0E;</span>
+              </a>
+            </li>
+            {%- endfor %}
+          </ul>
+
+          <div class="story-outro__foot">
+            <p aria-hidden="true"><span class="story-outro__square"></span> End of tape</p>
+            <a class="story-replay" href="#story-bio" data-story-replay data-cursor="REWIND"><span aria-hidden="true">&#9664;&#xFE0E;&#9664;&#xFE0E;</span> Rewind the story</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=1"></script>

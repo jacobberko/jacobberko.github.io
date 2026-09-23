@@ -18,6 +18,27 @@
     }, 2600);
   }
 
+  // Public hooks for the theme, easter-egg, sound and home modules loaded after this file.
+  // Modules add terminal commands with JBOS.registerCommand(name, { run(args, raw), help, hidden, aliases }).
+  const JBOS = window.JBOS = window.JBOS || {};
+  JBOS.commands = JBOS.commands || {};
+  JBOS.aliases = JBOS.aliases || {};
+  JBOS.events = JBOS.events || new EventTarget();
+  JBOS.reduceMotion = reduceMotion;
+  JBOS.finePointer = finePointer;
+  JBOS.toast = showToast;
+  JBOS.sound = JBOS.sound || { enabled: false, play: function () {} };
+  JBOS.registerCommand = function (name, spec) {
+    JBOS.commands[name] = spec;
+    (spec.aliases || []).forEach(function (alias) { JBOS.aliases[alias] = name; });
+  };
+  JBOS.on = function (type, handler) {
+    JBOS.events.addEventListener(type, function (event) { handler(event.detail); });
+  };
+  JBOS.emit = function (type, detail) {
+    JBOS.events.dispatchEvent(new CustomEvent(type, { detail: detail }));
+  };
+
   // Only show the boot sequence once per browsing session.
   try {
     if (window.sessionStorage.getItem("jb-booted")) {
@@ -511,12 +532,13 @@
   }
 
   function terminalLine(text, accent) {
-    if (!terminalOutput) return;
+    if (!terminalOutput) return null;
     const line = doc.createElement("p");
     line.textContent = text;
-    if (accent) line.className = "terminal-output-accent";
+    if (accent) line.className = typeof accent === "string" ? accent : "terminal-output-accent";
     terminalOutput.appendChild(line);
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    return line;
   }
 
   function openTerminal() {
@@ -530,6 +552,16 @@
   function closeTerminal() {
     if (terminal && terminal.open) terminal.close();
   }
+
+  JBOS.terminal = {
+    element: terminal,
+    output: terminalOutput,
+    input: terminalInput,
+    print: terminalLine,
+    clear: function () { if (terminalOutput) terminalOutput.innerHTML = ""; },
+    open: openTerminal,
+    close: closeTerminal
+  };
 
   doc.querySelectorAll("[data-terminal-open]").forEach(function (trigger) {
     trigger.addEventListener("click", openTerminal);
@@ -560,38 +592,42 @@
   if (terminalForm) {
     terminalForm.addEventListener("submit", function (event) {
       event.preventDefault();
-      const command = terminalInput.value.trim().toLowerCase();
-      terminalLine("visitor@jb:~$ " + (command || ""));
+      const raw = terminalInput.value.trim();
+      terminalLine("visitor@jb:~$ " + raw);
       terminalInput.value = "";
+      if (!raw) return;
 
-      if (!command) return;
+      const parts = raw.split(/\s+/);
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
+      const registered = JBOS.commands[command] || JBOS.commands[JBOS.aliases[command]];
+      JBOS.emit("terminal-command", { command: command, args: args, raw: raw });
+
       if (routes[command]) {
         terminalLine("Opening " + command + "…", true);
         window.setTimeout(function () { window.location.href = routes[command]; }, 280);
         return;
       }
       if (command === "help") {
-        terminalLine("COMMANDS: home · code · creative · startup · photo · contact · about · theme · clear", true);
+        const extra = Object.keys(JBOS.commands).filter(function (name) { return !JBOS.commands[name].hidden; });
+        terminalLine("COMMANDS: " + ["home", "code", "creative", "startup", "photo", "contact", "about"].concat(extra, ["clear"]).join(" · "), true);
       } else if (command === "about") {
         terminalLine("Jacob Berko — Cornell CS student, software engineer, founder, and creative builder.");
       } else if (command === "contact") {
         terminalLine("EMAIL: jmb787@cornell.edu · LINKEDIN: /in/jberko · GITHUB: @jacobberko", true);
-      } else if (command === "theme") {
-        body.classList.toggle("crt-mode");
-        try { window.localStorage.setItem("jb-crt", body.classList.contains("crt-mode") ? "on" : "off"); } catch (error) {}
-        terminalLine("CRT MODE " + (body.classList.contains("crt-mode") ? "ENABLED" : "DISABLED"), true);
       } else if (command === "clear") {
         terminalOutput.innerHTML = "";
+      } else if (registered) {
+        try {
+          registered.run(args, raw);
+        } catch (error) {
+          terminalLine("Segmentation fault (core dumped): " + command);
+        }
       } else {
         terminalLine("Unknown command: " + command + ". Type help.");
       }
     });
   }
-
-  // Restore the optional CRT mode.
-  try {
-    if (window.localStorage.getItem("jb-crt") === "on") body.classList.add("crt-mode");
-  } catch (error) {}
 
   // Classic Konami sequence unlocks a brief arcade-state badge.
   const konami = ["ArrowUp", "ArrowUp", "ArrowDown", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowLeft", "ArrowRight", "b", "a"];

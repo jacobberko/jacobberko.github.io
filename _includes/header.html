@@ -16,6 +16,61 @@
 
   <div class="header-actions">
     <span class="availability"><i aria-hidden="true"></i> Open to connect</span>
+
+    <div class="theme-switcher" data-theme-switcher>
+      <button class="theme-switcher__button" id="theme-switcher-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" data-theme-button data-cursor="THEME">
+        <span class="theme-switcher__swatch" aria-hidden="true"><i></i></span>
+        <span class="theme-switcher__label"><span class="theme-sr">Theme: </span><span data-theme-current>Default</span></span>
+        <span class="theme-switcher__caret" aria-hidden="true"></span>
+      </button>
+
+      <div class="theme-popover" data-theme-popover hidden>
+        <div class="theme-popover__bar" aria-hidden="true">
+          <span class="theme-popover__controls"><i></i><i></i><i></i></span>
+          <span>DISPLAY.CPL</span>
+          <span data-theme-count>3 MODES</span>
+        </div>
+        <ul class="theme-menu" id="theme-menu" role="menu" aria-labelledby="theme-switcher-button">
+          <li role="none">
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-theme-option="default">
+              <span class="theme-option__preview theme-option__preview--default" aria-hidden="true"><i></i><b></b><em></em></span>
+              <span class="theme-option__copy">
+                <span class="theme-option__name">Default</span>
+                <small>Paper, ink &amp; acid</small>
+              </span>
+              <span class="theme-option__key" aria-hidden="true">D</span>
+            </button>
+          </li>
+          <li role="none">
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-theme-option="crt">
+              <span class="theme-option__preview theme-option__preview--crt" aria-hidden="true"><i></i><b></b><em></em></span>
+              <span class="theme-option__copy">
+                <span class="theme-option__name">Retro CRT</span>
+                <small>Amber phosphor tube</small>
+              </span>
+              <span class="theme-option__key" aria-hidden="true">R</span>
+            </button>
+          </li>
+          <li role="none">
+            <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-theme-option="synthwave">
+              <span class="theme-option__preview theme-option__preview--synthwave" aria-hidden="true"><i></i><b></b><em></em></span>
+              <span class="theme-option__copy">
+                <span class="theme-option__name">Synthwave</span>
+                <small>Neon grid at midnight</small>
+              </span>
+              <span class="theme-option__key" aria-hidden="true">S</span>
+            </button>
+          </li>
+        </ul>
+        <p class="theme-popover__tip" aria-hidden="true">TIP: <kbd>`</kbd> then <code>theme next</code></p>
+      </div>
+    </div>
+
+    <button class="sound-toggle" type="button" data-sound-toggle aria-pressed="false" aria-label="Sound effects" data-label-on="Sound on" data-label-off="Sound off" data-cursor="SOUND">
+      <span class="sound-toggle__icon" aria-hidden="true"></span>
+      <span class="sound-toggle__label" data-sound-label>Sound off</span>
+    </button>
+
     <a class="header-contact" href="mailto:jmb787@cornell.edu" data-cursor="EMAIL">Contact <span aria-hidden="true">↗</span></a>
   </div>
 </div>

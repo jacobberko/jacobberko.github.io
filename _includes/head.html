@@ -5,6 +5,7 @@
 <meta name="color-scheme" content="light" />
 <meta name="format-detection" content="telephone=no" />
 {% seo %}
+{% if page.noindex %}<meta name="robots" content="noindex, nofollow" />{% endif %}
 <meta property="og:image" content="{{ '/images/og-card.png' | absolute_url }}" />
 <meta property="og:image:width" content="1734" />
 <meta property="og:image:height" content="907" />
@@ -18,9 +19,26 @@
 {% endif %}
 <link rel="icon" type="image/png" href="/images/favicon.png" />
 <link rel="apple-touch-icon" href="/apple.png" />
-<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css?v=20260923d" />
-<script>document.documentElement.classList.add('js');</script>
-<script defer src="{{ site.baseurl }}/assets/js/site.js?v=20260923d"></script>
+<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css?v=20260924a" />
+<script>
+  document.documentElement.classList.add('js');
+  // Apply the saved theme before first paint (themes.js owns everything after this).
+  try {
+    var jbTheme = localStorage.getItem('jb-theme');
+    if (!jbTheme && localStorage.getItem('jb-crt') === 'on') jbTheme = 'crt';
+    if (/^(crt|synthwave)$/.test(jbTheme || '')) {
+      document.documentElement.setAttribute('data-theme', jbTheme);
+      // Match the browser chrome before first paint; themes.js keeps these in sync afterwards.
+      var jbMeta = { crt: '#0d0904', synthwave: '#0d0524' };
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', jbMeta[jbTheme]);
+      document.querySelector('meta[name="color-scheme"]').setAttribute('content', 'dark');
+    }
+  } catch (error) {}
+</script>
+<script defer src="{{ site.baseurl }}/assets/js/site.js?v=20260924a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/sound.js?v=20260924a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/themes.js?v=20260924a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/eggs.js?v=20260924a"></script>
 {% if site.analytics.plausible.enabled %}
 <script defer data-domain="{{ site.analytics.plausible.site_fqdn }}"
   src="{{ site.analytics.plausible.script_source }}"></script>

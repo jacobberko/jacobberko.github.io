@@ -1,0 +1,60 @@
+# Shared home-page content. Both home concepts (lab/os, lab/story) read from here.
+bio:
+  - label: "01 / TECH + BUSINESS"
+    text: "I’m a Masters student at Cornell University studying Computer Science with a minor in Business. I’ve always loved the intersection of technology and business, a passion that drives my work as President of Kappa Theta Pi, founder of Throttle AI, and my 2026 Software Engineering Internship at Google."
+  - label: "02 / BEYOND THE CLASSROOM"
+    text: "Beyond the classroom, I love to build and create. Whether I’m developing software, running a startup, or working on music production, I’m always looking for new ways to bring ideas to life."
+
+experience:
+  - year: 2026
+    org: "Google"
+    role: "Software Engineering Intern"
+  - year: 2025
+    org: "Protiviti"
+    role: "Technology Consulting Intern"
+  - year: 2024
+    org: "Kappa Theta Pi"
+    role: "Founder / President · Preprofessional Computer Science Fraternity"
+  - year: 2024
+    org: "Jewish Federation of Greater Philadelphia"
+    role: "Technology Intern"
+  - year: 2024
+    org: "Cornell Technology Consulting"
+    role: "Project Manager"
+  - year: 2023
+    org: "International Business Consulting"
+    role: "Director of Marketing"
+  - year: 2023
+    org: "Cornell ChemE Car"
+    role: "Business Lead"
+  - year: 2022
+    org: "Google Change the Game Award"
+    role: "Winner"
+
+# level: 4 = Proficient, 3 = Intermediate, 2 = Beginner
+languages:
+  - { name: "Python", level: 4, label: "Proficient" }
+  - { name: "Java", level: 4, label: "Proficient" }
+  - { name: "SQL", level: 4, label: "Proficient" }
+  - { name: "Swift", level: 4, label: "Proficient" }
+  - { name: "OCaml", level: 3, label: "Intermediate" }
+  - { name: "C", level: 3, label: "Intermediate" }
+  - { name: "JavaScript", level: 3, label: "Intermediate" }
+  - { name: "HTML", level: 2, label: "Beginner" }
+
+coursework:
+  - "Object Oriented Programming & Data Structures"
+  - "Linear Algebra"
+  - "Discrete Structures"
+  - "Introduction to Algorithms"
+  - "Probability Models & Inference"
+  - "Machine Learning"
+  - "Foundations of Artificial Intelligence"
+  - "Intro to Software Engineering"
+  - "Deep Learning"
+  - "Computer System Organization"
+
+links:
+  - { label: "Explore code", href: "/code/" }
+  - { label: "View startup", href: "/business/" }
+  - { label: "Hear the work", href: "/creative/" }

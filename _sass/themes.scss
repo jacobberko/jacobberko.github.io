@@ -1,0 +1,1839 @@
+/* =========================================================================
+   JB//OS display modes: Default · Retro CRT · Synthwave
+   -------------------------------------------------------------------------
+   html[data-theme="crt" | "synthwave"] is set before first paint by the
+   inline script in _includes/head.html and afterwards by assets/js/themes.js.
+   The default theme has no attribute and is left untouched by this file,
+   apart from the header switcher and sound toggle it adds.
+
+   How the dark modes work
+   The site is built from two orientations: "paper" surfaces with ink text,
+   and "bands" (footer, dossier, terminal…) with paper text on ink. A dark
+   theme swaps the root palette (ink becomes the light text colour, paper the
+   dark surface), then re-scopes the custom properties locally so every band
+   keeps light-on-dark text and every acid chip keeps dark text. Contrast
+   pairs therefore travel together and nothing needs a one-off colour.
+   ========================================================================= */
+
+$theme-dark: 'html[data-theme="crt"], html[data-theme="synthwave"]';
+$theme-crt: 'html[data-theme="crt"]';
+$theme-synth: 'html[data-theme="synthwave"]';
+
+$icon-sound-on: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 9h4l5-4.5v15L7 15H3z'/%3E%3Cpath d='M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+$icon-sound-off: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 9h4l5-4.5v15L7 15H3z'/%3E%3Cpath d='M16 9.5l5 5M21 9.5l-5 5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+
+$chrome-type: linear-gradient(180deg, #ffffff 0%, #eaf4ff 20%, #9fdcff 43%, #3b1a7a 49%, #1d0540 51%, #ff64d2 56%, #ffb3ea 78%, #ffffff 100%);
+// Keyboard focus in the dark modes: gap | ring | gap, the same three stripes as the
+// default ring (system.scss) with the roles swapped. The contrasting colour is carried by
+// the outline and by the middle shadow, so neither a glow that replaces box-shadow nor
+// an `outline: 0` reset can erase it.
+$focus-ring: 0 0 0 0.14rem var(--focus-gap), 0 0 0 0.32rem var(--focus-ring), 0 0 0 0.4rem var(--focus-gap);
+
+$sun-mask: linear-gradient(to bottom, #000 0 44%, transparent 44% 46.5%, #000 46.5% 51%, transparent 51% 54%, #000 54% 57.5%, transparent 57.5% 61.5%, #000 61.5% 64%, transparent 64%);
+
+/* ---------- Orientation scopes shared by both dark modes ---------- */
+@mixin scope-band {
+  --ink: var(--band-ink);
+  --ink-rgb: var(--band-ink-rgb);
+  --paper: var(--band-text);
+  --paper-rgb: var(--band-text-rgb);
+  --muted: var(--band-muted);
+  --focus-ring: var(--band-text);
+  --focus-gap: var(--band-ink);
+}
+
+@mixin scope-surface {
+  --ink: var(--base-ink);
+  --ink-rgb: var(--base-ink-rgb);
+  --paper: var(--base-paper);
+  --paper-rgb: var(--base-paper-rgb);
+  --muted: var(--base-muted);
+  --focus-ring: var(--base-ink);
+  --focus-gap: var(--base-paper);
+}
+
+// Accent chips deliberately leave --focus-ring/--focus-gap alone: a focused chip (a
+// hovered CTA, the skip link) draws its ring on its parent's ground, so it keeps the
+// parent's pair; anything focusable inside an acid chip still reads through the dark gap.
+
+@mixin scope-accent {
+  --ink: var(--on-accent);
+  --ink-rgb: var(--on-accent-rgb);
+  --muted: rgba(var(--on-accent-rgb), 0.72);
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   1. Header controls: theme switcher + sound toggle (every theme)
+   ========================================================================= */
+.header-actions {
+  position: relative;
+}
+
+.theme-sr {
+  @include visually-hidden;
+}
+
+html:not(.js) .theme-switcher,
+html:not(.js) .sound-toggle {
+  display: none;
+}
+
+.theme-switcher {
+  display: flex;
+  flex: none;
+}
+
+.theme-switcher__button {
+  display: inline-flex;
+  min-height: 2.6rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.8rem 0.3rem 0.3rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  background: transparent;
+  font: 750 0.62rem/1 var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.theme-switcher__button:hover {
+  color: var(--on-accent, var(--ink));
+  background: var(--acid);
+}
+
+.theme-switcher__button[aria-expanded="true"],
+.theme-switcher__button[aria-expanded="true"]:hover {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.theme-switcher__swatch {
+  position: relative;
+  display: block;
+  width: 1.95rem;
+  height: 1.95rem;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: conic-gradient(from 225deg, #f7f5ee 0 50%, #11110f 0 75%, #d9ff43 0);
+}
+
+.theme-switcher__swatch i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.6) 0 10%, transparent 11%);
+}
+
+.theme-switcher.is-switching .theme-switcher__swatch {
+  animation: themeSwatchSpin 900ms var(--ease-out) both;
+}
+
+.theme-switcher__caret {
+  width: 0.38rem;
+  height: 0.38rem;
+  margin-left: 0.1rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.1rem) rotate(45deg);
+  transition: transform 240ms var(--ease-out);
+}
+
+.theme-switcher__button[aria-expanded="true"] .theme-switcher__caret {
+  transform: translateY(0.1rem) rotate(225deg);
+}
+
+/* Popover window */
+.theme-popover {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 1rem);
+  right: 0;
+  width: unquote("min(19.5rem, calc(100vw - 2rem))");
+  max-height: calc(100vh - 7rem);
+  max-height: calc(100dvh - 7rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: var(--shadow-pixel);
+  opacity: 0;
+  transform: translateY(-0.5rem) scale(0.97);
+  transform-origin: 85% 0;
+  transition: opacity 160ms ease, transform 280ms var(--ease-out);
+}
+
+.theme-popover[hidden] {
+  display: none;
+}
+
+.theme-popover.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+.theme-popover__bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-2);
+  font: 700 0.58rem/1.2 var(--font-mono);
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.theme-popover__bar > span:nth-child(2) {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+.theme-popover__bar > span:last-child {
+  opacity: 0.7;
+}
+
+.theme-popover__controls {
+  display: flex;
+  gap: 0.28rem;
+}
+
+.theme-popover__controls i {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--ink);
+  background: var(--orange);
+}
+
+.theme-popover__controls i:nth-child(2) { background: var(--acid); }
+.theme-popover__controls i:nth-child(3) { background: var(--cyan); }
+
+.theme-menu {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+}
+
+.theme-option {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 200ms ease;
+}
+
+.theme-option:hover {
+  border-color: var(--line-soft);
+  background: var(--paper-2);
+}
+
+.theme-option:focus-visible {
+  border-color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  background: var(--paper-2);
+  box-shadow: inset 0.3rem 0 0 var(--acid);
+}
+
+.theme-option[aria-checked="true"] {
+  border-color: var(--ink);
+  box-shadow: 0.2rem 0.2rem 0 var(--ink);
+}
+
+.theme-option[aria-checked="true"]:focus-visible {
+  box-shadow: inset 0.3rem 0 0 var(--acid), 0.2rem 0.2rem 0 var(--ink);
+}
+
+.theme-popover.is-open .theme-option {
+  animation: themeOptionIn 360ms var(--ease-out) both;
+}
+
+.theme-menu li:nth-child(2) .theme-option { animation-delay: 45ms; }
+.theme-menu li:nth-child(3) .theme-option { animation-delay: 90ms; }
+
+.theme-option__copy {
+  min-width: 0;
+}
+
+.theme-option__name {
+  display: block;
+  font: 900 0.95rem/1 var(--font-display);
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.theme-option__copy small {
+  display: block;
+  margin-top: 0.32rem;
+  opacity: 0.72;
+  font: 650 0.56rem/1.25 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-option__key {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 0.2rem;
+  box-shadow: 2px 2px 0 currentColor;
+  font: 800 0.62rem/1 var(--font-mono);
+}
+
+.theme-option[aria-checked="true"] .theme-option__key {
+  border-color: var(--on-accent, var(--ink));
+  color: var(--on-accent, var(--ink));
+  background: var(--acid);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-size: 0;
+}
+
+.theme-option[aria-checked="true"] .theme-option__key::before {
+  content: "\2713";
+  font-size: 0.78rem;
+}
+
+/* Mini window previews, painted in each mode's own colours. */
+.theme-option__preview {
+  position: relative;
+  display: block;
+  width: 3.7rem;
+  height: 2.65rem;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid;
+  border-radius: 0.35rem;
+}
+
+.theme-option__preview i {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0.5rem;
+  border-bottom: 1px solid;
+}
+
+.theme-option__preview b {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.35rem;
+  width: 52%;
+  height: 0.16rem;
+  background: currentColor;
+  box-shadow: 0 0.36rem 0 currentColor, 0 0.72rem 0 currentColor;
+}
+
+.theme-option__preview em {
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.35rem;
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.theme-option__preview--default {
+  border-color: #11110f;
+  color: #11110f;
+  background: #f7f5ee;
+}
+
+.theme-option__preview--default i { border-color: #11110f; background: #deddd6; }
+.theme-option__preview--default em { border: 1px solid #11110f; background: #d9ff43; }
+
+.theme-option__preview--crt {
+  border-color: #ffc266;
+  color: #ffc266;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 50% 45%, #2e1d08, #0d0904 78%);
+  box-shadow: inset 0 0 0.7rem rgba(0, 0, 0, 0.8), 0 0 0.6rem rgba(255, 170, 40, 0.25);
+}
+
+.theme-option__preview--crt i { border-color: #ffc266; background: #21170a; }
+.theme-option__preview--crt b { box-shadow: 0 0.36rem 0 currentColor, 0 0.72rem 0 currentColor, 0 0 0.3rem rgba(255, 176, 40, 0.9); }
+
+.theme-option__preview--crt em {
+  width: 0.4rem;
+  height: 0.55rem;
+  background: #ffae1a;
+  box-shadow: 0 0 0.4rem rgba(255, 174, 26, 0.9);
+  animation: acidCaretBlink 1s step-end infinite;
+}
+
+.theme-option__preview--synthwave {
+  border-color: #36f1ff;
+  color: #f6eeff;
+  background: linear-gradient(to bottom, #0b0322 0%, #2a0a52 55%, #6d1a6e 62%, #0b0322 62.5%);
+  box-shadow: 0 0 0.6rem rgba(54, 241, 255, 0.35);
+}
+
+.theme-option__preview--synthwave::after {
+  content: "";
+  position: absolute;
+  right: -40%;
+  bottom: 0;
+  left: -40%;
+  height: 38%;
+  background-image:
+    linear-gradient(to right, rgba(255, 79, 216, 0.9) 0 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 79, 216, 0.9) 0 1px, transparent 1px);
+  background-size: 0.45rem 0.45rem;
+  transform: perspective(1.4rem) rotateX(50deg);
+  transform-origin: 50% 100%;
+}
+
+.theme-option__preview--synthwave i { border-color: #36f1ff; background: linear-gradient(90deg, #ff4fd8, #9d5cff); }
+.theme-option__preview--synthwave b { width: 40%; }
+
+.theme-option__preview--synthwave em {
+  right: 0.5rem;
+  bottom: 38%;
+  width: 1rem;
+  height: 0.5rem;
+  border-radius: 1rem 1rem 0 0;
+  background: linear-gradient(to bottom, #fff17a, #ff4f8e);
+  box-shadow: 0 0 0.5rem rgba(255, 79, 216, 0.8);
+}
+
+.theme-popover__tip {
+  margin: 0;
+  padding: 0.55rem 0.8rem 0.7rem;
+  border-top: 1px dashed var(--line-soft);
+  opacity: 0.78;
+  font: 650 0.56rem/1.5 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (hover: none) {
+  .theme-popover__tip { display: none; }
+}
+
+.theme-popover__tip kbd {
+  min-width: 1.2rem;
+  min-height: 1.2rem;
+  margin-inline: 0.15rem;
+  font-size: 0.62rem;
+}
+
+.theme-popover__tip code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.2rem;
+  color: var(--on-accent, var(--ink));
+  background: var(--acid);
+  font: inherit;
+  text-transform: none;
+}
+
+/* Sound toggle: its state, label and title are driven by assets/js/sound.js. */
+.sound-toggle {
+  position: relative;
+  display: inline-grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.sound-toggle:hover {
+  background: var(--paper-2);
+}
+
+.sound-toggle[aria-pressed="true"] {
+  color: var(--on-accent, var(--ink));
+  background: var(--acid);
+}
+
+.sound-toggle[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sound-toggle__label {
+  @include visually-hidden;
+}
+
+.sound-toggle__icon {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  background: currentColor;
+  -webkit-mask: $icon-sound-off center / contain no-repeat;
+  mask: $icon-sound-off center / contain no-repeat;
+}
+
+.sound-toggle[aria-pressed="true"] .sound-toggle__icon {
+  -webkit-mask-image: $icon-sound-on;
+  mask-image: $icon-sound-on;
+}
+
+.sound-toggle::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--acid);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sound-toggle[aria-pressed="true"]::after {
+  animation: soundPing 900ms var(--ease-out) 1;
+}
+
+/* Header fit: tablet and phone widths. */
+@media (max-width: 1080px) {
+  .theme-switcher__button { min-height: 2.8rem; }
+  .theme-switcher__swatch { width: 2.1rem; height: 2.1rem; }
+  .sound-toggle { width: 2.8rem; height: 2.8rem; }
+}
+
+@media (max-width: 760px) {
+  .theme-switcher__button {
+    padding: 0.3rem;
+    gap: 0;
+  }
+
+  .theme-switcher__label {
+    @include visually-hidden;
+  }
+
+  .theme-switcher__caret { display: none; }
+}
+
+@media (max-width: 620px) {
+  .header-actions { gap: 0.4rem; }
+}
+
+@media (max-width: 380px) {
+  .header-shell { gap: 0.35rem; }
+  .theme-switcher__button { min-height: 2.5rem; padding: 0.2rem; }
+  .theme-switcher__swatch { width: 1.95rem; height: 1.95rem; }
+  .sound-toggle { width: 2.5rem; height: 2.5rem; }
+  .header-contact { width: 2.5rem; min-height: 2.5rem; }
+}
+
+@media (max-width: 349px) {
+  .brand-copy { display: none; }
+}
+
+/* Terminal output for the `theme` command. */
+.terminal-body .theme-term-item {
+  white-space: pre-wrap;
+}
+
+.terminal-body .theme-term-item.is-current {
+  color: var(--acid);
+}
+
+.terminal-body .theme-term-dim {
+  opacity: 0.66;
+}
+
+.theme-term-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.55rem;
+  vertical-align: -0.06rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.theme-term-swatch--default { background: conic-gradient(from 225deg, #f7f5ee 0 50%, #11110f 0 75%, #d9ff43 0); }
+.theme-term-swatch--crt { background: radial-gradient(circle, #ffc266 0 25%, #3a2408 26% 45%, #0d0904 46%); }
+.theme-term-swatch--synthwave { background: linear-gradient(to bottom, #fff17a, #ff4f8e 55%, #1a0640 56%); }
+
+/* =========================================================================
+   2. Switching: view-transition reveal, crossfade fallback, flourishes
+   ========================================================================= */
+html.theme-vt::view-transition-old(root),
+html.theme-vt::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.theme-crossfade,
+html.theme-crossfade *,
+html.theme-crossfade *::before,
+html.theme-crossfade *::after {
+  transition-property: color, background-color, border-color, outline-color, box-shadow, text-shadow, fill, stroke !important;
+  transition-duration: 520ms !important;
+  transition-timing-function: ease !important;
+  transition-delay: 0s !important;
+}
+
+/* CRT power-on: a beam draws across the tube, then the picture opens from it.
+   themes.js shows it as a manual popover (top layer, above an open modal) where it can,
+   so the UA popover box (fit-content, border, padding, Canvas colours) is reset here. */
+.theme-power {
+  position: fixed;
+  z-index: 8700;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  pointer-events: none;
+}
+
+.theme-power::before,
+.theme-power::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 50.5%;
+  background: #040201;
+  animation: crtShutter 640ms cubic-bezier(0.7, 0, 0.2, 1) 200ms both;
+}
+
+.theme-power::before {
+  top: 0;
+  transform-origin: 50% 0;
+}
+
+.theme-power::after {
+  bottom: 0;
+  transform-origin: 50% 100%;
+}
+
+.theme-power i {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 3px;
+  margin-top: -1.5px;
+  background: #fff6e0;
+  box-shadow: 0 0 0.6rem 0.2rem rgba(255, 200, 110, 0.95), 0 0 2.4rem 0.8rem rgba(255, 150, 40, 0.6);
+  animation: crtBeam 980ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+html.theme-enter[data-theme="crt"] .site-noise::before {
+  animation: crtWarmup 1.5s ease-out 0.45s both;
+}
+
+/* Synthwave: the floor rises, the sun comes up behind the ridge, titles ignite. */
+html.theme-enter[data-theme="synthwave"] .theme-scene__floor {
+  animation: synthFloorRise 1.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.theme-enter[data-theme="synthwave"] .theme-scene__sun {
+  animation: synthSunRise 1.7s cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+}
+
+html.theme-enter[data-theme="synthwave"] .theme-scene__ridge {
+  animation: synthRidgeRise 1.1s var(--ease-out) 60ms both;
+}
+
+html.theme-enter[data-theme="synthwave"] main h1 {
+  animation: synthIgnite 1.1s steps(1, end) 220ms both;
+}
+
+/* Default: the brand glyph spins home and page titles are re-inked. */
+html.theme-enter:not([data-theme]) .brand-mark {
+  animation: themeBrandSpin 900ms var(--ease-out) both;
+}
+
+html.theme-enter:not([data-theme]) main h1 {
+  animation: themeInkWipe 720ms var(--ease-out) 100ms both;
+}
+
+/* Terminal stage. A switch typed into the terminal would play underneath the modal's
+   dimmed, blurred ::backdrop, so themes.js docks the dialog to the bottom edge (only
+   its title bar showing, input still focused), clears the backdrop for the show, then
+   springs it back. `translate` is used because site.js drags the dialog with `transform`,
+   so the two compose instead of fighting. */
+.terminal {
+  transition: translate 620ms cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+
+.terminal::backdrop {
+  transition: background-color 360ms ease, backdrop-filter 360ms ease;
+}
+
+.terminal.is-theme-docked {
+  translate: 0 var(--theme-dock-y, 0px);
+  transition: translate 420ms cubic-bezier(0.6, 0, 0.8, 0.25);
+}
+
+html .terminal.is-theme-docked[open]::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Dock chip on the title bar: where the display is heading, with a progress underline. */
+.terminal.is-theme-docking::before {
+  content: attr(data-theme-dock-label);
+  content: attr(data-theme-dock-label) / "";
+  position: absolute;
+  z-index: 3;
+  top: 0.5rem;
+  right: 0.75rem;
+  max-width: 30%;
+  overflow: hidden;
+  padding: 0.3rem 0.55rem 0.34rem;
+  border-radius: 999px;
+  color: var(--on-accent, var(--ink));
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0% 2px no-repeat, var(--acid);
+  font: 800 0.56rem/1 var(--font-mono);
+  letter-spacing: 0.07em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  animation:
+    themeDockChip 280ms var(--ease-out) both,
+    themeDockProgress var(--theme-dock-hold, 1.6s) linear both;
+}
+
+/* =========================================================================
+   3. Shared dark-mode wiring (orientation scopes + fixes)
+   ========================================================================= */
+#{$theme-dark} {
+  color-scheme: dark;
+  --focus-ring: var(--base-ink);
+  --focus-gap: var(--base-paper);
+
+  /* Bands: paper-on-ink blocks keep light text on a dark ground. */
+  .section-block--dark,
+  .home-page .snapshot-section,
+  .home-page .about-section,
+  .home-page .contact-panel,
+  .coursework-panel,
+  .profile-dossier,
+  .creative-band,
+  .creative-console__screen,
+  .photo-page #photo-grid,
+  .gallery-item,
+  .gallery-meta,
+  .project-media--phones,
+  .phone-rail,
+  .site-footer,
+  .terminal,
+  .lightbox,
+  .boot-screen,
+  .page-transition,
+  .cure-reader,
+  body[data-page="code"] .page-shell > .section-block,
+  body[data-page="code"] .project-card {
+    @include scope-band;
+  }
+
+  /* Surfaces: paper cards (including those that sit inside bands). */
+  .window,
+  .stat-strip,
+  .profile-dossier__links,
+  .album-flip__back,
+  .project-card,
+  .venture-card,
+  .service-card,
+  .creative-photo-link__card,
+  .about-index span,
+  .terminal .window-bar,
+  body[data-page="code"] #featured-projects .project-card--featured {
+    @include scope-surface;
+  }
+
+  /* Accent chips and hover fills: dark text on acid. */
+  .skip-link,
+  .ticker,
+  .terminal-hint kbd,
+  .about-section .section-kicker,
+  .acid-heading__line,
+  .profile-sigil,
+  .about-index span:nth-child(2),
+  .about-index span:nth-child(3),
+  .album-art__badge,
+  .creative-photo-link__card > span,
+  .system-toast,
+  .cure-reader__title span,
+  .cursor-active .cursor-reticle,
+  .experience-row:hover,
+  .cta:hover,
+  .header-contact:hover,
+  .about-section .inline-links a:hover,
+  .contact-options a:hover,
+  .profile-dossier__links a:hover,
+  .cure-chip:hover,
+  .cure-reader select:hover,
+  .cure-nav:hover:not(:disabled) {
+    @include scope-accent;
+  }
+
+  /* Opt-in hooks for any module: data-theme-scope="band | surface | accent". */
+  [data-theme-scope="band"] { @include scope-band; }
+  [data-theme-scope="surface"] { @include scope-surface; }
+  [data-theme-scope="accent"] { @include scope-accent; }
+
+  ::selection {
+    color: var(--on-accent);
+    background: var(--acid);
+  }
+
+  .cure-reader select option {
+    color: var(--base-ink);
+    background: var(--base-paper);
+  }
+
+  /* Everything is dark now, so the cursor stays light over "dark" surfaces too. */
+  .cursor-on-dark:not(.cursor-active) .cursor-dot { background: var(--ink); }
+  .cursor-on-dark:not(.cursor-active) .cursor-reticle { border-color: var(--ink); }
+
+  .js .primary-nav {
+    box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.55);
+  }
+
+  .header-shell {
+    box-shadow: 0 0.6rem 2.4rem rgba(0, 0, 0, 0.5);
+  }
+
+  .chrome-orb {
+    filter: drop-shadow(0 0 1rem rgba(var(--acid-rgb), 0.3));
+  }
+
+  .terminal::backdrop,
+  .lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+  }
+}
+
+@media (max-width: 1080px) {
+  #{$theme-dark} {
+    &.js .primary-nav a.is-active { color: var(--on-accent); }
+  }
+}
+
+/* Keyboard focus. The base ring in system.scss shows its light half through box-shadow,
+   which the theme glows below replace on CTAs and header controls, and its outline is
+   --paper, the dark surface here. So the dark modes move the contrasting colour into the
+   outline too (see $focus-ring). :where() keeps the base specificity (0,1,1), so every
+   component focus style that already overrides the base ring still does. */
+:where(#{$theme-dark}) button:focus-visible,
+:where(#{$theme-dark}) a:focus-visible,
+:where(#{$theme-dark}) input:focus-visible {
+  outline-color: var(--focus-ring);
+  box-shadow: $focus-ring;
+}
+
+/* Home concepts under lab/ (JB//OS desktop + scroll story): same orientation rules. */
+#{$theme-dark} {
+  .home-os .os-band,
+  .home-os .os-desktop,
+  .home-os .os-window__body--dark,
+  .home-os .os-boot,
+  .home-os .os-power,
+  .home-os .os-task.is-active,
+  .story-bio,
+  .story-stack,
+  .story-rail__label,
+  .story-eq__name,
+  .story-work__status > span:first-child,
+  .story-card--finale .story-card__body {
+    @include scope-band;
+  }
+
+  .home-os .os-window,
+  .home-os .os-menu,
+  .home-os .os-taskbar,
+  .story-card__body {
+    @include scope-surface;
+  }
+
+  .home-os .os-intro,
+  .home-os .os-start,
+  .home-os .os-start-menu__rail,
+  .home-os .os-on .os-widget,
+  .home-os .os-on .os-window.is-active .os-window__bar,
+  .home-os .os-log__lvl--now,
+  .home-os .os-db th,
+  .home-os .os-button:hover,
+  .home-os .os-log__row:hover,
+  .home-os .os-db tbody tr:hover,
+  .home-os .os-menu button:hover,
+  .home-os .os-menu a:hover,
+  .home-os .os-menu button:focus-visible,
+  .home-os .os-menu a:focus-visible,
+  .home-os .os-task:hover,
+  .home-os .os-icon:hover .os-icon__label,
+  .home-os .os-icon:focus-visible .os-icon__label,
+  .story-intro,
+  .story-kicker,
+  .story-outro,
+  .story-card__badge,
+  .story-card--finale .story-card__bar,
+  .story-bio__keys li.is-found {
+    @include scope-accent;
+  }
+
+  // On phones every open window is a full-screen sheet, so its bar joins the accent scope;
+  // on desktop only the focused window (.is-active, above) is accented.
+  @media (max-width: 759px) {
+    .home-os .os-on .os-window.is-open .os-window__bar {
+      @include scope-accent;
+    }
+  }
+}
+
+/* =========================================================================
+   4. Retro CRT — warm amber phosphor on a dark tube
+   ========================================================================= */
+#{$theme-crt} {
+  --bg: #0d0904;
+  --paper: #150e06;
+  --paper-2: #21170a;
+  --ink: #ffc266;
+  --midnight: #0a0703;
+  --muted: #d9a050;
+  --line: #6e4b1f;
+  --line-soft: rgba(255, 194, 102, 0.2);
+  --acid: #ffae1a;
+  --cyan: #ffd98f;
+  --magenta: #ff8a3d;
+  --orange: #ff6a1f;
+  --violet: #c77b22;
+  --ink-rgb: 255, 194, 102;
+  --paper-rgb: 21, 14, 6;
+  --acid-rgb: 255, 174, 26;
+  --violet-rgb: 199, 123, 34;
+  --signal: #ffd070;
+  --signal-rgb: 255, 208, 112;
+  --ink-soft: #f2b75e;
+  --night: #0a0703;
+  --night-2: #140d05;
+  --matte: #1c1309;
+  --surface-bright: #22180b;
+  --shadow-pixel: 0.5rem 0.5rem 0 rgba(255, 174, 26, 0.24);
+  --shadow-soft: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.55);
+  --base-ink: #ffc266;
+  --base-ink-rgb: 255, 194, 102;
+  --base-paper: #150e06;
+  --base-paper-rgb: 21, 14, 6;
+  --base-muted: #d9a050;
+  --band-ink: #0a0703;
+  --band-ink-rgb: 10, 7, 3;
+  --band-text: #ffc266;
+  --band-text-rgb: 255, 194, 102;
+  --band-muted: #d9a050;
+  --on-accent: #1a0f00;
+  --on-accent-rgb: 26, 15, 0;
+  background: #070502;
+  scrollbar-color: #7a5424 #0d0904;
+
+  body {
+    background:
+      radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255, 150, 30, 0.09), rgba(255, 150, 30, 0) 70%),
+      linear-gradient(rgba(var(--ink-rgb), 0.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(var(--ink-rgb), 0.028) 1px, transparent 1px),
+      var(--bg);
+    background-repeat: no-repeat, repeat, repeat;
+    background-size: 100% 120vh, 4rem 4rem, 4rem 4rem;
+  }
+
+  body[data-page="startup"] {
+    background: var(--bg);
+  }
+
+  /* Phosphor bloom on headings and mono labels. */
+  h1,
+  h2,
+  h3,
+  h4,
+  .brand-copy strong,
+  .stat-item strong,
+  .eyebrow,
+  .section-kicker,
+  .system-code,
+  .window-bar,
+  .panel-heading,
+  .primary-nav a,
+  .theme-option__name {
+    text-shadow: 0 0 0.35em rgba(255, 170, 40, 0.38);
+  }
+
+  /* Slight chromatic aberration on large display type (red/blue fringe, never green). */
+  .mega-title,
+  .display-title,
+  .creative-title,
+  .profile-title,
+  .throttle-hero h1,
+  .throttle-deck,
+  .throttle-status__header h2,
+  .footer-callout > a,
+  .section-header h2,
+  .section-heading h2,
+  .creative-photo-link__card h2,
+  .legal-page h1 {
+    text-shadow:
+      0.022em 0 0 rgba(255, 58, 30, 0.42),
+      -0.022em 0 0 rgba(70, 120, 255, 0.36),
+      0 0 0.16em rgba(255, 176, 40, 0.5),
+      0 0 0.6em rgba(255, 140, 0, 0.22);
+  }
+
+  /* Outline type would fill with shadow, so it gets filter fringes instead. */
+  .section-header h2 span,
+  .creative-title__outline,
+  .page-hero h1 span:not(.display-title__line) {
+    text-shadow: none;
+    filter:
+      drop-shadow(0.03em 0 0 rgba(255, 58, 30, 0.5))
+      drop-shadow(-0.03em 0 0 rgba(70, 120, 255, 0.45))
+      drop-shadow(0 0 0.12em rgba(255, 176, 40, 0.55));
+  }
+
+  .acid-heading__line,
+  .ticker {
+    text-shadow: none;
+  }
+
+  .acid-heading__line {
+    box-shadow: 0.055em 0.055em 0 rgba(0, 0, 0, 0.7), 0 0 0.5em rgba(255, 160, 30, 0.35);
+  }
+
+  .ticker {
+    box-shadow: 0 0 2rem rgba(255, 160, 30, 0.3);
+  }
+
+  /* Monochrome-ish tube picture; hovering a card shows the true colours. */
+  main img,
+  .boot-card img {
+    filter: sepia(0.5) saturate(1.3) hue-rotate(-10deg) brightness(0.88) contrast(1.06);
+  }
+
+  main a:hover img,
+  main a:focus-visible img,
+  main button:hover img,
+  main button:focus-visible img,
+  .portrait-window:hover img,
+  .project-card:hover img,
+  .gallery-item:hover img,
+  .cure-reader img,
+  .store-badge {
+    filter: none;
+  }
+
+  .brand-mark,
+  .chrome-orb span {
+    filter: grayscale(1) sepia(1) saturate(3.2) hue-rotate(-12deg) brightness(1.02) contrast(1.05);
+  }
+
+  .brand:hover .brand-mark,
+  .chrome-orb:hover span {
+    filter: grayscale(1) sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.18) contrast(1.1);
+  }
+
+  .chrome-orb {
+    filter: drop-shadow(0 0 1.2rem rgba(255, 150, 30, 0.35));
+  }
+
+  .home-hero::before,
+  .creative-hero::before {
+    background:
+      radial-gradient(circle, rgba(255, 194, 102, 0.2) 1px, transparent 1.5px),
+      linear-gradient(135deg, rgba(255, 150, 30, 0.1), rgba(255, 80, 20, 0.05));
+    background-size: 0.75rem 0.75rem, 100% 100%;
+  }
+
+  .hero-deck::after {
+    content: "\2588";
+    display: inline-block;
+    margin-left: 0.18em;
+    color: var(--acid);
+    font-size: 0.72em;
+    line-height: 1;
+    text-shadow: 0 0 0.4em rgba(255, 170, 40, 0.8);
+    animation: acidCaretBlink 1.1s step-end infinite;
+  }
+
+  .portrait-scan {
+    opacity: 0.32;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0, 0, 0, 0.7) 3px);
+  }
+
+  .header-shell {
+    box-shadow: 0 0 0 1px rgba(255, 174, 26, 0.1), 0 0.6rem 2.4rem rgba(0, 0, 0, 0.55), 0 0 2rem rgba(255, 150, 30, 0.08);
+  }
+
+  .cta--dark,
+  .header-contact {
+    box-shadow: 0 0 1rem rgba(255, 170, 40, 0.28);
+  }
+
+  .cta:hover {
+    box-shadow: 0.25rem 0.25rem 0 rgba(255, 174, 26, 0.35), 0 0 1.4rem rgba(255, 170, 40, 0.45);
+  }
+
+  .system-toast {
+    box-shadow: 0 0 1.6rem rgba(255, 170, 40, 0.5), 0.35rem 0.35rem 0 rgba(0, 0, 0, 0.6);
+  }
+
+  .theme-switcher__button,
+  .sound-toggle {
+    box-shadow: 0 0 0.8rem rgba(255, 170, 40, 0.18);
+  }
+
+  /* Focus keeps the glow and adds the ring (after :hover, so it also wins while hovered). */
+  .cta:focus-visible,
+  .header-contact:focus-visible,
+  .theme-switcher__button:focus-visible,
+  .sound-toggle:focus-visible {
+    box-shadow: $focus-ring, 0 0 1.6rem 0.2rem rgba(255, 170, 40, 0.42);
+  }
+
+  .theme-switcher__swatch {
+    background:
+      repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0 1px, transparent 1px 3px),
+      radial-gradient(circle at 50% 50%, #ffd28a 0 16%, #ffae1a 17% 26%, #3a2408 27% 44%, #0d0904 45%);
+  }
+
+  /* The terminal is the tube's natural habitat. */
+  .terminal {
+    border-color: rgba(255, 194, 102, 0.7);
+    box-shadow: 0 0 0 1px rgba(255, 174, 26, 0.18), 0 0 3rem rgba(255, 150, 30, 0.28), 1rem 1rem 0 rgba(255, 174, 26, 0.16);
+  }
+
+  .terminal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 120% 110% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.35) 100%),
+      repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.26) 0 1px, transparent 1px 3px);
+  }
+
+  .terminal-body {
+    text-shadow: 0 0 0.35em rgba(255, 176, 40, 0.5);
+  }
+
+  .terminal-form input {
+    caret-color: var(--acid);
+  }
+
+  .page-transition i { background: #0a0703; }
+  .page-transition i:nth-child(2n) { background: #1b1206; }
+
+  .throttle-page {
+    --throttle-black: #0a0703;
+    --throttle-white: #ffc266;
+    --throttle-gray: #d9a050;
+    --throttle-white-rgb: 255, 194, 102;
+  }
+
+  .throttle-signal__sphere {
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 230, 180, 0.9) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 66% 68%, rgba(var(--acid-rgb), 0.72) 0 1px, transparent 1.5px),
+      #22170a;
+    background-size: 0.42rem 0.42rem, 0.55rem 0.55rem, 100% 100%;
+  }
+
+  /* The tube itself: scanlines (≈9% average darkening), curved vignette, glare. */
+  .site-noise {
+    overflow: hidden;
+    opacity: 1;
+    mix-blend-mode: normal;
+    background-image:
+      radial-gradient(ellipse 125% 115% at 50% 50%, transparent 62%, rgba(0, 0, 0, 0.3) 86%, rgba(0, 0, 0, 0.58) 100%),
+      repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.27) 0 1px, transparent 1px 3px);
+    background-size: 100% 100%, 100% 3px;
+    box-shadow: inset 0 0 5rem rgba(0, 0, 0, 0.45), inset 0 0 0.8rem rgba(0, 0, 0, 0.55);
+    animation: crtFlicker 6s steps(1, end) infinite;
+  }
+
+  .site-noise::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 22% 10%, rgba(255, 226, 170, 0.055), transparent 70%),
+      linear-gradient(to right, rgba(255, 60, 40, 0.03), transparent 10%, transparent 90%, rgba(80, 120, 255, 0.03));
+  }
+
+  /* Faint refresh bar rolling down the tube. */
+  .site-noise::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 24vh;
+    background: linear-gradient(to bottom, rgba(255, 190, 90, 0), rgba(255, 190, 90, 0.045) 44%, rgba(255, 210, 130, 0.07) 50%, rgba(255, 190, 90, 0.045) 56%, rgba(255, 190, 90, 0));
+    transform: translate3d(0, -30vh, 0);
+    animation: crtRoll 9s linear infinite;
+    will-change: transform;
+  }
+}
+
+/* =========================================================================
+   5. Synthwave — neon grid, chrome type and a sunset behind the content
+   ========================================================================= */
+.theme-scene {
+  display: none;
+}
+
+#{$theme-synth} {
+  --bg: rgba(13, 5, 36, 0.8);
+  --paper: #150a33;
+  --paper-2: #221048;
+  --ink: #f6eeff;
+  --midnight: rgba(11, 3, 34, 0.9);
+  --muted: #bba8ea;
+  --line: #6b4bb8;
+  --line-soft: rgba(246, 238, 255, 0.16);
+  --acid: #ff4fd8;
+  --cyan: #36f1ff;
+  --magenta: #ff2e97;
+  --orange: #ff9e3d;
+  --violet: #9d5cff;
+  --ink-rgb: 246, 238, 255;
+  --paper-rgb: 21, 10, 51;
+  --acid-rgb: 255, 79, 216;
+  --violet-rgb: 157, 92, 255;
+  --signal: #36f1ff;
+  --signal-rgb: 54, 241, 255;
+  --ink-soft: #e3d6ff;
+  --night: rgba(9, 2, 28, 0.9);
+  --night-2: rgba(24, 8, 60, 0.92);
+  --matte: #1b0d40;
+  --surface-bright: #221048;
+  --shadow-pixel: 0.5rem 0.5rem 0 rgba(255, 79, 216, 0.55), 0 0 1.6rem rgba(54, 241, 255, 0.18);
+  --shadow-soft: 0 1.5rem 4.5rem rgba(0, 0, 0, 0.55);
+  --base-ink: #f6eeff;
+  --base-ink-rgb: 246, 238, 255;
+  --base-paper: #150a33;
+  --base-paper-rgb: 21, 10, 51;
+  --base-muted: #bba8ea;
+  --band-ink: rgba(10, 3, 30, 0.84);
+  --band-ink-rgb: 10, 3, 30;
+  --band-text: #f6eeff;
+  --band-text-rgb: 246, 238, 255;
+  --band-muted: #bba8ea;
+  --on-accent: #16002a;
+  --on-accent-rgb: 22, 0, 42;
+  --sun-x: 50%;
+  background: #0d0524;
+  scrollbar-color: #ff4fd8 #0d0524;
+
+  body,
+  body[data-page="startup"] {
+    background: transparent;
+  }
+
+  /* ---- The scene (injected by themes.js, fixed behind all content) ---- */
+  .theme-scene {
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    pointer-events: none;
+    contain: strict;
+    background:
+      radial-gradient(circle 44vh at var(--sun-x) 50%, rgba(255, 79, 216, 0.3), rgba(255, 79, 216, 0) 100%),
+      linear-gradient(to bottom, #06011a 0%, #0e0330 32%, #26084f 47%, #561266 56.5%, #7a1f73 58%, #06011a 58.1%);
+    animation: synthSceneIn 900ms ease-out both;
+  }
+
+  /* Keeps the left text column over a darker sky. */
+  .theme-scene::after {
+    content: "";
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(6, 1, 20, 0.6) 0%, rgba(6, 1, 20, 0.3) 45%, rgba(6, 1, 20, 0.08) 100%);
+  }
+
+  .theme-scene__stars {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 58%;
+    background-image:
+      radial-gradient(1.5px 1.5px at 8% 14%, #ffffff 50%, transparent 51%),
+      radial-gradient(1px 1px at 23% 42%, rgba(255, 255, 255, 0.85) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 37% 8%, #ffd6f5 50%, transparent 51%),
+      radial-gradient(1px 1px at 52% 30%, #ffffff 50%, transparent 51%),
+      radial-gradient(1px 1px at 66% 12%, rgba(180, 240, 255, 0.9) 50%, transparent 51%),
+      radial-gradient(1.5px 1.5px at 79% 36%, #ffffff 50%, transparent 51%),
+      radial-gradient(1px 1px at 91% 20%, #ffffff 50%, transparent 51%),
+      radial-gradient(1px 1px at 14% 70%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
+      radial-gradient(1px 1px at 45% 64%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+      radial-gradient(1px 1px at 72% 78%, rgba(255, 255, 255, 0.55) 50%, transparent 51%);
+    background-size: 23rem 17rem;
+    -webkit-mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 35%, transparent 100%);
+    animation: synthTwinkle 4.5s ease-in-out infinite alternate;
+  }
+
+  .theme-scene__sun {
+    position: absolute;
+    top: 58%;
+    left: var(--sun-x);
+    width: unquote("min(46vh, 80vw)");
+    height: unquote("min(46vh, 80vw)");
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fff17a 0%, #ffc347 24%, #ff8a4c 42%, #ff4f8e 60%, #e723c1 78%, #9b1fd6 100%);
+    opacity: 0.94;
+    transform: translate(-50%, -64%);
+    -webkit-mask-image: $sun-mask;
+    mask-image: $sun-mask;
+  }
+
+  .theme-scene__ridge {
+    position: absolute;
+    top: calc(58% - 11vh);
+    right: 0;
+    left: 0;
+    height: 11vh;
+    background: linear-gradient(to bottom, #4a1275, #1a0638 70%, #10042a);
+    clip-path: polygon(0 100%, 0 62%, 5% 44%, 9% 58%, 15% 22%, 21% 55%, 26% 40%, 31% 68%, 36% 86%, 41% 100%, 60% 100%, 64% 84%, 69% 60%, 73% 70%, 79% 30%, 85% 58%, 90% 38%, 95% 60%, 100% 48%, 100% 100%);
+    opacity: 0.96;
+  }
+
+  .theme-scene__horizon {
+    position: absolute;
+    z-index: 2;
+    top: 58%;
+    right: 0;
+    left: 0;
+    height: 2px;
+    margin-top: -1px;
+    background: #ffd1f4;
+    box-shadow: 0 0 0.8rem 0.15rem rgba(255, 79, 216, 0.9), 0 0 3rem 0.8rem rgba(255, 79, 216, 0.4);
+  }
+
+  .theme-scene__floor {
+    position: absolute;
+    z-index: 1;
+    top: 58%;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    perspective: 28vh;
+    perspective-origin: 50% 0;
+    background: linear-gradient(to bottom, #2c0a50 0%, #14052f 40%, #07021a 100%);
+  }
+
+  /* Haze swallows the far edge of the plane and fades the sides. */
+  .theme-scene__floor::after {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(122, 31, 115, 0.95) 0%, rgba(58, 12, 90, 0.75) 7%, rgba(30, 7, 60, 0.3) 22%, rgba(30, 7, 60, 0) 42%),
+      linear-gradient(to right, rgba(7, 2, 26, 0.85), rgba(7, 2, 26, 0) 22%, rgba(7, 2, 26, 0) 78%, rgba(7, 2, 26, 0.85));
+  }
+
+  .theme-scene__grid {
+    position: absolute;
+    bottom: 0;
+    left: -130%;
+    width: 360%;
+    height: 300%;
+    background-image:
+      linear-gradient(to right, rgba(255, 79, 216, 0.95) 0 2px, rgba(255, 79, 216, 0.28) 2px 4px, transparent 4px),
+      linear-gradient(to bottom, rgba(255, 79, 216, 0.95) 0 2px, rgba(255, 79, 216, 0.28) 2px 4px, transparent 4px);
+    background-position: 50% 100%;
+    background-size: 6vh 6vh;
+    transform: rotateX(72deg);
+    transform-origin: 50% 100%;
+    backface-visibility: hidden;
+    animation: synthGrid 1.2s linear infinite;
+  }
+
+  /* A faint VHS scanline over everything. */
+  .site-noise {
+    opacity: 0.5;
+    mix-blend-mode: normal;
+    background-image: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 4px);
+    background-size: auto;
+  }
+
+  /* ---- Text over the open sky gets a night halo for contrast ---- */
+  .home-hero,
+  .page-hero,
+  .creative-hero,
+  .legal-page {
+    text-shadow: 0 0 0.3rem rgba(8, 1, 26, 0.9), 0 0 0.8rem rgba(8, 1, 26, 0.75), 0 0 1.8rem rgba(8, 1, 26, 0.5);
+  }
+
+  .home-hero::before,
+  .creative-hero::before {
+    display: none;
+  }
+
+  .legal-page {
+    background: rgba(12, 4, 32, 0.9);
+    box-shadow: 0 0 0 1px rgba(54, 241, 255, 0.22), 0 0 3rem rgba(255, 79, 216, 0.14);
+  }
+
+  /* ---- Glowing headings ---- */
+  .section-header h2,
+  .section-heading h2,
+  .project-body h2,
+  .project-body h3,
+  .venture-card h2,
+  .service-card h2,
+  .throttle-status__header h2,
+  .throttle-deck,
+  .legal-page h1,
+  .legal-page h2,
+  .profile-title > span:last-child,
+  .stat-item strong,
+  .theme-option__name {
+    text-shadow: 0 0 0.04em #ffffff, 0 0 0.18em rgba(255, 79, 216, 0.75), 0 0 0.55em rgba(255, 46, 151, 0.4);
+  }
+
+  .section-header h2 span,
+  .creative-title__outline {
+    -webkit-text-stroke-color: var(--cyan);
+    text-shadow: none;
+    filter: drop-shadow(0 0 0.08em rgba(54, 241, 255, 0.9)) drop-shadow(0 0 0.3em rgba(54, 241, 255, 0.45));
+  }
+
+  .acid-heading__line {
+    text-shadow: none;
+    box-shadow: 0.055em 0.055em 0 var(--cyan), 0 0 0.6em rgba(255, 79, 216, 0.55);
+  }
+
+  /* ---- Windows, cards, tags: neon edges ---- */
+  .window,
+  .terminal,
+  .project-card,
+  .venture-card,
+  .service-card,
+  .stat-strip,
+  .coursework-panel,
+  .creative-photo-link__card,
+  .theme-popover {
+    border-color: rgba(54, 241, 255, 0.6);
+  }
+
+  .window-bar,
+  .theme-popover__bar {
+    border-bottom-color: rgba(54, 241, 255, 0.45);
+    background: linear-gradient(90deg, rgba(255, 79, 216, 0.3), rgba(157, 92, 255, 0.24) 55%, rgba(54, 241, 255, 0.18)), var(--paper-2);
+  }
+
+  .project-card,
+  .stat-strip,
+  .coursework-panel {
+    box-shadow: 0.45rem 0.45rem 0 rgba(255, 79, 216, 0.45), 0 0 1.4rem rgba(54, 241, 255, 0.16);
+  }
+
+  .home-page .snapshot-section .stat-strip {
+    box-shadow: 0.4rem 0.4rem 0 var(--acid), 0 0 1.6rem rgba(255, 79, 216, 0.35);
+  }
+
+  .tag {
+    border-color: rgba(54, 241, 255, 0.65);
+    box-shadow: inset 0 0 0.6rem rgba(54, 241, 255, 0.16), 0 0 0.5rem rgba(54, 241, 255, 0.14);
+  }
+
+  .home-page .snapshot-section,
+  .home-page .about-section,
+  .home-page .contact-panel,
+  .section-block--dark,
+  .site-footer,
+  .creative-band,
+  .photo-page #photo-grid,
+  body[data-page="code"] .page-shell > .section-block {
+    box-shadow: inset 0 1px 0 rgba(255, 79, 216, 0.6), inset 0 0.8rem 1.4rem -1rem rgba(255, 79, 216, 0.55);
+  }
+
+  /* ---- Buttons ---- */
+  .cta--dark,
+  .header-contact {
+    border-color: transparent;
+    color: var(--on-accent);
+    background: linear-gradient(100deg, #ff4fd8, #b36bff 55%, #36f1ff);
+    box-shadow: 0 0 1.2rem rgba(255, 79, 216, 0.45);
+    text-shadow: none;
+  }
+
+  .cta:hover,
+  .header-contact:hover {
+    color: var(--on-accent);
+    background: #36f1ff;
+    box-shadow: 0.25rem 0.25rem 0 #ff4fd8, 0 0 1.6rem rgba(54, 241, 255, 0.6);
+  }
+
+  .theme-switcher__button,
+  .sound-toggle {
+    border-color: rgba(54, 241, 255, 0.75);
+    box-shadow: 0 0 0.8rem rgba(54, 241, 255, 0.22);
+  }
+
+  /* Focus keeps the neon and adds the ring (after :hover, so it also wins while hovered). */
+  .cta:focus-visible,
+  .header-contact:focus-visible,
+  .theme-switcher__button:focus-visible,
+  .sound-toggle:focus-visible {
+    box-shadow: $focus-ring, 0 0 1.8rem 0.25rem rgba(255, 79, 216, 0.5);
+  }
+
+  .theme-switcher__swatch {
+    background:
+      linear-gradient(to bottom, transparent 58%, rgba(255, 79, 216, 0.9) 58% 62%, transparent 62% 74%, rgba(255, 79, 216, 0.9) 74% 77%, transparent 77%),
+      linear-gradient(to bottom, #fff17a 0%, #ff8a4c 30%, #ff4f8e 52%, #1a0640 56%, #2a0a55 100%);
+  }
+
+  .ticker {
+    border-color: rgba(54, 241, 255, 0.6);
+    background: linear-gradient(90deg, #ff4fd8, #ff9e3d 35%, #36f1ff 70%, #ff4fd8);
+    box-shadow: 0 0 2rem rgba(255, 79, 216, 0.35);
+    text-shadow: none;
+  }
+
+  .header-shell {
+    border-color: rgba(54, 241, 255, 0.6);
+    background: rgba(13, 5, 36, 0.72);
+    box-shadow: 0 0 0 1px rgba(255, 79, 216, 0.15), 0 0 1.6rem rgba(54, 241, 255, 0.18), 0 0.8rem 2.4rem rgba(0, 0, 0, 0.5);
+  }
+
+  .chrome-orb {
+    filter: drop-shadow(0 0 1.2rem rgba(255, 79, 216, 0.55)) drop-shadow(0 0 2.4rem rgba(54, 241, 255, 0.3));
+  }
+
+  .terminal {
+    border-color: rgba(54, 241, 255, 0.7);
+    box-shadow: 0 0 0 1px rgba(255, 79, 216, 0.3), 0 0 2.6rem rgba(255, 79, 216, 0.35), 1rem 1rem 0 rgba(157, 92, 255, 0.45);
+  }
+
+  .terminal-body {
+    text-shadow: 0 0 0.3em rgba(54, 241, 255, 0.35);
+  }
+
+  .system-toast {
+    border-color: #36f1ff;
+    box-shadow: 0 0 1.6rem rgba(255, 79, 216, 0.55), 0.35rem 0.35rem 0 #36f1ff;
+  }
+
+  .cursor-dot,
+  .cursor-on-dark:not(.cursor-active) .cursor-dot {
+    background: var(--acid);
+    box-shadow: 0 0 0.5rem var(--acid), 0 0 1rem rgba(255, 79, 216, 0.6);
+  }
+
+  .cursor-reticle,
+  .cursor-on-dark:not(.cursor-active) .cursor-reticle {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0.6rem rgba(54, 241, 255, 0.5), inset 0 0 0.4rem rgba(54, 241, 255, 0.3);
+  }
+
+  .page-transition i {
+    background: #10042c;
+    box-shadow: inset 0 0.2rem 0 #ff4fd8;
+  }
+
+  .page-transition i:nth-child(2n) {
+    background: #1d0746;
+    box-shadow: inset 0 0.2rem 0 #36f1ff;
+  }
+
+  .boot-screen {
+    background: radial-gradient(circle at 50% 75%, #3a0d5c, #0b0322 62%);
+  }
+
+  /* ---- Throttle ---- */
+  .throttle-page {
+    --throttle-black: rgba(10, 3, 30, 0.72);
+    --throttle-white: #f6eeff;
+    --throttle-gray: #bba8ea;
+    --throttle-white-rgb: 246, 238, 255;
+  }
+
+  .throttle-telemetry {
+    box-shadow: 0 0 2rem rgba(255, 79, 216, 0.35);
+  }
+
+  .throttle-signal__sphere {
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.9) 0 1px, transparent 1.5px),
+      radial-gradient(circle at 66% 68%, rgba(54, 241, 255, 0.8) 0 1px, transparent 1.5px),
+      linear-gradient(to bottom, #ff4fd8, #7b2cff 60%, #1a0640);
+    background-size: 0.42rem 0.42rem, 0.55rem 0.55rem, 100% 100%;
+    box-shadow: inset -2.5rem -2rem 4rem rgba(10, 0, 30, 0.8), 0 0 5rem rgba(255, 79, 216, 0.35);
+  }
+
+  /* ---- Chrome-gradient display type ---- */
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .mega-title span,
+    .display-title,
+    .creative-title__solid,
+    .profile-title > span:first-child,
+    .throttle-hero h1,
+    .footer-callout > a > span,
+    .creative-photo-link__card h2 {
+      /* The padding/margin pair lets the gradient reach glyphs that overhang tight line boxes. */
+      margin-block: -0.06em;
+      padding-block: 0.06em;
+      color: #f6eeff;
+      background-image: $chrome-type;
+      background-origin: content-box;
+      background-size: 100% 100%;
+      background-size: 100% 1lh;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 0.045em 0 rgba(8, 1, 26, 0.95)) drop-shadow(0 0 0.22em rgba(255, 79, 216, 0.5));
+    }
+
+    .throttle-hero h1 span,
+    .footer-dot {
+      -webkit-text-fill-color: var(--acid);
+    }
+  }
+}
+
+@media (min-width: 900px) {
+  #{$theme-synth} {
+    --sun-x: 72%;
+  }
+}
+
+/* Phones: the sun sits behind the copy column, so it is smaller and dimmer there. */
+@media (max-width: 899px) {
+  #{$theme-synth} {
+    .theme-scene__sun {
+      width: unquote("min(38vh, 66vw)");
+      height: unquote("min(38vh, 66vw)");
+      opacity: 0.78;
+    }
+
+    .theme-scene::after {
+      background: linear-gradient(to bottom, rgba(6, 1, 20, 0.5), rgba(6, 1, 20, 0.34) 60%, rgba(6, 1, 20, 0.2));
+    }
+  }
+}
+
+/* =========================================================================
+   6. Keyframes
+   ========================================================================= */
+@keyframes themeDockChip {
+  from { opacity: 0; transform: translateY(-0.4rem) scale(0.8); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes themeDockProgress {
+  to { background-size: 100% 2px; }
+}
+
+@keyframes themeSwatchSpin {
+  0% { transform: rotate(0) scale(1); }
+  45% { transform: rotate(200deg) scale(0.78); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes themeOptionIn {
+  from { opacity: 0; transform: translateX(0.6rem); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes soundPing {
+  0% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.55); }
+}
+
+@keyframes themeBrandSpin {
+  from { transform: rotate(-270deg) scale(0.55); }
+  to { transform: none; }
+}
+
+@keyframes themeInkWipe {
+  from { clip-path: inset(-30% 100% -30% 0); }
+  to { clip-path: inset(-30% -10% -30% -10%); }
+}
+
+@keyframes crtShutter {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0); }
+}
+
+@keyframes crtBeam {
+  0% { opacity: 1; transform: scaleX(0) scaleY(1); }
+  22% { opacity: 1; transform: scaleX(1) scaleY(1); }
+  42% { opacity: 1; transform: scaleX(1) scaleY(1.4); }
+  100% { opacity: 0; transform: scaleX(1) scaleY(90); }
+}
+
+@keyframes crtWarmup {
+  from { background-color: rgba(255, 226, 170, 0.2); }
+  to { background-color: rgba(255, 226, 170, 0); }
+}
+
+@keyframes crtFlicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 0.94; }
+  42% { opacity: 1; }
+  77% { opacity: 0.96; }
+  78% { opacity: 1; }
+}
+
+@keyframes crtRoll {
+  0% { transform: translate3d(0, -30vh, 0); }
+  70%, 100% { transform: translate3d(0, 130vh, 0); }
+}
+
+@keyframes synthSceneIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes synthGrid {
+  from { transform: rotateX(72deg) translateY(0); }
+  to { transform: rotateX(72deg) translateY(6vh); }
+}
+
+@keyframes synthTwinkle {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes synthFloorRise {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes synthSunRise {
+  from { opacity: 0; transform: translate(-50%, 24%); }
+  to { opacity: 0.94; transform: translate(-50%, -64%); }
+}
+
+@keyframes synthRidgeRise {
+  from { opacity: 0; transform: translateY(70%); }
+  to { opacity: 0.96; transform: none; }
+}
+
+/* Two soft pulses only: well under the three-flashes-per-second guideline. */
+@keyframes synthIgnite {
+  0% { opacity: 0.35; }
+  10% { opacity: 1; }
+  18% { opacity: 0.6; }
+  28%, 100% { opacity: 1; }
+}
+
+/* =========================================================================
+   7. Reduced motion and print
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .theme-power { display: none; }
+
+  .terminal,
+  .terminal.is-theme-docked,
+  .terminal::backdrop {
+    transition: none;
+  }
+
+  .terminal.is-theme-docking::before {
+    animation: none;
+  }
+
+  .theme-popover,
+  .theme-option,
+  .theme-switcher__swatch,
+  .sound-toggle::after {
+    transition: none;
+    animation: none !important;
+  }
+
+  html[data-theme="crt"] .site-noise,
+  html[data-theme="crt"] .hero-deck::after,
+  .theme-option__preview--crt em {
+    animation: none;
+  }
+
+  html[data-theme="crt"] .site-noise::after { display: none; }
+
+  .theme-scene,
+  .theme-scene__grid,
+  .theme-scene__stars,
+  .theme-scene__sun,
+  .theme-scene__floor,
+  .theme-scene__ridge {
+    animation: none !important;
+  }
+}
+
+/* Windows High Contrast / forced colours: drop the decorative layers, keep the icons. */
+@media (forced-colors: active) {
+  .theme-scene,
+  .theme-power,
+  html[data-theme="crt"] .site-noise { display: none; }
+
+  .sound-toggle__icon {
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
+
+  .theme-switcher__swatch,
+  .theme-option__preview { forced-color-adjust: none; }
+}
+
+@media print {
+  .theme-scene,
+  .theme-power,
+  .theme-switcher,
+  .sound-toggle { display: none !important; }
+
+  html[data-theme="crt"] .site-noise { display: none; }
+}

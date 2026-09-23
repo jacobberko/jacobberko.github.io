@@ -1,0 +1,70 @@
+---
+layout: default
+title: 404 · File not found | Jake Berko
+description: JB//OS couldn't find that page. Head home, open the terminal, or catch the runaway file.
+section: error
+permalink: /404.html
+noindex: true
+---
+
+<div class="page-shell egg-404" data-egg-404>
+  <section aria-labelledby="egg-404-title">
+    <div class="egg-404__meta">
+      <p class="eyebrow"><span class="egg-404__led" aria-hidden="true"></span> SYSTEM FAULT · ERR 0x194</p>
+      <p class="system-code">[ JB//OS RECOVERY MODE ]</p>
+    </div>
+
+    <div class="egg-404__grid">
+      <article class="window egg-404__crash" data-egg-404-window>
+        <div class="window-bar">
+          <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p>FATAL_EXCEPTION.EXE · NOT RESPONDING</p>
+          <span>404</span>
+        </div>
+
+        <div class="egg-404__body">
+          <h1 class="egg-404__code" id="egg-404-title">
+            <span class="egg-404__digits" data-text="404">404</span>
+            <span class="egg-404__headline">File not found.</span>
+          </h1>
+
+          <p class="egg-404__copy">JB//OS searched every directory for <code data-egg-404-path>this page</code>. It isn't here. It may never have been.</p>
+          <p class="egg-404__suggest" data-egg-404-suggest hidden>Did you mean <a href="/" data-transition-link>/</a>?</p>
+
+<pre class="egg-404__trace" aria-label="Fake stack trace"><span class="egg-404__trace-error">Uncaught PageNotFoundError: ENOENT: no such file '<span data-egg-404-path>this page</span>'</span>
+    at Router.resolve (jbos/kernel/router.js:404:4)
+    at Visitor.navigate (jbos/userland/curiosity.js:26:1)
+    at LinkRot.decay (internet/entropy.js:∞)
+    at async Portfolio.render (jacobberko.com/index.html:1:1)
+Core dumped to /dev/null. Nothing of value was lost.</pre>
+
+          <div class="egg-404__actions">
+            <a class="cta cta--dark" href="/" data-cursor="HOME" data-transition-link>Return home <span aria-hidden="true">↗</span></a>
+            <button class="cta cta--ghost" type="button" data-terminal-open data-cursor="OPEN">Open terminal <span aria-hidden="true">›_</span></button>
+            <button class="cta cta--ghost" type="button" data-egg-404-retry data-cursor="RETRY">Retry <span aria-hidden="true">↻</span></button>
+          </div>
+          <p class="egg-404__retry-status" data-egg-404-retry-status role="status" aria-live="polite"></p>
+        </div>
+      </article>
+
+      <aside class="window egg-404__toy" aria-labelledby="egg-404-toy-title">
+        <div class="window-bar">
+          <div class="window-controls" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p id="egg-404-toy-title">FIND_THE_PAGE.EXE</p>
+          <span data-egg-404-score>0 / 3</span>
+        </div>
+        <div class="egg-404__arena" data-egg-404-arena>
+          <button class="egg-404__file" type="button" data-egg-404-file data-cursor="CATCH" aria-label="Catch the missing page">
+            <span class="egg-404__file-icon" aria-hidden="true"></span>
+            <small data-egg-404-file-label>page.html</small>
+          </button>
+          <div class="egg-404__win" data-egg-404-win hidden>
+            <p>Found it.</p>
+            <a class="cta cta--dark" href="/" data-cursor="HOME" data-transition-link>Take me home <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+        <p class="egg-404__status" data-egg-404-status role="status" aria-live="polite">The missing page is hiding in here. Catch it three times.</p>
+      </aside>
+    </div>
+  </section>
+</div>
