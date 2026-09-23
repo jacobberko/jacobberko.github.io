@@ -533,151 +533,39 @@
     return line;
   }
 
-  /* ---------- Command menu: always the last thing in the log ---------- */
-  // One element listing every visible command as a button. It moves to the end of the output
-  // when the terminal opens and after every command, so the log never collects copies of it.
-  // While a command is still printing (its run() returned a Promise that has not settled yet)
-  // the menu steps out of the log, and anything printed after it lands pulls it back to the end.
+  /* ---------- Command list: always the last thing in the log ---------- */
+  // The plain-text help line ("COMMANDS: barrel · gravity · …"). It is one element that moves
+  // to the end of the output when the terminal opens and after every command, so the commands
+  // are always on screen without typing help, and the log never collects copies of it. While a
+  // command is still printing (its run() returned a Promise that has not settled yet) the line
+  // steps out of the log, and anything printed after it lands pulls it back to the end.
   const PROMPT = "visitor@jb:~$";
-  const MENU_ORDER = ["theme", "snake", "hack", "party", "gravity", "barrel", "screensaver"];
-  const MENU_HINTS = {
-    theme: "switch the look",
-    snake: "play a round",
-    hack: "hollywood mode",
-    party: "after hours",
-    gravity: "drop the page",
-    barrel: "do a barrel roll",
-    screensaver: "lights out",
-    clear: "wipe the screen"
-  };
   let menu = null;
-  let menuGrid = null;
-  let menuKey = "";
-  let menuAnchor = null;
   let commandRun = 0;
   let commandBusy = false;
 
-  function menuCommands() {
-    const names = Object.keys(JBOS.commands).filter(function (name) {
+  function menuText() {
+    const fun = Object.keys(JBOS.commands).filter(function (name) {
       const spec = JBOS.commands[name];
       return spec && !spec.hidden && name !== "help" && name !== "clear";
-    });
-    // Known commands in a deliberate order; anything newer follows in registration order.
-    const registered = names.slice();
-    const rank = function (name) {
-      const index = MENU_ORDER.indexOf(name);
-      return index >= 0 ? index : MENU_ORDER.length + registered.indexOf(name);
-    };
-    return names.sort(function (a, b) { return rank(a) - rank(b); }).concat(["clear"]);
+    }).sort();
+    return "COMMANDS: " + fun.concat(["clear"]).join(" · ");
   }
 
-  function menuHint(name) {
-    if (MENU_HINTS[name]) return MENU_HINTS[name];
-    const spec = JBOS.commands[name];
-    const help = spec && typeof spec.help === "string" ? spec.help : "";
-    // Help strings read "name: what it does"; the menu already shows the name.
-    return help.toLowerCase().indexOf(name + ":") === 0 ? help.slice(name.length + 1).trim() : help;
-  }
-
-  function focusPrompt(event) {
-    // A tap should not summon the phone keyboard; mouse and keyboard users go back to the prompt.
-    if (!terminalInput || !terminal || !terminal.open) return;
-    if (finePointer || !event || event.detail === 0) terminalInput.focus({ preventScroll: true });
-  }
-
-  function buildMenu() {
-    if (!menu) {
-      menu = doc.createElement("div");
-      menu.className = "terminal-menu";
-      menu.setAttribute("role", "group");
-      menu.setAttribute("aria-labelledby", "terminal-menu-title");
-      const title = doc.createElement("p");
-      title.className = "terminal-menu__title";
-      title.id = "terminal-menu-title";
-      const label = doc.createElement("span");
-      label.textContent = "Commands";
-      const tip = doc.createElement("small");
-      tip.textContent = finePointer ? "click one or type it" : "tap one or type it";
-      title.appendChild(label);
-      title.appendChild(tip);
-      menuGrid = doc.createElement("div");
-      menuGrid.className = "terminal-menu__grid";
-      menu.appendChild(title);
-      menu.appendChild(menuGrid);
-      menu.addEventListener("click", function (event) {
-        const button = event.target.closest("[data-terminal-run]");
-        if (!button) return;
-        focusPrompt(event);
-        submitCommand(button.getAttribute("data-terminal-run"));
-      });
-    }
-
-    const names = menuCommands();
-    const key = names.join(" ");
-    if (key === menuKey) return menu;
-    menuKey = key;
-    menuGrid.textContent = "";
-    names.forEach(function (name) {
-      const spec = JBOS.commands[name];
-      const button = doc.createElement("button");
-      button.type = "button";
-      button.className = "terminal-menu__cmd";
-      button.setAttribute("data-terminal-run", name);
-      if (spec && typeof spec.help === "string") button.title = spec.help;
-      const label = doc.createElement("span");
-      label.className = "terminal-menu__name";
-      label.textContent = name;
-      button.appendChild(label);
-      const hint = menuHint(name);
-      if (hint) {
-        const small = doc.createElement("span");
-        small.className = "terminal-menu__hint";
-        small.textContent = hint;
-        button.appendChild(small);
-      }
-      menuGrid.appendChild(button);
-    });
-    return menu;
-  }
-
-  function placeMenu(flash) {
+  function placeMenu() {
     if (!terminalOutput || commandBusy) return;
-    const element = buildMenu();
-    if (terminalOutput.lastElementChild !== element) terminalOutput.appendChild(element);
-    if (flash && !reduceMotion) {
-      element.classList.remove("is-flashing");
-      void element.offsetWidth;
-      element.classList.add("is-flashing");
-      // A moved element replays its animations, so the class only lives as long as one flash.
-      window.clearTimeout(placeMenu.flashTimer);
-      placeMenu.flashTimer = window.setTimeout(function () { element.classList.remove("is-flashing"); }, 950);
+    if (!menu) {
+      menu = doc.createElement("p");
+      menu.className = "terminal-output-accent";
     }
-    scrollToMenu();
-  }
-
-  // Scrolls to the end, unless the newest output and the whole menu do not fit together (a short
-  // phone, a landscape phone, a long printout). Then the output wins: the view ends just under
-  // the menu's first row, so the commands peek in from below, and it never scrolls past the
-  // prompt line of the command that just ran.
-  function scrollToMenu() {
-    const log = terminalOutput;
-    const end = log.scrollHeight - log.clientHeight;
-    let top = end;
-    if (end > 0 && menu && menu.parentNode === log && menuAnchor && menuAnchor.parentNode === log) {
-      const origin = log.getBoundingClientRect().top + log.clientTop - log.scrollTop;
-      const pad = parseFloat(window.getComputedStyle(log).paddingTop) || 0;
-      const firstRow = menuGrid && menuGrid.firstElementChild;
-      const peekEnd = (firstRow || menu).getBoundingClientRect().bottom - origin;
-      const anchorTop = menuAnchor.getBoundingClientRect().top - origin - pad;
-      top = Math.min(end, Math.max(anchorTop, peekEnd + pad - log.clientHeight));
-    }
-    log.scrollTop = Math.max(0, top);
+    const text = menuText();
+    if (menu.textContent !== text) menu.textContent = text;
+    if (terminalOutput.lastElementChild !== menu) terminalOutput.appendChild(menu);
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
   }
 
   function detachMenu() {
-    if (!menu) return;
-    menu.classList.remove("is-flashing");
-    if (menu.parentNode) menu.parentNode.removeChild(menu);
+    if (menu && menu.parentNode) menu.parentNode.removeChild(menu);
   }
 
   // Output printed while no command is running (a "Did you mean", a stray timer, a game over
@@ -693,10 +581,10 @@
     }).observe(terminalOutput, { childList: true });
   }
 
-  function settleCommand(run, flash) {
+  function settleCommand(run) {
     if (run !== commandRun) return;
     commandBusy = false;
-    placeMenu(flash);
+    placeMenu();
   }
 
   // Runs a line as if it had been typed at the prompt.
@@ -705,7 +593,7 @@
     const run = ++commandRun;
     commandBusy = true;
     detachMenu();
-    menuAnchor = terminalLine(PROMPT + " " + raw);
+    terminalLine(PROMPT + " " + raw);
     if (!raw) { settleCommand(run); return; }
 
     const parts = raw.split(/\s+/);
@@ -715,11 +603,10 @@
     JBOS.emit("terminal-command", { command: command, args: args, raw: raw });
 
     // The terminal is for fun: easter-egg commands registered by the modules, plus help and clear.
-    // `help` just points at the menu, which is about to land under it anyway.
+    // `help` needs no output of its own: the command list lands right under it anyway.
     let result = null;
     if (command === "help") {
-      menuAnchor = null;
-      settleCommand(run, true);
+      settleCommand(run);
       return;
     }
     if (command === "clear") {
@@ -756,7 +643,6 @@
     resetTerminalPosition();
     terminal.showModal();
     setDialogState(true);
-    menuAnchor = null;
     placeMenu();
     window.setTimeout(function () { if (terminalInput) terminalInput.focus(); }, 20);
   }

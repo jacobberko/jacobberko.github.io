@@ -58,11 +58,10 @@
     position: relative;
   }
 
-  // Pinned length in vh: 3 per word of the bio (--words, from the markup), the same scroll
-  // distance per word the chapter has always had, however long the bio is.
+  // Pinned length in vh: the bio plays its word assembly on a clock (home-story.js), so the
+  // pin is only a short hold for reading before the next window slides over it.
   .story-bio {
-    --words: 80;
-    --len: calc(var(--words) * 3);
+    --len: 60;
     z-index: 1;
     color: var(--paper);
     background: var(--ink);
@@ -1482,12 +1481,12 @@
     margin-top: clamp(0.5rem, 2vh, 1.25rem);
   }
 
-  // Each frame owns its slice of --p (--f0, --fl: sized by word count in the markup). Words
-  // land in the first ~62% of it and the paragraph holds for the rest. With more than one
-  // block, every frame but the last then lifts away and is fully gone before the next one
-  // rises in, so two paragraphs are never on screen at once.
+  // Each frame owns its slice of the assembly clock --ap (0 -> 1, played by home-story.js once
+  // the paragraph is in view; --f0, --fl: sized by word count in the markup). Words land in
+  // the first ~62% of it. With more than one block, every frame but the last then lifts away
+  // and is fully gone before the next one rises in, so two paragraphs are never on screen at once.
   .story-bio.is-pinned .story-bio__frame {
-    --fx: calc((var(--p) - var(--f0)) / var(--fl));
+    --fx: calc((var(--ap, 0) - var(--f0)) / var(--fl));
     --q: clamp(0, var(--fx), 1);
     --leave: clamp(0, (var(--fx) - 0.86) * 9, 1);
     --on: clamp(0, (var(--fx) + 0.03) * 14, 1);
@@ -1517,6 +1516,8 @@
   .story-bio.is-pinned .story-word {
     --t: clamp(0, (var(--q) - var(--s)) * 12, 1);
     --u: calc(1 - var(--t));
+    // Eased (quadratic) remainder of the flight, so each word decelerates into place.
+    --e: calc(var(--u) * var(--u));
     --flash: calc(var(--t) * var(--u) * 4);
   }
 
@@ -1550,9 +1551,9 @@
     opacity: var(--o);
     // 2D on purpose: ~80 words must not each become a compositor layer.
     transform:
-      translate(calc(var(--dx) * var(--u) * 0.42em), calc((var(--dy) * 0.3 + 1.1) * var(--u) * 1em))
-      rotate(calc(var(--dr) * var(--u) * 5deg))
-      scale(calc(1 + var(--u) * 0.55));
+      translate(calc(var(--dx) * var(--e) * 0.42em), calc((var(--dy) * 0.3 + 1.1) * var(--e) * 1em))
+      rotate(calc(var(--dr) * var(--e) * 5deg))
+      scale(calc(1 + var(--e) * 0.55));
   }
 
   .story-bio.is-pinned .story-bio__meter {
@@ -1568,21 +1569,11 @@
     text-transform: uppercase;
   }
 
-  .story-bio__cue,
   .story-bio__count {
     grid-row: 1;
     grid-column: 1;
     margin: 0;
     white-space: nowrap;
-  }
-
-  .story-bio__cue {
-    color: var(--acid);
-    opacity: calc(1 - var(--p) * 14);
-  }
-
-  .story-bio__count {
-    opacity: calc(var(--p) * 14);
   }
 
   .story-bio__count b {
@@ -1612,7 +1603,7 @@
   .story-bio__progress i {
     display: block;
     background: var(--acid);
-    transform: scaleX(var(--wp, var(--p)));
+    transform: scaleX(var(--wp, var(--ap, 0)));
     transform-origin: 0 50%;
   }
 
@@ -2265,10 +2256,6 @@
     // gutter (or beside a heading) stay, so none drifts behind a line of text.
     .story-chapter.is-pinned .story-glyph:not(.story-glyph--phone) {
       display: none;
-    }
-
-    .story-bio.is-pinned {
-      --len: calc(var(--words) * 2.75);
     }
 
     .story-bio.is-pinned .story-words {

@@ -129,17 +129,24 @@
   let frameId = 0;
   let measureId = 0;
 
-  /* ---------- 01 · Bio: word counter + keyword tags ---------- */
+  /* ---------- 01 · Bio: flies in on its own, word counter + keyword tags ---------- */
 
+  // The words used to assemble only as the visitor scrolled, which left an empty block on
+  // screen for anyone who paused. Now the assembly plays on a clock (--ap: 0 -> the point where
+  // the last word has landed) as soon as half the paragraph is in view, and it resets once the
+  // paragraph drops back below the screen (or on rewind), so it plays again next time.
   function createBio(chapter) {
     const element = chapter.element;
+    const framesEl = element.querySelector(".story-bio__frames");
     const frames = Array.from(element.querySelectorAll(".story-bio__frame"));
     const frameCount = Math.max(frames.length, 1);
     const thresholds = [];
     const keyStarts = {};
+    let firstStart = 1;
+    let lastLand = 0;
 
     frames.forEach(function (frame, frameIndex) {
-      // Each frame's slice of --p (set in the markup, sized by word count).
+      // Each frame's slice of the clock (set in the markup, sized by word count).
       const sliceStart = readNumber(frame, "--f0", frameIndex / frameCount);
       const sliceLength = readNumber(frame, "--fl", 1 / frameCount) || 1 / frameCount;
       frame.querySelectorAll(".story-word").forEach(function (word) {
@@ -147,11 +154,18 @@
         // Mirrors --t in home-story.scss: a word reads as landed halfway through its 1/12 window.
         const at = sliceStart + (start + 0.5 / 12) * sliceLength;
         thresholds.push(at);
+        firstStart = Math.min(firstStart, sliceStart + start * sliceLength);
+        lastLand = Math.max(lastLand, sliceStart + (start + 1 / 12) * sliceLength);
         const key = word.getAttribute("data-key");
         if (key && (keyStarts[key] === undefined || at < keyStarts[key])) keyStarts[key] = at;
       });
     });
     thresholds.sort(function (a, b) { return a - b; });
+
+    // The clock runs from just before the first word moves to the moment the last one lands.
+    const clockFrom = clamp(firstStart - 0.01, 0, 1);
+    const clockTo = clamp(lastLand + 0.005, clockFrom + 0.01, 1);
+    const duration = clamp(900 + thresholds.length * 30, 1600, 3200);
 
     const countEl = element.querySelector("[data-story-words]");
     const totalEl = element.querySelector("[data-story-words-total]");
@@ -165,55 +179,110 @@
     const cache = {};
     let shown = -1;
     let complete = false;
+    let state = "idle";
+    let visible = false;
+    let raf = 0;
+    let startedAt = 0;
+
+    function render(p, audible) {
+      setVar(element, cache, "--ap", p);
+
+      let count = 0;
+      while (count < thresholds.length && thresholds[count] <= p) count += 1;
+      if (count !== shown) {
+        shown = count;
+        if (countEl) countEl.textContent = pad(count, 3);
+      }
+
+      // The meter bar follows the words (0 -> 1 as they land, easing between one word and
+      // the next), so it is full exactly when the counter is.
+      let landed = count;
+      if (count < thresholds.length) {
+        const from = count ? thresholds[count - 1] : 0;
+        landed += clamp((p - from) / Math.max(thresholds[count] - from, 0.0001), 0, 1);
+      }
+      setVar(element, cache, "--wp", thresholds.length ? landed / thresholds.length : p);
+
+      let newlyFound = false;
+      let all = tags.length > 0;
+      tags.forEach(function (tag) {
+        const found = p >= tag.at;
+        if (found !== tag.found) {
+          tag.found = found;
+          tag.element.classList.toggle("is-found", found);
+          if (found) newlyFound = true;
+        }
+        if (!found) all = false;
+      });
+
+      if (all !== complete) {
+        complete = all;
+        element.classList.toggle("has-all-keys", all);
+        if (all && audible) play("success");
+      } else if (newlyFound && audible) {
+        play("pop");
+      }
+    }
+
+    function frame(now) {
+      raf = 0;
+      if (state !== "playing") return;
+      if (!startedAt) startedAt = now;
+      const t = clamp((now - startedAt) / duration, 0, 1);
+      render(clockFrom + (clockTo - clockFrom) * t, true);
+      if (t < 1) raf = window.requestAnimationFrame(frame);
+      else state = "done";
+    }
+
+    function start() {
+      if (state !== "idle" || !live || !chapter.pinned) return;
+      state = "playing";
+      startedAt = 0;
+      render(clockFrom, false);
+      raf = window.requestAnimationFrame(frame);
+    }
+
+    function reset() {
+      if (raf) window.cancelAnimationFrame(raf);
+      raf = 0;
+      state = "idle";
+      shown = -1;
+      complete = false;
+      clearVars(element, cache, ["--ap", "--wp"]);
+      if (countEl) countEl.textContent = pad(0, 3);
+      element.classList.remove("has-all-keys");
+      tags.forEach(function (tag) {
+        tag.found = false;
+        tag.element.classList.remove("is-found");
+      });
+    }
+
+    if (framesEl && "IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          visible = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+          if (visible) {
+            start();
+            return;
+          }
+          // Dropped back below the screen (the visitor went back up): play again next time.
+          const floor = entry.rootBounds ? entry.rootBounds.bottom : window.innerHeight;
+          if (!entry.isIntersecting && entry.boundingClientRect.top >= floor - 1 && state !== "idle") reset();
+        });
+      }, { threshold: [0, 0.5, 1] }).observe(framesEl);
+    } else {
+      visible = true;
+    }
 
     return {
-      update: function (p, quiet) {
-        let count = 0;
-        while (count < thresholds.length && thresholds[count] <= p) count += 1;
-        if (count !== shown) {
-          shown = count;
-          if (countEl) countEl.textContent = pad(count, 3);
-        }
-
-        // The meter bar follows the words (0 -> 1 as they land, easing between one word and
-        // the next), so it is full exactly when the counter is, not at the end of the pin.
-        let landed = count;
-        if (count < thresholds.length) {
-          const from = count ? thresholds[count - 1] : 0;
-          landed += clamp((p - from) / Math.max(thresholds[count] - from, 0.0001), 0, 1);
-        }
-        setVar(element, cache, "--wp", thresholds.length ? landed / thresholds.length : p);
-
-        let newlyFound = false;
-        let all = tags.length > 0;
-        tags.forEach(function (tag) {
-          const found = p >= tag.at;
-          if (found !== tag.found) {
-            tag.found = found;
-            tag.element.classList.toggle("is-found", found);
-            if (found) newlyFound = true;
-          }
-          if (!found) all = false;
-        });
-
-        const audible = !quiet && scrollDirection > 0;
-        if (all !== complete) {
-          complete = all;
-          element.classList.toggle("has-all-keys", all);
-          if (all && audible) play("success");
-        } else if (newlyFound && audible) {
-          play("pop");
-        }
+      // The chapter just got (re)pinned or scrolled: start if the paragraph is already in view.
+      update: function () {
+        if (visible && state === "idle") start();
       },
-      reset: function () {
-        shown = -1;
-        complete = false;
-        clearVars(element, cache, ["--wp"]);
-        element.classList.remove("has-all-keys");
-        tags.forEach(function (tag) {
-          tag.found = false;
-          tag.element.classList.remove("is-found");
-        });
+      reset: reset,
+      replay: function () {
+        reset();
+        if (visible) start();
       }
     };
   }
@@ -570,6 +639,8 @@
     play("whoosh");
     window.clearTimeout(rewindTimer);
     rewindTimer = window.setTimeout(stopRewind, 5000);
+    // The bio plays its fly-in again as the rewind reaches it.
+    if (bioChapter && bioChapter.module && bioChapter.module.replay) bioChapter.module.replay();
     window.scrollTo({ top: rewindTarget, behavior: "smooth" });
     focusTitle(first);
     schedule();

@@ -1702,10 +1702,7 @@
       current.after(120 + total * 58 + 900, function () {
         print("Relax: nothing was hacked. It's a portfolio.", "egg-dim");
       });
-      current.after(120 + total * 58 + 1900, function () {
-        print("You now have root on a static site. You can read everything you could already read.");
-      });
-      current.after(120 + total * 58 + 3000, function () {
+      current.after(120 + total * 58 + 2000, function () {
         print("Incident reported to the security team. (Also Jake. He's not worried.)", "egg-dim");
         current.done();
       });

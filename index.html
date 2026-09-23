@@ -63,9 +63,9 @@ description: Cornell computer science student building software, businesses, and
       </nav>
     </div>
 
-    <!-- 01 · BIO: kinetic type that assembles word by word. --words (the bio's word count) sets
-         the pinned length, so each word gets a fixed scroll distance (see home-story.scss). -->
-    <section class="story-chapter story-bio" id="story-bio" data-story-chapter="bio" data-cursor-tone="dark" aria-labelledby="story-bio-title" style="--words: {{ story_bio_total }}">
+    <!-- 01 · BIO: kinetic type that flies in word by word on its own once the paragraph is in
+         view (home-story.js plays it on a clock), then holds while the visitor reads. -->
+    <section class="story-chapter story-bio" id="story-bio" data-story-chapter="bio" data-cursor-tone="dark" aria-labelledby="story-bio-title">
       <div class="story-stage">
         <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>01_BIO.TXT</span><span>{{ story_bio_total }} WORDS</span></div>
         <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">HELLO</span></div>
@@ -143,7 +143,6 @@ description: Cornell computer science student building software, businesses, and
           </div>
 
           <div class="story-bio__meter" aria-hidden="true">
-            <p class="story-bio__cue">&#9660;&#xFE0E; Keep scrolling to assemble</p>
             <p class="story-bio__count">Words <b data-story-words>000</b> / <span data-story-words-total>000</span></p>
             <span class="story-bio__progress"><i></i></span>
             <ul class="story-bio__keys">
@@ -344,4 +343,4 @@ description: Cornell computer science student building software, businesses, and
   </div>
 </div>
 
-<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=6"></script>
+<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=7"></script>
