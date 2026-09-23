@@ -685,4 +685,22 @@
   }
   updateClock();
   window.setInterval(updateClock, 30000);
+
+  // Album cover toggles the Apple Music player beneath it.
+  doc.querySelectorAll("[data-player-toggle]").forEach(function (toggle) {
+    const player = doc.getElementById(toggle.getAttribute("aria-controls"));
+    const badge = toggle.querySelector(".album-art__badge");
+    if (!player) return;
+    toggle.addEventListener("click", function () {
+      const open = player.hasAttribute("hidden");
+      if (open) player.removeAttribute("hidden");
+      else player.setAttribute("hidden", "");
+      player.classList.add("is-visible");
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.setAttribute("aria-label", (open ? "Hide" : "Show") + " the Apple Music player for the Waves EP");
+      if (badge) badge.textContent = open ? "✕ CLOSE" : "▶ PLAY";
+      toggle.setAttribute("data-cursor", open ? "CLOSE" : "PLAY");
+      if (open) player.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    });
+  });
 })();
