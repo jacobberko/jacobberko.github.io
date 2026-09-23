@@ -881,17 +881,5 @@
     });
   }
 
-  // Terminal: `story`, `story work`, `story replay` …
-  const terminalApi = jbos();
-  if (typeof terminalApi.registerCommand === "function") {
-    const destinations = {
-      bio: 0, about: 0, "1": 0,
-      work: 1, experience: 1, timeline: 1, "2": 1,
-      stack: 2, skills: 2, languages: 2, courses: 2, "3": 2,
-      next: 3, outro: 3, links: 3, "4": 3
-    };
-
-  }
-
   measure();
 })();
