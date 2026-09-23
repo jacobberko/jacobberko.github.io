@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Home concept #2 · Scroll Story (lab/story/index.html + assets/js/home-story.js)
+   Home page · Scroll Story (index.html + assets/js/home-story.js)
    --------------------------------------------------------------------------
    home-story.js measures every chapter once per resize and, from one
    requestAnimationFrame loop, writes unitless custom properties:
@@ -41,6 +41,10 @@
     // inside chapters and cards that re-scope --ink. Title bars and the chapter rail opt
     // into the theme scopes through data-theme-scope in the markup.
     --story-on-acid: var(--on-accent, var(--ink));
+    // Where a pinned stage's content starts: clear of the fixed site header (0.75rem + a
+    // 4.4rem shell above 1080px, 0.5rem + 4rem below) plus one consistent breath, so every
+    // chapter's kicker sits at the same height.
+    --story-top: calc(5.15rem + clamp(1.25rem, 3.4vh, 2.25rem));
     position: relative;
     width: 100vw;
     margin-left: calc(50% - 50vw);
@@ -121,7 +125,11 @@
     z-index: 1;
   }
 
+  // Side paddings are tokens so full-bleed rows (marquees, the timeline track) can undo
+  // them exactly, and so the rail gutter below can widen the right one.
   .story-stage__inner {
+    --story-pad-l: var(--page-pad);
+    --story-pad-r: var(--page-pad);
     position: relative;
     z-index: 2;
     display: grid;
@@ -131,7 +139,13 @@
     align-content: start;
     gap: clamp(1.75rem, 3.5vw, 3rem);
     margin: 0 auto;
-    padding: clamp(3rem, 6vw, 5.5rem) var(--page-pad) clamp(3.5rem, 7vw, 6rem);
+    padding: clamp(3rem, 6vw, 5.5rem) var(--story-pad-r) clamp(3.5rem, 7vw, 6rem) var(--story-pad-l);
+  }
+
+  // While the chapter rail is on screen (the live story), every chapter keeps a gutter on
+  // the right that no content, card or shadow runs into.
+  .story.is-live .story-stage__inner {
+    --story-pad-r: max(var(--page-pad), 4.25rem);
   }
 
   .story-stage__inner > * {
@@ -235,6 +249,8 @@
   }
 
   .story-outro .story-title span {
+    margin-left: 0.07em;
+    letter-spacing: 0;
     color: var(--paper);
     -webkit-text-stroke: clamp(1px, 0.08vw, 2px) var(--ink);
   }
@@ -304,23 +320,28 @@
     margin: 0 0 1rem;
     color: var(--acid);
     font-family: var(--font-mono);
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.09em;
     line-height: 1.2;
     text-transform: uppercase;
   }
 
+  // --lh is the line height as a number, so the key-word highlights can size themselves
+  // to the type rather than to the line box (see .story-mark::after).
   .story-words {
+    --lh: 1.18;
     max-width: 29em;
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(1.35rem, 2.6vw, 2.7rem);
     font-weight: 900;
     letter-spacing: -0.045em;
-    line-height: 1.16;
+    line-height: var(--lh);
   }
 
+  // Words are inline-blocks (so each can fly in on its own) separated by real spaces in
+  // the markup, so they wrap and space like ordinary text.
   .story-word {
     position: relative;
     display: inline-block;
@@ -342,17 +363,72 @@
     display: none;
   }
 
+  // The acid swipe a word flashes as it lands (pinned only). Its overhang is less than
+  // half a space, so it never reaches a neighbour's glyphs.
   .story-word::after {
     z-index: -1;
-    inset: 0.1em -0.12em 0.02em;
+    inset: 0.1em -0.08em 0.02em;
     background: var(--acid);
     transform: scaleX(0);
     transform-origin: 0 50%;
   }
 
-  .story-word.is-key > span { color: var(--ink); }
-  .story-word.is-key::after { transform: none; }
+  .story-word.is-key::after { display: none; }
   .story-word.is-num > span { color: var(--cyan); }
+
+  // Key phrases: the highlight hugs the word (not its trailing punctuation). Real inline
+  // padding gives the letters room inside the mark without the overhang reaching into the
+  // neighbouring spaces. Vertically the mark is ~0.96em tall and centred on the type (cap
+  // height to just into the descenders, in Arial Black's metrics) whatever the line height,
+  // so marks on consecutive lines always keep (--lh - 0.96)em between them.
+  // A key word followed by another one (is-join) stretches its highlight across the space
+  // so the phrase reads as one mark.
+  .story-mark {
+    position: relative;
+    display: inline-block;
+    padding: 0 0.12em;
+    color: var(--story-on-acid);
+    font-weight: inherit;
+  }
+
+  .story-mark::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: calc(var(--lh, 1.18) * 0.5em - 0.43em) -0.06em calc(var(--lh, 1.18) * 0.5em - 0.53em);
+    background: var(--acid);
+    transform-origin: 0 50%;
+    pointer-events: none;
+  }
+
+  // Inside a phrase the padding only goes on its outer ends, so the words keep a normal
+  // space between them.
+  .story-word.is-join .story-mark {
+    padding-right: 0;
+  }
+
+  .story-word.is-join + .story-word .story-mark {
+    padding-left: 0;
+  }
+
+  .story-word.is-join .story-mark::after {
+    right: -0.34em;
+  }
+
+  // A multi-word key phrase never breaks across lines, so its highlight stays one piece.
+  .story-phrase {
+    white-space: nowrap;
+  }
+
+  // A line that opens with a key phrase, flagged word by word by home-story.js after every
+  // relayout: the whole line shifts left by the mark's inline padding (0.12em, above), so its
+  // first letter lines up with the paragraph's left edge, the padding and highlight hang into
+  // the margin, and the spaces between its words stay even. A relative offset rather than a
+  // negative margin, so the line breaks it was measured against can never change because of it.
+  .story-words .is-hang {
+    position: relative;
+    left: -0.12em;
+  }
 
   .story-bio__meter {
     display: none;
@@ -598,18 +674,20 @@
     background: var(--ink);
   }
 
+  // May borrow a little of the column gap (at least 0.475rem wherever the channels sit
+  // side by side), so the longest name, "JavaScript", never has to be truncated.
   .story-eq__name {
     display: block;
-    max-width: 100%;
+    max-width: calc(100% + 0.45rem);
     overflow: hidden;
-    padding: 0.32rem 0.5rem;
+    padding: 0.32rem 0.45rem;
     border-radius: 999px;
     color: var(--paper);
     background: var(--ink);
     font-family: var(--font-mono);
     font-size: 0.6rem;
     font-weight: 800;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     line-height: 1;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -641,6 +719,10 @@
     letter-spacing: 0.05em;
     line-height: 1.2;
     text-transform: uppercase;
+  }
+
+  .story-eq__legend > span {
+    white-space: nowrap;
   }
 
   .story-catalog__body {
@@ -692,13 +774,17 @@
     list-style: none;
   }
 
+  // Code and title span the card; the barcode and the LOGGED stamp share the footer row,
+  // side by side with a gutter between them, and the footer always keeps at least ~1.15rem
+  // under the title however many lines it runs to.
   .story-deck__card {
     position: relative;
     display: grid;
     min-width: 0;
     min-height: 8.5rem;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto 1fr auto;
-    gap: 0.6rem;
+    gap: 0.6rem 0.9rem;
     padding: 0.85rem 0.95rem;
     overflow: hidden;
     border: 1px solid var(--ink);
@@ -706,6 +792,11 @@
     color: var(--ink);
     background: var(--paper);
     box-shadow: 0.22rem 0.22rem 0 var(--ink);
+  }
+
+  .story-deck__code,
+  .story-deck__card strong {
+    grid-column: 1 / -1;
   }
 
   .story-deck__code {
@@ -729,13 +820,19 @@
     width: 100%;
     max-width: 8.5rem;
     height: 1.1rem;
+    grid-row: 3;
+    grid-column: 1;
+    align-self: end;
+    margin-top: 0.55rem;
     background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px, var(--ink) 4px 5px, transparent 5px 8px, var(--ink) 8px 11px, transparent 11px 13px);
   }
 
   .story-deck__stamp {
-    position: absolute;
-    right: 0.7rem;
-    bottom: 0.75rem;
+    grid-row: 3;
+    grid-column: 2;
+    align-self: end;
+    justify-self: end;
+    margin-bottom: 0.1rem;
     padding: 0.22rem 0.4rem;
     border: 2px solid var(--magenta);
     border-radius: 0.2rem;
@@ -749,11 +846,12 @@
     transform: rotate(-8deg);
   }
 
+  // Full bleed from inside the (possibly asymmetric) stage padding.
   .story-marquee-wrap {
     display: grid;
     width: 100vw;
     gap: 0.1rem;
-    margin-left: calc(50% - 50vw);
+    margin-left: calc(50% - 50vw + (var(--story-pad-r) - var(--story-pad-l)) / 2);
     padding-block: 0.35rem;
   }
 
@@ -801,6 +899,10 @@
 
   .story-doors > li {
     border-top: 1px solid var(--ink);
+  }
+
+  .story-deck__card strong {
+    text-wrap: balance;
   }
 
   .story-door {
@@ -965,7 +1067,7 @@
     --story-p: 0;
     position: absolute;
     top: 0;
-    right: clamp(0.35rem, 1vw, 1.1rem);
+    right: clamp(0.35rem, 0.7vw, 0.75rem);
     color: var(--paper);
     opacity: 0;
     pointer-events: none;
@@ -1176,8 +1278,20 @@
     overflow: hidden;
   }
 
-  .story-chapter.is-pinned .story-title {
+  // One title size for the whole live story, pinned or not: a chapter that falls back to its
+  // static layout (its stage does not fit the screen) keeps the same kicker-to-title scale
+  // as its pinned neighbours instead of jumping to the larger static-page size.
+  .story.is-live .story-title {
     font-size: clamp(1.8rem, 3.4vw, 3.6rem);
+  }
+
+  // The title bar leads the window while a chapter slides in, then docks away (--dock,
+  // 0 -> 1 over the last stretch before its top edge reaches the top of the screen, written
+  // by home-story.js), so no chapter keeps a strip of it behind, or peeking around, the
+  // fixed site header.
+  .story.is-live .story-tab {
+    opacity: calc(1 - var(--dock, 0));
+    transform: translate3d(0, calc(var(--dock, 0) * -100%), 0);
   }
 
   .story-chapter.is-pinned .story-tab {
@@ -1192,7 +1306,7 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
     gap: clamp(0.8rem, 2.2vh, 1.75rem);
-    padding: 5.9rem var(--page-pad) clamp(1rem, 3vh, 2.25rem);
+    padding: var(--story-top) var(--story-pad-r) clamp(1rem, 3vh, 2.25rem) var(--story-pad-l);
   }
 
   // While the next chapter covers this one: recede and dim.
@@ -1231,6 +1345,9 @@
   // Giant display word: opens from a slit as the chapter arrives, drifts while pinned,
   // then shrinks and tips away as the next chapter covers it.
   .story-chapter.is-pinned .story-mega {
+    // Tight tracking pushes the last glyph past the text box; the padding keeps the reveal's
+    // clip-path from slicing it.
+    padding-inline: 0.14em;
     position: absolute;
     top: 55%;
     left: 50%;
@@ -1285,6 +1402,52 @@
       rotate(calc(var(--p) * var(--spin) * 360deg));
   }
 
+  // Glyph lanes. home-story.js measures each pinned stage (px from its top-left corner):
+  // --head-end (bottom of the heading), --foot-top (top of the bottom row), --title-end
+  // (right end of the title text) and --col-end (right edge of the bio text column).
+  // A glyph opts into the lanes that keep it off every line of text:
+  //   --lane    drifts only between the heading and the bottom row, 1.5rem clear of both
+  //             (plus the reach of its spin); --gy and the drift are shares of that lane,
+  //             so it moves the same way on every screen, however short;
+  //   --head    rides in the heading row, just right of the title;
+  //   --side    stays right of the text column;
+  //   --gutter  stays in the left page margin, 0.75rem clear of the text.
+  .story-chapter.is-pinned .story-glyph--lane {
+    --lo: calc(var(--head-end, 0px) + 1.5rem + 0.4em);
+    --room: max(0px, var(--foot-top, 100vh) - 1.5rem - 1.4em - var(--lo));
+    --f: clamp(0, var(--gy) / 100 + (0.5 - var(--p)) * var(--depth) * 0.4 + (1 - var(--in)) * var(--depth) * 0.18, 1);
+    top: 0;
+    transform:
+      translate3d(0, calc(var(--lo) + var(--room) * var(--f)), 0)
+      rotate(calc(var(--p) * var(--spin) * 360deg));
+  }
+
+  // --gy places it within the heading band (0 = top of the kicker, 100 = foot of the title).
+  .story-chapter.is-pinned .story-glyph--head {
+    top: calc(var(--story-top) + (var(--head-end, 20vh) - var(--story-top)) * var(--gy) / 100);
+    left: calc(var(--title-end, 50%) + 1.5rem + 0.5em);
+    left: unquote("max(calc(var(--gx) * 1%), calc(var(--title-end, 50%) + 1.5rem + 0.5em))");
+    margin-top: -0.5em;
+    transform:
+      translate3d(0, calc((0.5 - var(--p)) * var(--depth) * 0.5em + (1 - var(--in)) * var(--depth) * 18vh), 0)
+      rotate(calc(var(--p) * var(--spin) * 360deg));
+  }
+
+  .story-chapter.is-pinned .story-glyph--side {
+    left: unquote("max(calc(var(--gx) * 1%), calc(var(--col-end, 0px) + 1rem))");
+  }
+
+  // A lane glyph on the right that keeps below the chapter rail (centred on the screen,
+  // ~4.4rem tall each way), so it never half-hides behind it on narrow screens.
+  .story-chapter.is-pinned .story-glyph--low {
+    --lo: max(var(--head-end, 0px) + 1.5rem + 0.4em, 50vh + 5.5rem);
+  }
+
+  .story-chapter.is-pinned .story-glyph--gutter {
+    right: calc(100% - var(--page-pad) + 0.75rem);
+    left: auto;
+  }
+
   .story-chapter.is-pinned .story-glyph:nth-child(5n + 1) { color: var(--acid); }
   .story-chapter.is-pinned .story-glyph:nth-child(5n + 2) { color: var(--cyan); }
   .story-chapter.is-pinned .story-glyph:nth-child(5n + 3) { color: var(--magenta); }
@@ -1308,21 +1471,28 @@
 
   /* ---------- 01 · Bio (pinned) ---------- */
 
+  // The frame stack is centred in the free space; its height is set by the longer paragraph,
+  // so both paragraphs still start on the same line (no jump between them) while the block
+  // sits balanced between the heading and the word meter instead of hugging the top.
   .story-bio.is-pinned .story-bio__frames {
     align-self: center;
     gap: 0;
+    margin-top: clamp(0.5rem, 2vh, 1.25rem);
   }
 
-  // Each frame owns an equal slice of --p; the previous one lifts away as the next arrives.
+  // Each frame owns its slice of --p (--f0, --fl: sized by word count in the markup). Words
+  // land in the first ~62% of it, the paragraph holds, then lifts away and is fully gone
+  // before the next frame starts to rise in, so two paragraphs are never on screen at once.
   .story-bio.is-pinned .story-bio__frame {
-    --q: clamp(0, var(--p) * var(--frames) - var(--f), 1);
-    --leave: clamp(0, (var(--p) * var(--frames) - var(--f) - 0.9) * 8, 1);
-    --on: clamp(0, (var(--p) * var(--frames) - var(--f) + 0.06) * 14, 1);
+    --fx: calc((var(--p) - var(--f0)) / var(--fl));
+    --q: clamp(0, var(--fx), 1);
+    --leave: clamp(0, (var(--fx) - 0.86) * 9, 1);
+    --on: clamp(0, (var(--fx) + 0.03) * 14, 1);
     grid-row: 1;
     grid-column: 1;
-    align-self: center;
+    align-self: start;
     opacity: calc(var(--on) * (1 - var(--leave)));
-    transform: translate3d(0, calc(var(--leave) * -12vh), 0) scale(calc(1 - var(--leave) * 0.1));
+    transform: translate3d(0, calc((1 - var(--on)) * 5vh - var(--leave) * 10vh), 0) scale(calc(1 - var(--leave) * 0.08));
     transform-origin: 50% 0;
   }
 
@@ -1330,14 +1500,14 @@
   .story-bio.is-pinned .story-bio__frame:last-child { --leave: 0; }
 
   .story-bio.is-pinned .story-bio__label {
-    margin-bottom: clamp(0.75rem, 2vh, 1.4rem);
+    margin-bottom: clamp(0.9rem, 2.4vh, 1.5rem);
   }
 
   .story-bio.is-pinned .story-words {
+    --lh: 1.14;
     max-width: 23em;
     font-size: 1.5rem;
-    font-size: unquote("clamp(1.3rem, min(3.7vw, 6.3vh), 3.9rem)");
-    line-height: 1.06;
+    font-size: unquote("clamp(1.3rem, min(4.4vw, 5.5vh), 3.9rem)");
   }
 
   // Word i flies in over its own 1/12 of the frame, starting at --s (set in Liquid).
@@ -1360,13 +1530,15 @@
     transform: scaleX(var(--flash));
   }
 
+  // Key words pop as they land and settle back to their natural size, so at rest they
+  // keep the same spacing as their neighbours.
   .story-bio.is-pinned .story-word.is-key {
     --bump: calc(var(--t) * var(--u) * 4);
     z-index: 1;
-    transform: scale(calc(1 + var(--bump) * 0.3 + var(--t) * 0.04));
+    transform: scale(calc(1 + var(--bump) * 0.3));
   }
 
-  .story-bio.is-pinned .story-word.is-key::after {
+  .story-bio.is-pinned .story-mark::after {
     transform: scaleX(var(--t));
   }
 
@@ -1487,8 +1659,10 @@
     grid-template-rows: auto minmax(0, 1fr);
   }
 
+  // Top-aligned so the kicker sits at the same height as in every other chapter.
   .story-work.is-pinned .story-work__head {
     grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
   }
 
   .story-work.is-pinned .story-work__readout {
@@ -1592,13 +1766,17 @@
     --node: clamp(0, (var(--t) - 0.55) * 2.5, 1);
   }
 
-  .story-work.is-pinned .story-card.is-current {
+  // Stacking inside the moving track (its own stacking context): the finale burst sits
+  // under every card body, so confetti and rings pass behind text, never over it; the
+  // current card rises above its neighbours; nodes and the pen stay on top of the line.
+  .story-work.is-pinned .story-card__body {
     z-index: 2;
+    opacity: calc(var(--o) * (1 - var(--e, 0)));
+    transition: box-shadow 260ms ease;
   }
 
-  .story-work.is-pinned .story-card__body {
-    opacity: var(--o);
-    transition: box-shadow 260ms ease;
+  .story-work.is-pinned .story-card.is-current .story-card__body {
+    z-index: 3;
   }
 
   .story-work.is-pinned .story-card.is-current .story-card__body {
@@ -1617,13 +1795,14 @@
 
   .story-work.is-pinned .story-card__node {
     position: absolute;
-    z-index: 2;
+    z-index: 4;
     display: block;
     width: 1rem;
     height: 1rem;
     margin: -0.5rem 0 0 -0.5rem;
     border: 2px solid var(--ink);
     background: var(--paper);
+    opacity: calc(1 - var(--e, 0));
     transform: rotate(45deg) scale(var(--node));
   }
 
@@ -1654,7 +1833,7 @@
   }
 
   .story-work.is-pinned .story-track__pen {
-    z-index: 3;
+    z-index: 5;
     width: 1.15rem;
     height: 1.15rem;
     margin: -0.575rem 0 0 -0.575rem;
@@ -1673,7 +1852,7 @@
   // Finale: the last node detonates, the stage flashes, the card pops.
   .story-work.is-pinned .story-burst {
     position: absolute;
-    z-index: 4;
+    z-index: 1;
     display: block;
     width: 0;
     height: 0;
@@ -1770,7 +1949,7 @@
 
     .story-work.is-pinned .story-work__viewport {
       width: 100vw;
-      margin-left: calc(50% - 50vw);
+      margin-left: calc(50% - 50vw + (var(--story-pad-r) - var(--story-pad-l)) / 2);
     }
 
     .story-work.is-pinned .story-track {
@@ -1867,11 +2046,14 @@
 
   /* ---------- 03 · Stack (pinned) ---------- */
 
-  // Phase A: the equaliser. Phase B (after --swap): the course catalog shuffles.
+  // Phase A: the equaliser. Then the swap runs in two clean steps: the equaliser lifts away
+  // completely (--swap-out) before the course catalog rises in (--swap), so the two
+  // windows never show through each other. Phase B: the catalog shuffles.
   .story-stack.is-pinned {
-    --swap: clamp(0, (var(--p) - 0.42) * 9, 1);
-    --deck-start: 0.52;
-    --deck-span: 0.43;
+    --swap-out: clamp(0, (var(--p) - 0.38) * 16, 1);
+    --swap: clamp(0, (var(--p) - 0.445) * 16, 1);
+    --deck-start: 0.54;
+    --deck-span: 0.42;
   }
 
   .story-stack.is-pinned .story-stack__panels {
@@ -1886,8 +2068,8 @@
   }
 
   .story-stack.is-pinned .story-eq {
-    opacity: calc(1 - var(--swap));
-    transform: translate3d(0, calc(var(--swap) * -9vh), 0) scale(calc(1 - var(--swap) * 0.1)) rotate(calc(var(--swap) * -2.5deg));
+    opacity: calc(1 - var(--swap-out));
+    transform: translate3d(0, calc(var(--swap-out) * -9vh), 0) scale(calc(1 - var(--swap-out) * 0.1)) rotate(calc(var(--swap-out) * -2.5deg));
   }
 
   .story-stack.is-pinned .story-catalog {
@@ -1901,8 +2083,8 @@
   // Chips fly into formation while the chapter arrives; bars fill in step with --p;
   // scroll speed makes the whole meter dance.
   .story-stack.is-pinned .story-eq__channel {
-    --fly: clamp(0, (var(--in) + var(--p) - 0.5 - var(--k) * 0.05) * 3, 1);
-    --fill: clamp(0, (var(--p) - 0.02 - var(--k) * 0.022) * 6, 1);
+    --fly: clamp(0, (var(--in) + var(--p) - 0.5 - var(--k) * 0.04) * 4, 1);
+    --fill: clamp(0, (var(--p) - 0.02 - var(--k) * 0.02) * 7, 1);
     --dance: calc(var(--speed) * var(--amp) / 7);
   }
 
@@ -1922,18 +2104,28 @@
     font-size: clamp(3.5rem, 8vw, 7rem);
   }
 
+  // --c (the deck position, 0 -> n - 1) is written by home-story.js: it steps card by card,
+  // flicking each one away over the first part of its slice and then holding, so a course
+  // is always resting, readable, at the front of the pile.
+  // The right and bottom margins are room for the fanned pile: rear cards step right and
+  // tilt, reaching further past the deck's edge the narrower the cards are, so the pile
+  // keeps about the same inset from the window frame as the front card does on the left.
   .story-stack.is-pinned .story-deck {
-    --c: calc(clamp(0, (var(--p) - var(--deck-start)) / var(--deck-span), 1) * (var(--n) - 1));
+    --c: 0;
     position: relative;
     display: block;
     height: clamp(10.5rem, 27vh, 13.5rem);
+    margin: 0 clamp(0.25rem, calc(2.6rem - 3vw), 1.25rem) 0.35rem 0;
   }
 
-  // Card k: --gone as it is flicked away, --behind while it waits in the pile.
+  // Card k: --gone as it is flicked away, --behind while it waits in the pile. A flicked
+  // card stays fully opaque (so no title ever shows through it) and slides all the way out
+  // of the window, which clips it like a card pulled from a sleeve; it only fades over the
+  // last tenth of the throw, once it is out of sight.
   .story-stack.is-pinned .story-deck__card {
     --gone: clamp(0, var(--c) - var(--k), 1);
     --behind: clamp(0, var(--k) - var(--c), 4);
-    --o: calc((1 - var(--gone)) * clamp(0, 3.4 - var(--behind), 1));
+    --o: calc(clamp(0, (1 - var(--gone)) * 10, 1) * clamp(0, 3.4 - var(--behind), 1));
     position: absolute;
     right: 0;
     bottom: 0;
@@ -1942,10 +2134,16 @@
     min-height: 0;
     opacity: var(--o);
     transform:
-      translate3d(calc(var(--gone) * -118% + var(--behind) * 0.55rem), calc(var(--behind) * -0.72rem + var(--gone) * 2rem), 0)
+      translate3d(calc(var(--gone) * -165% + var(--behind) * 0.55rem), calc(var(--behind) * -0.72rem + var(--gone) * 2rem), 0)
       rotate(calc(var(--gone) * -14deg + var(--behind) * 1.6deg + var(--rr) * 1deg))
       scale(calc(1 - var(--behind) * 0.04));
     transform-origin: 50% 100%;
+  }
+
+  // Cards waiting in the pile show their blank backs: only the front card (and the one
+  // being flicked away) shows its record, so no half-covered label peeks over the top.
+  .story-stack.is-pinned .story-deck__card > * {
+    opacity: clamp(0, calc(1 - var(--behind) * 1.6), 1);
   }
 
   .story-stack.is-pinned .story-deck__card strong {
@@ -1981,8 +2179,8 @@
   /* ---------- Responsive ---------- */
 
   @media (max-width: 1080px) {
-    .story-chapter.is-pinned .story-stage__inner {
-      padding-top: 5.3rem;
+    .story {
+      --story-top: calc(4.5rem + clamp(1.25rem, 3.2vh, 1.9rem));
     }
   }
 
@@ -1990,12 +2188,17 @@
     .story-stack:not(.is-pinned) .story-stack__panels {
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     }
+
+    // Side by side, the languages window is far shorter than the course catalog: keep it in
+    // view while the catalog scrolls instead of leaving an empty column behind it.
+    .story-stack:not(.is-pinned) .story-stack__panels > :first-child {
+      position: sticky;
+      top: calc(var(--story-top, 6rem));
+      align-self: start;
+    }
   }
 
   @media (min-width: 761px) {
-    .story-chapter.is-pinned .story-stage__inner {
-      padding-right: unquote("max(var(--page-pad), 3.4rem)");
-    }
 
     .story-stack.is-pinned .story-catalog__body {
       grid-template-columns: minmax(8rem, 0.32fr) minmax(0, 1fr);
@@ -2019,16 +2222,22 @@
       font-size: 0.58rem;
     }
 
+    // Phones: the rail (0.25rem from the edge, ~1.85rem wide) gets its own gutter, so no
+    // text, card or card shadow ever runs underneath it.
+    .story.is-live .story-stage__inner {
+      --story-pad-r: calc(var(--page-pad) + 1.9rem);
+    }
+
     .story-chapter.is-pinned .story-stage__inner {
-      padding: 5.1rem calc(var(--page-pad) + 1.3rem) 0.9rem var(--page-pad);
+      padding-bottom: 0.9rem;
     }
 
     .story-rail {
-      right: 0.2rem;
+      right: 0.25rem;
     }
 
     .story-rail ol {
-      padding: 0.3rem 0.15rem;
+      padding: 0.25rem 0.1rem;
       box-shadow: 0.15rem 0.15rem 0 var(--acid);
     }
 
@@ -2047,7 +2256,9 @@
       bottom: 1rem;
     }
 
-    .story-chapter.is-pinned .story-glyph:nth-child(n + 3) {
+    // Phones have no side margin for decoration: only the glyphs parked in the right-hand
+    // gutter (or beside a heading) stay, so none drifts behind a line of text.
+    .story-chapter.is-pinned .story-glyph:not(.story-glyph--phone) {
       display: none;
     }
 
@@ -2059,7 +2270,8 @@
       font-size: 1.2rem;
       font-size: unquote("clamp(1.05rem, min(5.6vw, 3.5vh), 2.1rem)");
       font-size: unquote("clamp(1.05rem, min(5.6vw, 3.5svh), 2.1rem)");
-      line-height: 1.1;
+      // A little more air than on wide screens: key phrases often land on consecutive lines.
+      --lh: 1.26;
     }
 
     .story-bio.is-pinned .story-bio__meter {
@@ -2082,7 +2294,6 @@
     }
 
     .story-work.is-pinned .story-work__head {
-      align-items: end;
       gap: 0.6rem 1rem;
     }
 
@@ -2098,11 +2309,24 @@
       display: none;
     }
 
-    // Phones: the track turns vertical and the line draws down the left edge.
+    // Phones: the track turns vertical and the line draws down the left edge. The window
+    // keeps a clear 1.25rem band under the heading (about 2rem below the title's baseline
+    // with the row gap) and fades the line in over the next 2.5rem, so nothing ever runs
+    // right up against the title.
     .story-work.is-pinned .story-work__viewport {
       overflow: hidden;
-      -webkit-mask-image: linear-gradient(180deg, transparent, #000 1.25rem, #000 calc(100% - 2rem), transparent);
-      mask-image: linear-gradient(180deg, transparent, #000 1.25rem, #000 calc(100% - 2rem), transparent);
+      // Room for the cards' offset shadows before the window's clip edge.
+      padding-right: 0.6rem;
+      -webkit-mask-image: linear-gradient(180deg, transparent 1.25rem, #000 3.75rem, #000 calc(100% - 2rem), transparent);
+      mask-image: linear-gradient(180deg, transparent 1.25rem, #000 3.75rem, #000 calc(100% - 2rem), transparent);
+    }
+
+    // Cards leave whole instead of being sliced by that edge: --e (0 -> 1) dissolves a card
+    // (body and node) while its top climbs the last 60px (3.75rem, where the fade above
+    // ends) to the top of the window, so it has all but gone before any of it reaches the
+    // clear band. Unitless px, like --x and --shift.
+    .story-work.is-pinned .story-card {
+      --e: clamp(0, (var(--p) * var(--shift) - var(--x) + 60) / 60, 1);
     }
 
     .story-work.is-pinned .story-track {
@@ -2154,7 +2378,7 @@
       transform:
         translate3d(calc(var(--u) * 3.5rem), calc(var(--u) * 1.25rem), 0)
         rotate(calc(var(--u) * 6deg))
-        scale(calc(0.86 + var(--t) * 0.14));
+        scale(calc(0.86 + var(--t) * 0.14 - var(--e) * 0.06));
       transform-origin: 0 50%;
     }
 
@@ -2227,12 +2451,19 @@
       height: auto;
     }
 
+    // One even row of three keys down to 320px: the type steps down with the width and
+    // the keys spread across the window instead of wrapping "BEGINNER" onto its own line.
     .story-eq__legend {
+      justify-content: space-between;
+      gap: 0.35rem 0.5rem;
       padding: 0.55rem 0.9rem;
+      letter-spacing: 0.02em;
+      font-size: unquote("min(0.56rem, 2.4vw)");
     }
 
+    // Tall enough for a three-line course title plus its code and barcode.
     .story-stack.is-pinned .story-deck {
-      height: 10rem;
+      height: 11.5rem;
     }
 
     .story-stack.is-pinned .story-deck__card strong {
@@ -2254,6 +2485,7 @@
     .story-door {
       grid-template-columns: 1.8rem minmax(0, 1fr) auto;
       gap: 0.6rem;
+      padding-block: clamp(0.9rem, 3.6vh, 1.8rem);
     }
 
     // The label column is the viewport minus ~8.6rem of fixed chrome (page padding, the

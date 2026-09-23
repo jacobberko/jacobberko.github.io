@@ -1,4 +1,4 @@
-/* Home concept #2 · Scroll Story (lab/story/index.html, styles in _sass/home-story.scss).
+/* Home page · Scroll Story (index.html, styles in _sass/home-story.scss).
    One requestAnimationFrame loop turns the scroll position into unitless CSS custom
    properties on each chapter (--in, --p, --out, --vel, --speed); the motion itself lives
    in CSS. Scrolling is never hijacked: stages are position: sticky and move at native speed.
@@ -54,6 +54,12 @@
     element.style.setProperty(name, text);
   }
 
+  // A unitless custom property from an element's inline style (set in the markup).
+  function readNumber(element, name, fallback) {
+    const value = parseFloat(element.style.getPropertyValue(name));
+    return isNaN(value) ? fallback : value;
+  }
+
   function clearVars(element, cache, names) {
     names.forEach(function (name) { element.style.removeProperty(name); });
     Object.keys(cache).forEach(function (key) { delete cache[key]; });
@@ -82,13 +88,16 @@
       name: element.getAttribute("data-story-chapter"),
       stage: element.querySelector(".story-stage"),
       inner: element.querySelector(".story-stage__inner"),
+      head: element.querySelector(".story-head"),
       title: element.querySelector(".story-title"),
+      tab: element.querySelector(".story-tab"),
       tracksVelocity: element.hasAttribute("data-story-velocity"),
       top: 0,
       height: 1,
       stageHeight: 1,
       cover: 0,
       pinLength: 1,
+      dockDistance: 1,
       pinned: false,
       active: false,
       covered: false,
@@ -101,6 +110,7 @@
   if (!chapters.length) return;
 
   const CHAPTER_VARS = ["--in", "--p", "--out", "--vel", "--speed"];
+  const LANE_VARS = ["--head-end", "--foot-top", "--title-end", "--col-end"];
 
   function chapterNamed(name) {
     return chapters.find(function (chapter) { return chapter.name === name; }) || null;
@@ -129,10 +139,13 @@
     const keyStarts = {};
 
     frames.forEach(function (frame, frameIndex) {
+      // Each frame's slice of --p (set in the markup, sized by word count).
+      const sliceStart = readNumber(frame, "--f0", frameIndex / frameCount);
+      const sliceLength = readNumber(frame, "--fl", 1 / frameCount) || 1 / frameCount;
       frame.querySelectorAll(".story-word").forEach(function (word) {
-        const start = parseFloat(word.style.getPropertyValue("--s")) || 0;
+        const start = readNumber(word, "--s", 0);
         // Mirrors --t in home-story.scss: a word reads as landed halfway through its 1/12 window.
-        const at = (frameIndex + start + 0.5 / 12) / frameCount;
+        const at = sliceStart + (start + 0.5 / 12) * sliceLength;
         thresholds.push(at);
         const key = word.getAttribute("data-key");
         if (key && (keyStarts[key] === undefined || at < keyStarts[key])) keyStarts[key] = at;
@@ -243,15 +256,34 @@
       });
     }
 
+    // "ACHIEVEMENT · FULL CIRCLE: GOOGLE 2022 → GOOGLE 2026": everything after the colon is
+    // joined with no-break spaces, so the toast breaks after the colon (or not at all) and
+    // never leaves the last year on a line of its own.
+    const fullCircle = (function () {
+      const raw = story.getAttribute("data-full-circle") || "";
+      const split = raw.indexOf(": ");
+      if (split < 0) return raw;
+      return raw.slice(0, split + 2) + raw.slice(split + 2).replace(/ /g, "\u00A0");
+    })();
+    let toastShown = false;
+
     function celebrate() {
-      const message = story.getAttribute("data-full-circle");
       const toast = jbos().toast;
-      if (!message || typeof toast !== "function") return;
+      if (!fullCircle || typeof toast !== "function") return;
       try {
         if (window.sessionStorage.getItem("jb-story-full-circle")) return;
         window.sessionStorage.setItem("jb-story-full-circle", "1");
       } catch (error) { /* storage is optional; toast anyway */ }
-      toast(message);
+      toast(fullCircle);
+      toastShown = true;
+    }
+
+    // The toast belongs to the end of the timeline: once the next chapter starts to slide
+    // over it, clear it (only if it is still ours) so it never sits on the next window.
+    function dismissToast() {
+      toastShown = false;
+      const element = doc.querySelector(".system-toast");
+      if (element && element.textContent === fullCircle) element.classList.remove("is-visible");
     }
 
     return {
@@ -284,7 +316,9 @@
           card.element.style.setProperty("--x", card.position.toFixed(1));
         });
       },
-      update: function (p, quiet) {
+      update: function (p, quiet, out) {
+        if (toastShown && out > 0.04) dismissToast();
+
         let next = 0;
         cards.forEach(function (card, index) {
           if (cardProgress(card, p) >= 0.75) next = index;
@@ -326,7 +360,11 @@
     };
   }
 
-  /* ---------- 03 · Stack: record counter for the shuffling deck ---------- */
+  /* ---------- 03 · Stack: deck position + record counter ---------- */
+
+  // Share of each card's slice spent flicking it away; the rest of the slice the next
+  // card rests at the front of the pile, so it can be read.
+  const DECK_FLICK = 0.5;
 
   function createStack(chapter) {
     const element = chapter.element;
@@ -335,8 +373,9 @@
     const count = deck ? deck.children.length : 0;
     if (!deck || !count) return null;
 
-    let start = 0.52;
-    let span = 0.43;
+    const cache = {};
+    let start = 0.54;
+    let span = 0.42;
     let shown = -1;
 
     return {
@@ -346,13 +385,23 @@
         span = parseFloat(styles.getPropertyValue("--deck-span")) || span;
       },
       update: function (p) {
-        const index = Math.round(clamp((p - start) / span, 0, 1) * (count - 1));
+        // Linear position through the deck, then eased card by card (flick, hold, flick…).
+        const linear = clamp((p - start) / span, 0, 1) * (count - 1);
+        const base = Math.min(Math.floor(linear), count - 1);
+        const step = clamp((linear - base) / DECK_FLICK, 0, 1);
+        const position = Math.min(base + step * step * (3 - 2 * step), count - 1);
+        setVar(deck, cache, "--c", position, 3);
+
+        // The counter flips once the outgoing card has slid clear of the pile (--gone ~0.6 in
+        // CSS); on wide screens that card is covering the counter at that moment.
+        const index = Math.min(Math.floor(position + 0.4), count - 1);
         if (index === shown) return;
         shown = index;
         if (recordEl) recordEl.textContent = pad(index + 1, 2);
       },
       reset: function () {
         shown = -1;
+        clearVars(deck, cache, ["--c"]);
         if (recordEl) recordEl.textContent = recordEl.getAttribute("data-static") || String(count);
       }
     };
@@ -543,8 +592,12 @@
     const speed = Math.abs(signed);
 
     chapters.forEach(function (chapter) {
-      if (!chapter.pinned) return;
       const rel = chapter.top - y;
+      // Every chapter's title bar (pinned or not) docks away over the last stretch before
+      // its top edge reaches the top of the screen, where the fixed site header sits, and
+      // slides back out when scrolling up. So none is left behind, or peeking around, it.
+      if (chapter.tab) setVar(chapter.tab, chapter.cache, "--dock", clamp(1 - rel / chapter.dockDistance, 0, 1), 3);
+      if (!chapter.pinned) return;
       const onScreen = rel < viewHeight && rel + chapter.height > 0;
       if (onScreen !== chapter.active) {
         chapter.active = onScreen;
@@ -565,7 +618,7 @@
         setVar(chapter.element, chapter.cache, "--vel", signed, 3);
         setVar(chapter.element, chapter.cache, "--speed", speed, 3);
       }
-      if (chapter.module && chapter.module.update) chapter.module.update(p, quiet);
+      if (chapter.module && chapter.module.update) chapter.module.update(p, quiet, out);
     });
 
     const marqueesRunning = driveMarquees(dt, speed);
@@ -597,7 +650,8 @@
     chapter.active = false;
     chapter.covered = false;
     chapter.element.classList.remove("is-active");
-    clearVars(chapter.element, chapter.cache, CHAPTER_VARS);
+    clearVars(chapter.element, chapter.cache, CHAPTER_VARS.concat(LANE_VARS));
+    if (chapter.tab) chapter.tab.style.removeProperty("--dock");
     if (chapter.module && chapter.module.reset) chapter.module.reset();
   }
 
@@ -624,10 +678,76 @@
     stopRewind();
   }
 
+  // Where the decorative glyphs may drift (see "Glyph lanes" in home-story.scss), in px from
+  // the stage's top-left corner, measured while every moving part is parked: the foot of the
+  // heading, the top of the stage's bottom row, the right end of the title text and the
+  // right edge of the bio text column.
+  function measureLanes(chapter) {
+    const element = chapter.element;
+    const origin = chapter.stage.getBoundingClientRect();
+    const setPx = function (name, value) { element.style.setProperty(name, value.toFixed(1) + "px"); };
+    if (chapter.head) setPx("--head-end", chapter.head.getBoundingClientRect().bottom - origin.top);
+    const foot = chapter.inner.lastElementChild;
+    if (foot && foot !== chapter.head) setPx("--foot-top", foot.getBoundingClientRect().top - origin.top);
+    if (chapter.title && doc.createRange) {
+      const range = doc.createRange();
+      range.selectNodeContents(chapter.title);
+      setPx("--title-end", range.getBoundingClientRect().right - origin.left);
+    }
+    const columns = Array.from(element.querySelectorAll(".story-words"));
+    if (columns.length) {
+      setPx("--col-end", Math.max.apply(null, columns.map(function (column) {
+        return column.getBoundingClientRect().right;
+      })) - origin.left);
+    }
+  }
+
+  // Key-phrase highlights carry inline padding, which would indent the first letter of a line
+  // that opens with one. Every word (or unbreakable phrase) on such a line is flagged, so CSS
+  // (.is-hang) can shift the whole line left by that padding: its first letter lines up with
+  // the paragraph's edge, the highlight hangs into the margin and the word spacing stays even.
+  // Lines come from layout offsets, which transforms never touch, so the flying words do not
+  // affect the check; every column is read before any flag is written.
+  const wordColumns = Array.from(story.querySelectorAll(".story-words"));
+
+  function hangMarks() {
+    wordColumns.forEach(function (column) {
+      column.querySelectorAll(".is-hang").forEach(function (element) {
+        element.classList.remove("is-hang");
+      });
+    });
+    const hung = [];
+    wordColumns.forEach(function (column) {
+      const step = (parseFloat(window.getComputedStyle(column).fontSize) || 16) * 0.5;
+      const lines = [];
+      let line = null;
+      column.querySelectorAll(".story-word").forEach(function (word) {
+        const top = word.offsetTop;
+        if (!line || top > line.top + step) {
+          line = { top: top, words: [] };
+          lines.push(line);
+        }
+        line.words.push(word);
+      });
+      lines.forEach(function (row) {
+        if (!row.words[0].querySelector(".story-mark")) return;
+        row.words.forEach(function (word) {
+          const phrase = word.parentElement;
+          const unit = phrase && phrase.classList.contains("story-phrase") ? phrase : word;
+          if (hung.indexOf(unit) < 0) hung.push(unit);
+        });
+      });
+    });
+    hung.forEach(function (unit) { unit.classList.add("is-hang"); });
+  }
+
   function measure() {
     measureId = 0;
     setLive(supportsStory && !motionQuery.matches && window.innerHeight >= MIN_VIEW_HEIGHT);
-    if (!live) return;
+    if (!live) {
+      hangMarks();
+      return;
+    }
 
     viewHeight = window.innerHeight;
     viewWidth = window.innerWidth;
@@ -637,6 +757,8 @@
     story.classList.add("is-measuring");
     chapters.forEach(function (chapter) { chapter.element.classList.add("is-pinned"); });
     chapters.forEach(function (chapter) {
+      // A pinned stage's top padding clears the fixed header: the distance a title bar docks over.
+      chapter.dockDistance = Math.max(parseFloat(window.getComputedStyle(chapter.inner).paddingTop) || 0, 1);
       const module = chapter.module;
       const moduleFits = !module || !module.fits || module.fits();
       chapter.pinned = moduleFits && chapter.inner.scrollHeight <= chapter.stage.clientHeight + 2;
@@ -646,9 +768,12 @@
       if (!chapter.pinned) releaseChapter(chapter);
     });
     chapters.forEach(function (chapter) {
-      if (chapter.pinned && chapter.module && chapter.module.measure) chapter.module.measure();
+      if (!chapter.pinned) return;
+      if (chapter.module && chapter.module.measure) chapter.module.measure();
+      measureLanes(chapter);
     });
     story.classList.remove("is-measuring");
+    hangMarks();
 
     const y = currentScroll();
     chapters.forEach(function (chapter) {
@@ -766,40 +891,6 @@
       next: 3, outro: 3, links: 3, "4": 3
     };
 
-    terminalApi.registerCommand("story", {
-      help: "Jump around the scroll story: story bio | work | stack | next | replay",
-      aliases: ["chapter"],
-      run: function (args) {
-        const terminal = jbos().terminal || {};
-        const print = function (text, accent) {
-          if (typeof terminal.print === "function") terminal.print(text, accent);
-        };
-        const closeThen = function (action) {
-          if (typeof terminal.close === "function") terminal.close();
-          window.setTimeout(action, 140);
-        };
-        const wanted = String(args[0] || "").toLowerCase();
-
-        if (!wanted) {
-          print("SCROLL STORY · 4 CHAPTERS", true);
-          print("story bio · story work · story stack · story next · story replay");
-          return;
-        }
-        if (wanted === "replay" || wanted === "rewind") {
-          print("\u25C0\uFE0E\u25C0\uFE0E Rewinding the tape…", true);
-          closeThen(startRewind);
-          return;
-        }
-        if (!Object.prototype.hasOwnProperty.call(destinations, wanted)) {
-          print("No chapter called “" + wanted + "”. Try: bio · work · stack · next · replay");
-          play("error");
-          return;
-        }
-        const index = destinations[wanted];
-        print("Cueing chapter " + pad(index + 1, 2) + "…", true);
-        closeThen(function () { jumpTo(index); });
-      }
-    });
   }
 
   measure();

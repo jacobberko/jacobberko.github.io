@@ -869,14 +869,8 @@ html .terminal.is-theme-docked[open]::backdrop {
   box-shadow: $focus-ring;
 }
 
-/* Home concepts under lab/ (JB//OS desktop + scroll story): same orientation rules. */
+/* Home-page scroll story: same orientation rules. */
 #{$theme-dark} {
-  .home-os .os-band,
-  .home-os .os-desktop,
-  .home-os .os-window__body--dark,
-  .home-os .os-boot,
-  .home-os .os-power,
-  .home-os .os-task.is-active,
   .story-bio,
   .story-stack,
   .story-rail__label,
@@ -886,30 +880,10 @@ html .terminal.is-theme-docked[open]::backdrop {
     @include scope-band;
   }
 
-  .home-os .os-window,
-  .home-os .os-menu,
-  .home-os .os-taskbar,
   .story-card__body {
     @include scope-surface;
   }
 
-  .home-os .os-intro,
-  .home-os .os-start,
-  .home-os .os-start-menu__rail,
-  .home-os .os-on .os-widget,
-  .home-os .os-on .os-window.is-active .os-window__bar,
-  .home-os .os-log__lvl--now,
-  .home-os .os-db th,
-  .home-os .os-button:hover,
-  .home-os .os-log__row:hover,
-  .home-os .os-db tbody tr:hover,
-  .home-os .os-menu button:hover,
-  .home-os .os-menu a:hover,
-  .home-os .os-menu button:focus-visible,
-  .home-os .os-menu a:focus-visible,
-  .home-os .os-task:hover,
-  .home-os .os-icon:hover .os-icon__label,
-  .home-os .os-icon:focus-visible .os-icon__label,
   .story-intro,
   .story-kicker,
   .story-outro,
@@ -917,14 +891,6 @@ html .terminal.is-theme-docked[open]::backdrop {
   .story-card--finale .story-card__bar,
   .story-bio__keys li.is-found {
     @include scope-accent;
-  }
-
-  // On phones every open window is a full-screen sheet, so its bar joins the accent scope;
-  // on desktop only the focused window (.is-active, above) is accented.
-  @media (max-width: 759px) {
-    .home-os .os-on .os-window.is-open .os-window__bar {
-      @include scope-accent;
-    }
   }
 }
 

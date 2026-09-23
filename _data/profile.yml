@@ -1,4 +1,4 @@
-# Shared home-page content. Both home concepts (lab/os, lab/story) read from here.
+# Home-page content. The scroll story in index.html is built from this file.
 bio:
   - label: "01 / TECH + BUSINESS"
     text: "I’m a Masters student at Cornell University studying Computer Science with a minor in Business. I’ve always loved the intersection of technology and business, a passion that drives my work as President of Kappa Theta Pi, founder of Throttle AI, and my 2026 Software Engineering Internship at Google."
