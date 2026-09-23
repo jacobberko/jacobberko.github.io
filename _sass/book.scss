@@ -1,0 +1,474 @@
+/* The Cure: page-turning preview reader opened from the creative page.
+   Leaves live in one preserve-3d context and are separated by a tiny translateZ,
+   so the browser depth-sorts pages correctly while several are mid-turn. */
+
+/* Keep the scrollbar's space while a dialog locks scrolling, so the page behind doesn't shift. */
+html:has(> body.dialog-open) {
+  scrollbar-gutter: stable;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.cure-reader {
+  --page-ratio: 0.6471;
+  --turn-ms: 900ms;
+  --ease-page: cubic-bezier(0.65, 0, 0.35, 1);
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: none;
+  height: 100svh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  color: var(--paper);
+  background: transparent;
+}
+
+.cure-reader[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.cure-reader::backdrop {
+  background:
+    radial-gradient(60% 55% at 50% 48%, rgba(255, 35, 80, 0.2), rgba(255, 35, 80, 0) 70%),
+    rgba(9, 7, 11, 0.9);
+  backdrop-filter: blur(0.7rem);
+}
+
+.cure-reader[open]::backdrop { animation: cureFadeIn 600ms ease both; }
+.cure-reader.is-closing::backdrop { animation: cureFadeOut 520ms ease 260ms both; }
+
+.cure-reader__progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(247, 245, 238, 0.12);
+}
+
+.cure-reader__progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--acid);
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left center;
+  transition: transform 600ms var(--ease-page);
+}
+
+.cure-reader__bar,
+.cure-reader__foot {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem clamp(1rem, 3vw, 2rem);
+  font: 700 0.64rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: opacity 400ms ease, transform 400ms ease;
+}
+
+.cure-reader__bar { justify-content: space-between; }
+.cure-reader__foot { justify-content: center; flex-wrap: wrap; }
+
+.cure-reader.is-opening .cure-reader__bar,
+.cure-reader.is-opening .cure-reader__foot,
+.cure-reader.is-closing .cure-reader__bar,
+.cure-reader.is-closing .cure-reader__foot {
+  opacity: 0;
+  transform: translateY(-0.4rem);
+  pointer-events: none;
+}
+
+.cure-reader__title {
+  margin: 0;
+  color: rgba(247, 245, 238, 0.7);
+}
+
+.cure-reader__title span {
+  margin-right: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  color: var(--ink);
+  background: var(--acid);
+}
+
+.cure-reader__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cure-chip,
+.cure-reader select {
+  min-height: 2.2rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(247, 245, 238, 0.38);
+  border-radius: 999px;
+  color: var(--paper);
+  background: rgba(247, 245, 238, 0.04);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: color 200ms ease, background 200ms ease, border-color 200ms ease;
+}
+
+.cure-reader select option { color: var(--ink); }
+
+.cure-chip:hover,
+.cure-reader select:hover {
+  color: var(--ink);
+  background: var(--acid);
+  border-color: var(--acid);
+}
+
+.cure-chip:focus-visible,
+.cure-reader select:focus-visible,
+.cure-nav:focus-visible,
+.cure-scrub:focus-visible {
+  outline: 2px solid var(--acid);
+  outline-offset: 3px;
+}
+
+.cure-chip[aria-pressed="false"] { opacity: 0.55; }
+/* Hidden but still holding its space, so the footer never re-wraps and nudges the book. */
+.cure-chip.is-hidden { visibility: hidden; }
+
+.cure-nav {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid rgba(247, 245, 238, 0.38);
+  border-radius: 50%;
+  color: var(--paper);
+  background: transparent;
+  font: 800 1rem var(--font-mono);
+  cursor: pointer;
+  transition: color 200ms ease, background 200ms ease, opacity 200ms ease;
+}
+
+.cure-nav:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--acid);
+}
+
+.cure-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.cure-scrub {
+  width: unquote("min(26rem, 48vw)");
+  accent-color: var(--acid);
+  cursor: pointer;
+}
+
+.cure-reader__label {
+  min-width: 13rem;
+  margin: 0;
+  color: rgba(247, 245, 238, 0.78);
+  text-align: center;
+}
+
+.cure-reader__table {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  padding: 0.25rem 1rem;
+}
+
+.cure-flight {
+  transform-origin: 0 0;
+}
+
+.cure-stage {
+  --page-h: min(calc(100dvh - 10.5rem), calc((100vw - 3rem) / (2 * 0.6471)), 54rem);
+  position: relative;
+  width: calc(var(--page-h) * 2 * var(--page-ratio));
+  height: var(--page-h);
+}
+
+.cure-book {
+  --shift: -25%;
+  --left-stack: 0px;
+  --right-stack: 0px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--page-h) * 2 * var(--page-ratio));
+  height: 100%;
+  perspective: 2600px;
+  transform-style: preserve-3d;
+  transform: translateX(var(--shift));
+  transition: transform 700ms var(--ease-page);
+  touch-action: pan-y;
+  user-select: none;
+}
+
+/* Page-edge stacks on the outer edges; they thicken and thin as you read. */
+.cure-book::before,
+.cure-book::after {
+  content: "";
+  position: absolute;
+  top: 0.7%;
+  bottom: 0.7%;
+  border-radius: 2px;
+  background: repeating-linear-gradient(to right, #efe9dc 0, #efe9dc 1px, #c9bfa9 1px, #c9bfa9 2px);
+  transition: width 600ms var(--ease-page);
+  pointer-events: none;
+}
+
+.cure-book::before { right: 100%; width: var(--left-stack); }
+.cure-book::after { left: 100%; width: var(--right-stack); }
+
+.cure-leaf {
+  --angle: 0deg;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transform: rotateY(var(--angle)) translateZ(var(--lift, 0px));
+  transition: transform var(--leaf-turn, var(--turn-ms)) var(--ease-page);
+  cursor: pointer;
+}
+
+.cure-leaf.is-turned { --angle: -180deg; }
+.cure-leaf.is-peek { --angle: -13deg; transition-duration: 320ms; }
+.cure-leaf.is-turned.is-peek { --angle: -167deg; }
+
+.cure-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  box-shadow: 0 1.4rem 2.6rem rgba(0, 0, 0, 0.42);
+}
+
+.cure-face--back { transform: rotateY(180deg); }
+
+.cure-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Gutter shading near the spine. */
+.cure-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0) 9%);
+  pointer-events: none;
+}
+
+.cure-face--back::after {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0) 9%);
+}
+
+/* Shade that deepens as a page approaches edge-on, then clears. */
+.cure-face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cure-face--back::before {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.5));
+}
+
+.cure-leaf.is-turning .cure-face::before {
+  animation: cureShade var(--leaf-turn, var(--turn-ms)) var(--ease-page) both;
+}
+
+.cure-face.is-missing {
+  display: grid;
+  place-items: center;
+  color: #8a8578;
+  font: 700 0.7rem var(--font-mono);
+  letter-spacing: 0.1em;
+}
+
+/* Hardcover: rounded fore-edge on the front, dark endpaper inside. */
+.cure-leaf--cover .cure-face--front { border-radius: 0 6px 6px 0; }
+
+.cure-leaf--cover .cure-face--back {
+  border-radius: 6px 0 0 6px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 1.5px),
+    radial-gradient(90% 80% at 30% 30%, #5d0b1f, #1b0309);
+  background-size: 0.7rem 0.7rem, auto;
+}
+
+.cure-leaf--cover .cure-face--back img { display: none; }
+
+.cure-endpaper-mark {
+  position: absolute;
+  inset: auto 0 12% 0;
+  z-index: 3;
+  margin: 0;
+  color: rgba(255, 210, 220, 0.4);
+  font: 700 0.62rem var(--font-mono);
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+/* Back board, visible once every leaf has turned. */
+.cure-board {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  width: 50%;
+  height: 100%;
+  place-items: center;
+  border-radius: 0 6px 6px 0;
+  color: rgba(255, 210, 220, 0.55);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 1.5px),
+    radial-gradient(90% 80% at 70% 30%, #5d0b1f, #1b0309);
+  background-size: 0.7rem 0.7rem, auto;
+  box-shadow: 0 1.4rem 2.6rem rgba(0, 0, 0, 0.42);
+  font: 700 0.6rem var(--font-mono);
+  letter-spacing: 0.28em;
+  text-align: center;
+}
+
+.cure-board p { margin: 0; line-height: 2.2; }
+
+.cure-end {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 12%;
+  color: #1a1a17;
+  background: #fbfaf6;
+}
+
+.cure-end__kicker {
+  margin: 0;
+  color: #d8163f;
+  font: 800 0.62rem var(--font-mono);
+  letter-spacing: 0.22em;
+}
+
+.cure-end__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: unquote("min(9vw, 2.6rem)");
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+
+.cure-end__text {
+  margin: 0;
+  color: #55524a;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.cure-end a,
+.cure-end button {
+  align-self: flex-start;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #1a1a17;
+  border-radius: 999px;
+  color: #1a1a17;
+  background: transparent;
+  font: 800 0.6rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.cure-end a:hover,
+.cure-end button:hover {
+  color: var(--paper);
+  background: #1a1a17;
+}
+
+.cure-reader.is-resetting .cure-book,
+.cure-reader.is-resetting .cure-leaf {
+  transition: none !important;
+}
+
+/* The on-page cover "lifts off" while the reader is open. */
+.album-art--book.is-lifted img {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+@media (max-width: 760px) {
+  .cure-stage {
+    --page-h: min(calc(100dvh - 12.5rem), calc((100vw - 2rem) / 0.6471));
+    width: calc(var(--page-h) * var(--page-ratio));
+    overflow: hidden;
+    border-radius: 4px;
+  }
+
+  .cure-reader__title { display: none; }
+  .cure-reader__bar { justify-content: flex-end; }
+  .cure-reader__label { order: -1; width: 100%; min-width: 0; }
+  .cure-scrub { width: 52vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cure-book,
+  .cure-leaf,
+  .cure-flight,
+  .cure-reader__progress i,
+  .cure-book::before,
+  .cure-book::after { transition: none !important; }
+  .cure-leaf.is-turning .cure-face::before,
+  .cure-reader[open]::backdrop,
+  .cure-reader.is-closing::backdrop { animation: none !important; }
+}
+
+@keyframes cureShade {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cureFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cureFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

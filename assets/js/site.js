@@ -201,7 +201,8 @@
   let imageLoadToken = 0;
 
   function setDialogState(open) {
-    body.classList.toggle("dialog-open", open);
+    // Stay locked while any other dialog (e.g. the book reader) is still open.
+    body.classList.toggle("dialog-open", open || Boolean(doc.querySelector("dialog[open]")));
   }
 
   function dialogIsOpen(dialog) {

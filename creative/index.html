@@ -119,7 +119,8 @@ section: creative
           href="{{ '/creative/the-cure-preview.pdf' | relative_url }}"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Read the preview of The Cure (opens a PDF in a new tab)"
+          aria-label="Open the preview of The Cure in a page-turning reader"
+          data-book-open
           data-cursor="READ">
           <img
             src="{{ '/creative/images/the-cure-cover.jpg' | relative_url }}?v=2"
@@ -152,13 +153,80 @@ section: creative
             class="cta cta--dark"
             href="{{ '/creative/the-cure-preview.pdf' | relative_url }}"
             target="_blank"
-            rel="noopener noreferrer">
+            rel="noopener noreferrer"
+            data-book-open>
             Read the preview <span aria-hidden="true">↗</span>
           </a>
         </div>
       </article>
     </div>
   </section>
+
+  <dialog class="cure-reader" id="cure-reader" aria-label="The Cure, preview reader"
+    aria-describedby="cure-reader-note"
+    data-pages="25"
+    data-pages-dir="{{ '/creative/the-cure/pages/' | relative_url }}">
+    <p class="visually-hidden" id="cure-reader-note">Pages are shown as images. For the full text, use Open as PDF.</p>
+    <div class="cure-reader__progress" aria-hidden="true"><i></i></div>
+
+    <header class="cure-reader__bar">
+      <p class="cure-reader__title"><span>The Cure</span> Preview edition</p>
+      <div class="cure-reader__actions">
+        <label>
+          <span class="visually-hidden">Jump to a chapter</span>
+          <select data-book-chapter>
+            <option value="1">Cover</option>
+            <option value="3">Copyright</option>
+            <option value="5">Prologue</option>
+            <option value="8">Chapter 1</option>
+            <option value="12">Chapter 2</option>
+            <option value="14">Chapter 3</option>
+            <option value="17">Chapter 4</option>
+            <option value="21">Chapter 5</option>
+          </select>
+        </label>
+        <button type="button" class="cure-chip" data-book-sound aria-pressed="true">♪ Sound on</button>
+        <a class="cure-chip" href="{{ '/creative/the-cure-preview.pdf' | relative_url }}" target="_blank" rel="noopener noreferrer">Open as PDF <span aria-hidden="true">↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+        <button type="button" class="cure-chip" data-book-close aria-label="Close the reader" autofocus>✕</button>
+      </div>
+    </header>
+
+    <div class="cure-reader__table">
+      <div class="cure-flight">
+        <div class="cure-stage">
+          <div class="cure-book" data-book>
+            <div class="cure-board" aria-hidden="true">
+              <div>
+                <p>THE CURE</p>
+                <p>PREVIEW EDITION</p>
+                <p>JAKE BERKO · 2026</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="cure-reader__foot">
+      <button type="button" class="cure-nav" data-book-prev aria-label="Previous page">←</button>
+      <input type="range" class="cure-scrub" data-book-scrub min="0" max="13" step="1" value="0" aria-label="Turn to a page">
+      <button type="button" class="cure-nav" data-book-next aria-label="Next page">→</button>
+      <p class="cure-reader__label" data-book-label aria-hidden="true">Cover</p>
+      <p class="visually-hidden" data-book-live aria-live="polite"></p>
+      <button type="button" class="cure-chip is-hidden" data-book-restart>↺ Start over</button>
+    </footer>
+
+    <template id="cure-end-page">
+      <div class="cure-end">
+        <p class="cure-end__kicker">End of preview</p>
+        <p class="cure-end__title">The Cure</p>
+        <p class="cure-end__text">That’s where the preview stops. The whole thing is also available as a PDF.</p>
+        <a href="{{ '/creative/the-cure-preview.pdf' | relative_url }}" target="_blank" rel="noopener noreferrer">Open the PDF ↗</a>
+        <button type="button" data-book-restart>↺ Back to the prologue</button>
+      </div>
+    </template>
+  </dialog>
+  <script defer src="{{ '/assets/js/book.js' | relative_url }}?v=20260923d"></script>
 
 {% comment %}
   Photography link, hidden for now. The archive itself still lives at /portfolio/.
