@@ -2553,15 +2553,23 @@ html:not(.js) .album-art__badge { display: none; }
   outline-offset: 2px;
 }
 
-/* The Cure reuses the album stage (same columns as Waves, so the text windows match)
-   with a portrait cover that sits against its window while the stage is two-column. */
+/* The Cure reuses the album stage with a portrait cover. */
 .album-art--book {
   width: unquote("min(100%, 22rem)");
   aspect-ratio: auto;
 }
 
+/* Two-column widths only (the stage stacks at 1040px and below): each cover + window
+   pair is centred in its band, and both windows share one max width so they match. */
 @media (min-width: 1041px) {
-  .album-art--book { justify-self: end; }
+  .creative-band .album-stage {
+    grid-template-columns: minmax(0, 32rem) minmax(20rem, 40rem);
+    justify-content: center;
+  }
+
+  .creative-book .album-stage {
+    grid-template-columns: minmax(0, 22rem) minmax(20rem, 40rem);
+  }
 }
 
 .album-art--book a {
