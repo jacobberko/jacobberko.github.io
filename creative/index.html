@@ -40,24 +40,42 @@ section: creative
     </header>
 
     <div class="album-stage" data-cursor-tone="dark">
-      <figure class="album-art reveal">
-        <button
-          type="button"
-          class="album-art__toggle"
-          aria-controls="apple-music-player"
-          aria-expanded="false"
-          aria-label="Show the Apple Music player for the Waves EP"
-          data-player-toggle
-          data-cursor="PLAY">
-          <img
-            src="{{ '/creative/images/waves.png' | relative_url }}"
-            alt="Waves album cover by Jake Berko, featuring a black-and-white photograph of a surfer beneath bold typography"
-            width="1384"
-            height="1386"
-            loading="lazy"
-            decoding="async">
-          <span class="album-art__badge" aria-hidden="true">▶ PLAY</span>
-        </button>
+      <figure class="album-art album-flip reveal" data-flip>
+        <div class="album-flip__inner">
+          <div class="album-flip__face album-flip__front">
+            <button
+              type="button"
+              class="album-art__toggle"
+              aria-controls="waves-player"
+              aria-expanded="false"
+              aria-label="Flip the Waves cover to play the EP on Apple Music"
+              data-flip-open
+              data-cursor="PLAY">
+              <img
+                src="{{ '/creative/images/waves.png' | relative_url }}"
+                alt="Waves album cover by Jake Berko, featuring a black-and-white photograph of a surfer beneath bold typography"
+                width="1384"
+                height="1386"
+                loading="lazy"
+                decoding="async">
+              <span class="album-art__badge" aria-hidden="true">▶ PLAY</span>
+            </button>
+          </div>
+
+          <div class="album-flip__face album-flip__back" id="waves-player">
+            <div class="window-bar">
+              <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
+              <span class="window-bar__title">apple-music.embed</span>
+              <button type="button" class="album-flip__close" aria-label="Flip back to the Waves cover" data-flip-close data-cursor="FLIP">↺ FLIP</button>
+            </div>
+            <iframe
+              title="Listen to the Waves EP by Jake Berko on Apple Music"
+              allow="autoplay *; encrypted-media *;"
+              loading="lazy"
+              sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+              src="https://embed.music.apple.com/us/album/waves-ep/1824102575"></iframe>
+          </div>
+        </div>
       </figure>
 
       <article class="window reveal">
@@ -87,19 +105,6 @@ section: creative
       </article>
     </div>
 
-    <div class="music-player window reveal" id="apple-music-player" hidden>
-      <div class="window-bar">
-        <div class="window-controls" aria-hidden="true"><span></span><span></span><span></span></div>
-        <span class="window-bar__title">apple-music.embed</span>
-        <span class="window-bar__status">LIVE</span>
-      </div>
-      <iframe
-        title="Listen to the Waves EP by Jake Berko on Apple Music"
-        allow="autoplay *; encrypted-media *;"
-        loading="lazy"
-        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
-        src="https://embed.music.apple.com/us/album/waves-ep/1824102575"></iframe>
-    </div>
   </section>
 
   <section class="section-block creative-book creative-band creative-band--midnight" id="the-cure" aria-labelledby="book-title">

@@ -2444,7 +2444,7 @@ ul.project-meta {
 
 .album-art:hover img { transform: scale(1.015); }
 
-/* The Waves cover is a button that reveals the Apple Music player below it. */
+/* The Waves cover is the front of a flip card; the Apple Music player is on the back. */
 .album-art__toggle {
   position: relative;
   z-index: 1;
@@ -2477,12 +2477,85 @@ ul.project-meta {
 
 .album-art:hover .album-art__badge { transform: translateY(-0.15rem); }
 
-.music-player[hidden] { display: none; }
-html:not(.js) .music-player[hidden] { display: block; }
+html:not(.js) .album-art__badge { display: none; }
+
+.album-flip {
+  perspective: 1800px;
+}
+
+.album-flip__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* Symmetric easing so the card is edge-on exactly at the 425ms face swap. */
+  transition: transform 850ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.album-flip.is-flipped .album-flip__inner { transform: rotateY(180deg); }
+
+.album-flip__face {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  /* Faces swap at the halfway point, which also keeps the hidden side out of clicks,
+     tab order and screen readers (Safari ignores backface-visibility on iframes). */
+  transition: visibility 0s linear 425ms;
+}
+
+.album-flip__back {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid rgba(247, 245, 238, 0.32);
+  border-radius: 0.35rem;
+  box-shadow: 1.1rem 1.1rem 0 var(--violet);
+  transform: rotateY(180deg);
+  visibility: hidden;
+}
+
+.album-flip.is-flipped .album-flip__front { visibility: hidden; }
+.album-flip.is-flipped .album-flip__back { visibility: visible; }
+
+.album-flip__back iframe {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+}
+
+.album-flip__close {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--ink);
+  background: transparent;
+  font: 800 0.58rem var(--font-mono);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: color 200ms ease, background 200ms ease;
+}
+
+.album-flip__close:hover {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.album-flip__close:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
 
 /* The Cure reuses the album stage with a portrait book cover. */
 .creative-book .album-stage {
-  grid-template-columns: minmax(0, 22rem) minmax(20rem, 38rem);
+  grid-template-columns: minmax(0, 22rem) minmax(20rem, 44rem);
   justify-content: center;
   gap: clamp(1.5rem, 4vw, 4rem);
 }
@@ -2506,20 +2579,6 @@ html:not(.js) .music-player[hidden] { display: block; }
   aspect-ratio: 1200 / 1915;
   box-shadow: 1.1rem 1.1rem 0 #8a0b2c;
   object-fit: cover;
-}
-
-.music-player {
-  width: unquote("min(100%, 46rem)");
-  min-width: 0;
-  margin: clamp(2rem, 5vw, 5rem) auto 0;
-}
-
-.music-player iframe {
-  display: block;
-  width: 100%;
-  min-height: 28rem;
-  border: 0;
-  border-radius: 0.8rem;
 }
 
 /* Creative archive */
@@ -4084,4 +4143,6 @@ body.game-mode::before {
   .ticker-track,
   .throttle-telemetry__track { animation: none; transform: none; }
   .portrait-window { transform: none; }
+  .album-flip__inner,
+  .album-flip__face { transition: none !important; }
 }

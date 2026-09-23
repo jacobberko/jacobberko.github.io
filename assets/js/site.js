@@ -686,21 +686,26 @@
   updateClock();
   window.setInterval(updateClock, 30000);
 
-  // Album cover toggles the Apple Music player beneath it.
-  doc.querySelectorAll("[data-player-toggle]").forEach(function (toggle) {
-    const player = doc.getElementById(toggle.getAttribute("aria-controls"));
-    const badge = toggle.querySelector(".album-art__badge");
-    if (!player) return;
-    toggle.addEventListener("click", function () {
-      const open = player.hasAttribute("hidden");
-      if (open) player.removeAttribute("hidden");
-      else player.setAttribute("hidden", "");
-      player.classList.add("is-visible");
-      toggle.setAttribute("aria-expanded", String(open));
-      toggle.setAttribute("aria-label", (open ? "Hide" : "Show") + " the Apple Music player for the Waves EP");
-      if (badge) badge.textContent = open ? "✕ CLOSE" : "▶ PLAY";
-      toggle.setAttribute("data-cursor", open ? "CLOSE" : "PLAY");
-      if (open) player.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+  // Waves cover flips over to reveal the Apple Music player on its back.
+  doc.querySelectorAll("[data-flip]").forEach(function (card) {
+    const openButton = card.querySelector("[data-flip-open]");
+    const closeButton = card.querySelector("[data-flip-close]");
+    if (!openButton || !closeButton) return;
+    // Matches the 425ms face swap in CSS; focus can only land once the face is visible.
+    const swapDelay = reduceMotion ? 0 : 460;
+
+    function setFlipped(flipped) {
+      card.classList.toggle("is-flipped", flipped);
+      openButton.setAttribute("aria-expanded", String(flipped));
+      window.setTimeout(function () {
+        (flipped ? closeButton : openButton).focus({ preventScroll: true });
+      }, swapDelay);
+    }
+
+    openButton.addEventListener("click", function () { setFlipped(true); });
+    closeButton.addEventListener("click", function () { setFlipped(false); });
+    card.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && card.classList.contains("is-flipped")) setFlipped(false);
     });
   });
 })();
