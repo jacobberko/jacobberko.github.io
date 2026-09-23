@@ -2553,16 +2553,15 @@ html:not(.js) .album-art__badge { display: none; }
   outline-offset: 2px;
 }
 
-/* The Cure reuses the album stage with a portrait book cover. */
-.creative-book .album-stage {
-  grid-template-columns: minmax(0, 22rem) minmax(20rem, 44rem);
-  justify-content: center;
-  gap: clamp(1.5rem, 4vw, 4rem);
-}
-
+/* The Cure reuses the album stage (same columns as Waves, so the text windows match)
+   with a portrait cover that sits against its window while the stage is two-column. */
 .album-art--book {
   width: unquote("min(100%, 22rem)");
   aspect-ratio: auto;
+}
+
+@media (min-width: 1041px) {
+  .album-art--book { justify-self: end; }
 }
 
 .album-art--book a {
@@ -3886,7 +3885,6 @@ body.game-mode::before {
 @media (min-width: 901px) and (max-width: 1040px) {
   .creative-hero,
   .album-stage,
-  .creative-book .album-stage,
   .throttle-hero__grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3996,8 +3994,7 @@ body.game-mode::before {
   .project-row p { grid-column: 2 / -1; }
 
   .service-card,
-  .album-stage,
-  .creative-book .album-stage { grid-template-columns: 1fr; }
+  .album-stage { grid-template-columns: 1fr; }
   .service-card__media { border-right: 0; border-bottom: 1px solid var(--ink); }
   .service-card__media img { min-height: 20rem; }
 
