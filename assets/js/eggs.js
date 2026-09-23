@@ -1,11 +1,12 @@
 (function () {
   "use strict";
 
-  // JB//OS easter eggs. The terminal is for fun: gravity, barrel, party, hack, snake, screensaver,
-  // shake and secrets (plus theme/sound from their own modules). On the page: the hero name bursts
-  // on five quick clicks, a mouse or phone shake wobbles the page, 30 idle seconds start a
-  // screensaver (click to leave), the chrome star charges up, and the 404 page has a runaway page to
-  // catch. Effects run one at a time, stop on Escape, and swap motion for a toast under reduced motion.
+  // JB//OS easter eggs. Terminal commands: gravity, barrel, party, hack, snake and screensaver, plus
+  // the hidden `do` and `shake` (theme lives in themes.js). On the page: the hero name bursts on five
+  // quick clicks, a mouse or phone shake wobbles the page, 60 idle seconds start a screensaver (any
+  // click or key wakes it), the chrome star charges up, and the 404 page has a runaway page to catch.
+  // Effects run one at a time, stop on Escape, and swap motion for a toast under reduced motion.
+  // Nothing here lists the page secrets: finding them is the point.
 
   const doc = document;
   const root = doc.documentElement;
@@ -26,9 +27,8 @@
   const terminalForm = terminalEl ? terminalEl.querySelector("[data-terminal-form]") : null;
   const terminalLabel = terminalForm ? terminalForm.querySelector("label") : null;
   const PROMPT = terminalLabel ? terminalLabel.textContent : "visitor@jb:~$";
-  const EMAIL = "jmb787@cornell.edu";
+  const EMAIL = "business@jacobberko.com";
   const MAILTO = "mailto:" + EMAIL + "?subject=" + encodeURIComponent("Let's build something");
-  const bootedAt = Date.now();
   const supportsPopover = typeof HTMLElement === "function" &&
     Object.prototype.hasOwnProperty.call(HTMLElement.prototype, "popover");
   const supportsTransforms = Boolean(window.CSS && CSS.supports &&
@@ -45,29 +45,10 @@
   function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
   function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
-  function shuffle(list) {
-    for (let i = list.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const swap = list[i];
-      list[i] = list[j];
-      list[j] = swap;
-    }
-    return list;
-  }
-  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-  function easeInCubic(t) { return t * t * t; }
-  function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
 
   function sfx(name) {
     try {
       if (JBOS.sound && typeof JBOS.sound.play === "function") JBOS.sound.play(name);
-    } catch (error) { /* sound is optional */ }
-  }
-
-  // Long sounds (party music, the wave) stop with their effect, even when it is skipped early.
-  function stopLongSounds() {
-    try {
-      if (JBOS.sound && typeof JBOS.sound.stopAll === "function") JBOS.sound.stopAll();
     } catch (error) { /* sound is optional */ }
   }
 
@@ -132,12 +113,10 @@
     }
   }
 
-
   function textBar(percent, width) {
     const filled = Math.round(clamp(percent, 0, 100) / 100 * width);
     return "[" + "█".repeat(filled) + "░".repeat(width - filled) + "]";
   }
-
 
   // Optimal-string-alignment distance: like Levenshtein, but a swapped pair ("cta") costs 1.
   function editDistance(a, b) {
@@ -166,7 +145,6 @@
     return typeof term.print === "function" ? term.print(String(text), className || false) : null;
   }
 
-
   function scrollTerminal() {
     if (terminalOutput) terminalOutput.scrollTop = terminalOutput.scrollHeight;
   }
@@ -178,45 +156,15 @@
     return node;
   }
 
-
   // Prefer the terminal when it is open (the toast would sit behind the modal backdrop).
   function say(message, className) {
     if (terminalOpen()) print(message, className || "egg-ok");
     else toast(message);
   }
 
-  function terminalColumns() {
-    if (!terminalOutput) return 60;
-    const size = parseFloat(window.getComputedStyle(terminalOutput).fontSize) || 12.8;
-    return Math.max(24, Math.floor((terminalOutput.clientWidth - 32) / (size * 0.61)));
-  }
-
-  /* ---------------------------------------------------------------------------------------------
-   * Hints: `secrets` prints a few of these. Discovery is the reward; nothing is tracked or scored.
-   * ------------------------------------------------------------------------------------------- */
-
-  // Every secret has a route for mouse-and-keyboard visitors (`hint`) and one for touch-only visitors
-  // (`touch`, when it differs): page-wide words also work as terminal commands, the mouse shake has a
-  // phone shake, the orb hover has a press-and-hold, the Konami code can be swiped and the console
-  // function has a terminal twin. `secrets` shows the hint that fits the current device.
-  const EGGS = [
-    { id: "burst", hint: "The big name on the home page cracks under pressure. Five quick clicks.", touch: "The big name on the home page cracks under pressure. Five quick taps." },
-    { id: "shake", hint: "Shake your mouse like it owes you money.", touch: "Shake your phone like it owes you money. (Nothing? Type `shake` in here first.)" },
-    { id: "saver", hint: "Stop touching anything for thirty seconds. The system gets bored." },
-    { id: "orb", hint: "Hover the chrome star on the home page. Stay a while.", touch: "Press and hold the chrome star on the home page." },
-    { id: "konami", hint: "↑ ↑ ↓ ↓ ← → ← → B A", touch: "Grab a keyboard: ↑ ↑ ↓ ↓ ← → ← → B A." },
-    { id: "lost", hint: "Visit a page that doesn't exist, then catch the runaway page three times." }
-  ];
-  // Touch-only devices (no fine hover pointer) get the touch route in hints.
-  function hintFor(egg) { return (!finePointer && egg.touch) || egg.hint; }
-  // Effects call unlock(id) when a secret is found. Achievement tracking is intentionally left out.
-  function unlock() {}
-
   /* ---------------------------------------------------------------------------------------------
    * FX runtime: one top-layer host (a manual popover, so effects can sit above an open terminal)
-   * that holds every overlay and the achievement card, a one-at-a-time effect runner, canvases and
-   * a confetti engine. Keeping a single host means there is no second top-layer element whose
-   * order could drift: whatever is raised, the card (z-index inside the host) stays on top.
+   * that holds every overlay, a one-at-a-time effect runner, canvases and a confetti engine.
    * ------------------------------------------------------------------------------------------- */
 
   let fxHost = null;
@@ -416,9 +364,10 @@
         }
         return pieces.length;
       },
-      draw: function () {
+      // keep: draw over whatever is already on the canvas this frame.
+      draw: function (keep) {
         const ctx = view.ctx;
-        ctx.clearRect(0, 0, view.w, view.h);
+        if (!keep) ctx.clearRect(0, 0, view.w, view.h);
         pieces.forEach(function (piece) {
           ctx.globalAlpha = clamp((piece.life - piece.age) / 0.6, 0, 1);
           ctx.fillStyle = piece.color;
@@ -559,7 +508,6 @@
   }
 
   function burstName(title) {
-    unlock("burst");
     if (reduceMotion || !supportsTransforms) {
       toast("JAKE BERKO IS STRUCTURALLY SOUND. (REDUCED MOTION IS ON.)");
       return;
@@ -673,10 +621,7 @@
     });
   }
 
-
-
   function gravity() {
-    unlock("gravity");
     if (reduceMotion || !supportsTransforms) {
       toast("GRAVITY CHECK: STILL 9.81 M/S². (MOTION IS REDUCED, SO EVERYTHING STAYS PUT.)");
       return;
@@ -773,7 +718,6 @@
     });
   }
 
-
   function animateMain(name, keyframes, timing, message, reducedMessage) {
     const main = doc.getElementById("main-content") || doc.querySelector("main");
     if (reduceMotion || !main || typeof main.animate !== "function") {
@@ -795,17 +739,11 @@
   }
 
   function barrelRoll() {
-    unlock("barrel");
     sfx("whoosh");
     animateMain("barrel", [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
       { duration: 1250, easing: "cubic-bezier(0.65, 0, 0.35, 1)" },
       "DO A BARREL ROLL!", "BARREL ROLL DECLINED: REDUCED MOTION IS ON. (IMAGINE IT. VERY IMPRESSIVE.)");
   }
-
-
-
-
-
 
   function busy() {
     if (!active) return false;
@@ -813,107 +751,165 @@
     return true;
   }
 
-  // PARTY: a countdown on the beat, the drop, sweeping lasers, the disco ball, a scrolling banner,
-  // confetti cannons every bar and a firework finale. Colour washes pulse at the tempo (about two per
-  // second), well under strobe territory.
-  function party() {
-    if (busy()) return;
-    if (reduceMotion) {
+  // PARTY: about 26 seconds of after-hours with a real track. sound.js synthesises the music live
+  // (a build, a silent eighth, the drop, an outro) and everything on screen follows the audio clock:
+  // the room dims and the disco ball lowers through the build, then the drop brings the lasers, the
+  // beams, the banner and the confetti, and every kick pulses the lights. Pulses stay at the tempo
+  // (about two a second), well under strobe territory. Typing `party` is the opt-in, so the music
+  // plays even though the site's sound toggle is off. Esc, a click, hiding the tab or leaving the
+  // page stops the music on the spot. Reduced motion keeps the music and a still, dimmed room.
+  const PARTY_PLAN = { bpm: 128, dropBeat: 16, endBeat: 48, lengthBeats: 56 };
+  const PARTY_BANNER = "NOW PLAYING ✱ JB//OS — AFTER HOURS (EXTENDED MIX) ✱ 128 BPM ✱ LIVE FROM ITHACA, NY ✱ ";
+
+  function party(music) {
+    if (busy()) {
+      if (music) music.stop();
+      return;
+    }
+    if (reduceMotion && !music) {
       say("PARTY MODE (QUIET EDITION): PLEASE IMAGINE LASERS, A DISCO BALL AND A VERY GOOD DJ.");
       return;
     }
     closeTerminal();
-    effect("party", function (fx) {
-      const BEAT = 60000 / 124;
-      const DROP_AT = 4 * BEAT;
-      const PARTY_BEATS = 20;
-      const stage = make("div", "egg-disco");
-      const lights = make("div", "egg-disco__lights");
+    const started = effect("party", function (fx) {
+      const plan = music && music.plan ? music.plan : PARTY_PLAN;
+      const beat = 60 / plan.bpm;
+      const dropAt = plan.dropBeat * beat;
+      const outroAt = plan.endBeat * beat;
+      const lengthAt = plan.lengthBeats * beat;
+
+      const stage = make("div", "egg-club" + (reduceMotion ? " is-still" : ""));
+      stage.appendChild(make("div", "egg-club__dim"));
+      stage.appendChild(make("div", "egg-club__wash"));
+      const lights = make("div", "egg-club__lights");
       for (let i = 0; i < 6; i += 1) lights.appendChild(make("i"));
-      const ball = make("div", "egg-disco__ball");
+      const ball = make("div", "egg-club__ball");
       ball.appendChild(make("span"));
-      const banner = make("div", "egg-party-banner");
-      const bannerText = "JB//OS AFTER HOURS ✳ 124 BPM ✳ NO SLEEP TILL SHIPPED ✳ ";
-      const bannerTrack = make("div", "egg-party-banner__track");
-      for (let i = 0; i < 4; i += 1) bannerTrack.appendChild(make("span", "", bannerText));
-      banner.appendChild(bannerTrack);
-      const count = make("div", "egg-party-count");
-      stage.appendChild(make("div", "egg-disco__wash"));
-      stage.appendChild(lights);
-      stage.appendChild(ball);
-      stage.appendChild(banner);
-      stage.appendChild(count);
-      stage.style.setProperty("--beat", Math.round(BEAT) + "ms");
+      const banner = make("div", "egg-club__banner");
+      const track = make("div", "egg-club__track");
+      if (reduceMotion) track.appendChild(make("span", "", PARTY_BANNER.replace(/ ✱ $/, "")));
+      else for (let i = 0; i < 4; i += 1) track.appendChild(make("span", "", PARTY_BANNER));
+      banner.appendChild(track);
+      const stop = make("p", "egg-club__stop", finePointer ? "♪ ESC TO STOP" : "♪ TAP TO STOP");
+      // The stop hint rides just above the banner, whatever height the banner wraps to.
+      const dock = make("div", "egg-club__dock");
+      dock.appendChild(stop);
+      dock.appendChild(banner);
+      if (!reduceMotion) {
+        stage.appendChild(lights);
+        stage.appendChild(ball);
+      }
+      stage.appendChild(dock);
+      stage.style.setProperty("--beat", (beat * 1000).toFixed(2) + "ms");
       host().appendChild(stage);
+
+      let view = null;
+      let field = null;
+      if (!reduceMotion) {
+        view = fxCanvas(fx, "egg-club__canvas");
+        stage.insertBefore(view.canvas, ball);
+        field = confettiField(view);
+      }
+
+      function onHidden() { if (doc.hidden) fx.end(); }
+      doc.addEventListener("visibilitychange", onHidden);
+      if (music) music.onstop = function () { if (!fx.ended) fx.end(); };
       fx.onEnd(function () {
+        doc.removeEventListener("visibilitychange", onHidden);
+        if (music) {
+          music.onstop = null;
+          music.stop();
+        }
         stage.remove();
         body.classList.remove("egg-party");
-        stopLongSounds();
+        body.style.removeProperty("--egg-beat");
       });
       window.requestAnimationFrame(function () { stage.classList.add("is-visible"); });
 
-      ["3", "2", "1", "DROP"].forEach(function (label, i) {
-        fx.after(i * BEAT, function () {
-          count.textContent = label;
-          count.classList.remove("is-hit");
-          void count.offsetWidth;
-          count.classList.add("is-hit");
-          sfx(label === "DROP" ? "powerup" : "tick");
-        });
-      });
-
-      const view = fxCanvas(fx);
-      const field = confettiField(view);
-      const palette = themePalette();
-      let dropped = false;
-      let elapsed = 0;
-
-      fx.after(DROP_AT, function () {
-        dropped = true;
-        count.textContent = "";
-        stage.classList.add("is-dropped");
-        body.classList.add("egg-party");
-        sfx("party");
-        toast("PARTY MODE · 124 BPM · ESC TO STOP");
-        field.burst({ origin: "left", count: 100 });
-        field.burst({ origin: "right", count: 100 });
-      });
-      for (let bar = 1; bar < PARTY_BEATS / 4; bar += 1) {
-        fx.after(DROP_AT + bar * 4 * BEAT, function () {
-          field.burst({ origin: bar % 2 ? "left" : "right", count: 70 });
-          sfx("pop");
-        });
+      // The audio clock drives everything. Without audio (or if the browser never lets it start),
+      // the same timeline runs on the page clock instead.
+      let wallStart = clock() + 120;
+      let last = -1;
+      function musicTime() {
+        if (music) {
+          if (music.running()) return music.time();
+          if (clock() - fx.startedAt < 1500) return Math.min(last, 0);
+          music.onstop = null;
+          music.stop();
+          music = null;
+          wallStart = clock() - Math.max(last, 0) * 1000;
+        }
+        return (clock() - wallStart) / 1000;
       }
-      const finale = DROP_AT + PARTY_BEATS * BEAT;
-      [0.18, 0.5, 0.82, 0.34, 0.66].forEach(function (x, i) {
-        fx.after(finale + i * BEAT * 0.5, function () {
-          field.burst({ origin: { x: view.w * x, y: view.h * (i < 3 ? 0.32 : 0.22) }, spread: Math.PI, count: 70, power: 620 });
-          sfx("pop");
-        });
-      });
 
-      // Laser beams from the floor corners, sweeping on the beat.
-      function drawLasers() {
+      let flash = 0;
+      const cues = [
+        { at: dropAt, run: function () {
+          stage.classList.add("is-dropped");
+          if (reduceMotion) return;
+          body.style.setProperty("--egg-beat", (beat * 1000).toFixed(2) + "ms");
+          body.classList.add("egg-party");
+          flash = 0.7;
+          field.burst({ origin: "left", count: 120 });
+          field.burst({ origin: "right", count: 120 });
+        } },
+        { at: outroAt, run: function () {
+          stage.classList.add("is-outro");
+          body.classList.remove("egg-party");
+          if (reduceMotion) return;
+          flash = 0.45;
+          [0.2, 0.5, 0.8, 0.35, 0.65].forEach(function (x, i) {
+            fx.after(i * beat * 1000 / 3, function () {
+              field.burst({ origin: { x: view.w * x, y: view.h * (i < 3 ? 0.3 : 0.2) }, spread: Math.PI, count: 70, power: 620 });
+            });
+          });
+        } },
+        { at: lengthAt - 0.7, run: function () { stage.classList.remove("is-visible"); } },
+        { at: lengthAt, run: function () { fx.end(); } }
+      ];
+      if (!reduceMotion) {
+        // Confetti cannons every other bar of the drop, from both sides when the hook comes in.
+        [2, 4, 6].forEach(function (bar) {
+          cues.push({ at: dropAt + bar * 4 * beat, run: function () {
+            if (bar === 4) {
+              field.burst({ origin: "left", count: 80 });
+              field.burst({ origin: "right", count: 80 });
+            } else {
+              field.burst({ origin: bar === 2 ? "right" : "left", count: 80 });
+            }
+          } });
+        });
+        cues.sort(function (a, b) { return a.at - b.at; });
+      }
+      let cue = 0;
+
+      const palette = themePalette();
+      let sweep = 0;
+
+      // Lasers fan out from three points on the floor; they sweep with the bar and flare on the kick.
+      function drawLasers(alpha, spread) {
         const ctx = view.ctx;
-        const beams = [
-          { x: 0, dir: 1 }, { x: view.w, dir: -1 }, { x: view.w * 0.5, dir: 1 }
-        ];
+        const length = Math.hypot(view.w, view.h);
+        const origins = [{ x: 0, dir: 1 }, { x: view.w, dir: -1 }, { x: view.w / 2, dir: 0 }];
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
         ctx.lineCap = "round";
-        beams.forEach(function (beam, b) {
-          for (let k = 0; k < 3; k += 1) {
-            const phase = elapsed / (BEAT / 1000) * Math.PI / 2 + b * 1.7 + k * 0.5;
-            const angle = -Math.PI / 2 + beam.dir * (0.25 + 0.55 * Math.sin(phase)) * (b === 2 ? 0.7 : 1);
-            const length = Math.hypot(view.w, view.h);
-            ctx.strokeStyle = palette[(b * 3 + k) % palette.length];
-            ctx.globalAlpha = 0.38;
-            ctx.lineWidth = 2.5;
-            ctx.shadowColor = ctx.strokeStyle;
-            ctx.shadowBlur = 16;
+        origins.forEach(function (origin, o) {
+          for (let k = 0; k < 4; k += 1) {
+            const swing = Math.sin(sweep + o * 2.1 + k * 0.55);
+            const lean = origin.dir === 0 ? (k - 1.5) * 0.28 * spread : origin.dir * (0.2 + 0.5 * k / 3) * spread;
+            const angle = -Math.PI / 2 + lean + swing * 0.32 * spread;
+            const x = origin.x + Math.cos(angle) * length;
+            const y = view.h + Math.sin(angle) * length;
+            ctx.strokeStyle = palette[(o * 2 + k) % palette.length];
+            ctx.globalAlpha = alpha * 0.18;
+            ctx.lineWidth = 9;
             ctx.beginPath();
-            ctx.moveTo(beam.x, view.h + 4);
-            ctx.lineTo(beam.x + Math.cos(angle) * length, view.h + Math.sin(angle) * length);
+            ctx.moveTo(origin.x, view.h + 2);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = 1.6;
             ctx.stroke();
           }
         });
@@ -921,24 +917,81 @@
       }
 
       fx.loop(function (dt) {
-        elapsed += dt;
+        const t = musicTime();
+        last = t;
+        while (cue < cues.length && t >= cues[cue].at) {
+          cues[cue].run();
+          cue += 1;
+          if (fx.ended) return false;
+        }
+        if (reduceMotion) return true;
+
+        // kick: 1 on every kick, decaying over the beat. build: 0 -> 1 across the build.
+        let kick = 0;
+        let dim;
+        let wash;
+        let beams = 0;
+        let lasers;
+        let spread;
+        let speed;
+        const build = clamp(t / dropAt, 0, 1);
+        if (t < dropAt) {
+          const beats = t / beat;
+          if (beats >= 0 && beats < 8) kick = 0.5 * Math.exp(-5 * (beats % 1));
+          const gap = t >= dropAt - beat / 2;
+          dim = gap ? 0.86 : 0.12 + 0.5 * Math.pow(build, 1.3);
+          wash = gap ? 0 : 0.04 + 0.18 * build + 0.12 * kick;
+          lasers = gap ? 0 : 0.04 + 0.26 * build;
+          spread = 0.35 + 0.5 * build;
+          speed = 0.6 + 3.4 * build * build;
+        } else if (t < outroAt) {
+          kick = Math.exp(-5 * (((t - dropAt) / beat) % 1));
+          dim = 0.5 - 0.18 * kick;
+          wash = 0.2 + 0.28 * kick;
+          beams = 0.35 + 0.45 * kick;
+          lasers = 0.32 + 0.5 * kick;
+          spread = 1;
+          speed = Math.PI * 2 / (beat * 4);
+        } else {
+          const fade = clamp(1 - (t - outroAt) / (beat * 4), 0, 1);
+          kick = Math.exp(-2 * (t - outroAt) / beat);
+          dim = 0.3 + 0.2 * fade;
+          wash = 0.12 * fade + 0.2 * kick;
+          beams = 0.5 * fade * fade;
+          lasers = 0.5 * fade * fade;
+          spread = 1;
+          speed = 1.5;
+        }
+        sweep += speed * dt;
+        stage.style.setProperty("--kick", kick.toFixed(3));
+        stage.style.setProperty("--dim", dim.toFixed(3));
+        stage.style.setProperty("--wash", wash.toFixed(3));
+        stage.style.setProperty("--beams", beams.toFixed(3));
+        stage.style.setProperty("--build", (build * build * (3 - 2 * build)).toFixed(3));
+
+        const ctx = view.ctx;
+        ctx.clearRect(0, 0, view.w, view.h);
+        if (lasers > 0.01) drawLasers(lasers, spread);
         field.step(dt);
-        field.draw();
-        if (dropped && elapsed * 1000 < finale) drawLasers();
+        field.draw(true);
+        if (flash > 0.01) {
+          ctx.globalAlpha = flash;
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, view.w, view.h);
+          ctx.globalAlpha = 1;
+          flash *= Math.exp(-dt * 7);
+        }
         return true;
       });
-      fx.after(finale + 2400, function () { stage.classList.remove("is-visible"); });
-      fx.after(finale + 3100, function () { fx.end(); });
     });
+    if (!started && music) music.stop();
   }
 
-
   function wobble() {
-    unlock("shake");
     const lines = [
       "WHOA, EASY. THE PIXELS ARE GETTING DIZZY.",
       "SHAKING IT WON'T MAKE IT LOAD FASTER. (IT'S ALREADY LOADED.)",
-      "JB//OS IS NOT A SNOW GLOBE. (TRY TYPING “ITHACA”.)",
+      "JB//OS IS NOT A SNOW GLOBE.",
       "EARTHQUAKE DETECTED. MAGNITUDE: ENTHUSIASTIC."
     ];
     toast(pick(lines));
@@ -950,16 +1003,40 @@
     window.setTimeout(function () { body.classList.remove("egg-wobble"); }, 800);
   }
 
+  // Swallows the rest of the gesture that woke the screensaver (a held key's repeats and release, or
+  // the click that follows a press), so waking never also opens the terminal or follows a link.
+  // A fresh press afterwards goes through as normal.
+  function swallowWakeGesture(key) {
+    const types = key === null
+      ? ["pointerup", "mouseup", "click", "auxclick", "dblclick", "contextmenu"]
+      : ["keydown", "keypress", "keyup"];
+    const ends = key === null ? ["click", "auxclick", "contextmenu"] : ["keyup"];
+    let timer = 0;
+    function release() {
+      window.clearTimeout(timer);
+      types.forEach(function (type) { window.removeEventListener(type, swallow, true); });
+    }
+    function swallow(event) {
+      if (key !== null && (event.key !== key || (event.type === "keydown" && !event.repeat))) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (ends.indexOf(event.type) >= 0) release();
+    }
+    types.forEach(function (type) { window.addEventListener(type, swallow, true); });
+    timer = window.setTimeout(release, 1500);
+  }
+
   function screensaver(manual) {
     if (active || (!manual && (dialogOpen() || doc.hidden))) return;
     closeTerminal();
+    // Not skippable by the global Escape/click handlers: the screensaver handles its own wake-up.
     effect("saver", function (fx) {
       const layer = make("div", "egg-saver");
       const logo = make("div", "egg-saver__logo");
       logo.appendChild(make("strong", "", "JB//OS"));
       logo.appendChild(make("small", "", "PORTFOLIO.26"));
       const time = make("p", "egg-saver__clock");
-      const hint = make("p", "egg-saver__hint", "MOVE THE MOUSE OR PRESS ANY KEY");
+      const hint = make("p", "egg-saver__hint", finePointer ? "Click the mouse or press any key" : "Tap the screen or press any key");
       const corner = make("p", "egg-saver__corner", "CORNER!");
       layer.appendChild(logo);
       layer.appendChild(time);
@@ -1022,32 +1099,27 @@
         return true;
       });
 
-      // Only a click or tap ends it (Escape too, so keyboard users are never stuck); moving the mouse,
-      // scrolling or other keys just let it keep bouncing.
+      // Any click, tap or key wakes it; moving the mouse or scrolling does not. The waking input is
+      // swallowed (backtick must not also open the terminal, a click must not land on a link). Input
+      // in the first moments is swallowed too, so the gesture that started it cannot end it.
+      const armedAt = clock() + 450;
       const wakeEvents = ["pointerdown", "keydown"];
       function wake(event) {
-        if (event.type === "keydown" && event.key !== "Escape") return;
         event.preventDefault();
-        event.stopPropagation();
-        fx.skip();
+        event.stopImmediatePropagation();
+        if (clock() < armedAt || fx.ended) return;
+        swallowWakeGesture(event.type === "keydown" ? event.key : null);
+        fx.end();
       }
-      fx.after(450, function () {
-        wakeEvents.forEach(function (type) {
-          window.addEventListener(type, wake, { capture: true, passive: type !== "keydown" });
-        });
-      });
+      wakeEvents.forEach(function (type) { window.addEventListener(type, wake, true); });
       fx.onEnd(function () {
-        wakeEvents.forEach(function (type) { window.removeEventListener(type, wake, { capture: true }); });
+        wakeEvents.forEach(function (type) { window.removeEventListener(type, wake, true); });
         layer.classList.remove("is-visible");
         window.setTimeout(function () { layer.remove(); settleHost(); }, 340);
-        unlock("saver");
         if (elapsed > 4) toast("WELCOME BACK. JB//OS KEPT YOUR SEAT WARM.");
       });
-    });
+    }, { skippable: false });
   }
-
-
-
 
   /* ---------------------------------------------------------------------------------------------
    * Page-wide secrets
@@ -1167,8 +1239,8 @@
     return state;
   })();
 
-  // Thirty seconds of stillness starts the screensaver.
-  const IDLE_MS = 30000;
+  // A minute of stillness starts the screensaver.
+  const IDLE_MS = 60000;
   let lastActivity = clock();
   let idleNoticeShown = false;
   function markActivity() {
@@ -1187,7 +1259,6 @@
       if (!idleNoticeShown) {
         idleNoticeShown = true;
         toast("STILL THERE? JB//OS IS HOLDING YOUR PLACE.");
-        unlock("saver");
       }
       return;
     }
@@ -1212,7 +1283,6 @@
       let press = null;
       let swallowClickUntil = 0;
       const charge = function (byTouch) {
-        unlock("orb");
         toast(byTouch ? "THE ORB IS PLEASED. (TAP IT FOR THE TERMINAL.)" : "THE ORB IS PLEASED. (CLICK IT FOR THE TERMINAL.)");
         sfx("powerup");
         if (reduceMotion) return;
@@ -1293,12 +1363,16 @@
     }
   }
 
+  // A job is a command that keeps printing after run() returns. Its promise settles when the output is
+  // finished or the job is cancelled; run() returns it so site.js puts the command menu back after it.
   function startJob() {
     cancelJob();
+    let settle = null;
     const current = {
       cancelled: false,
       timers: [],
       cleanups: [],
+      promise: new Promise(function (resolve) { settle = resolve; }),
       after: function (ms, fn) {
         const id = window.setTimeout(function () { if (!current.cancelled) fn(); }, ms);
         current.timers.push(id);
@@ -1307,8 +1381,10 @@
       done: function () {
         if (job === current) job = null;
         runJobCleanups(current);
+        settle();
       }
     };
+    current.onCancel(settle);
     job = current;
     return current;
   }
@@ -1422,7 +1498,7 @@
   if (terminalInput && !JBOS.terminalExtras) {
     JBOS.terminalExtras = "eggs";
     terminalInput.addEventListener("keydown", function (event) {
-      if (snakeGame || event.altKey || event.metaKey || event.ctrlKey || event.isComposing) return;
+      if (event.defaultPrevented || snakeGame || event.altKey || event.metaKey || event.ctrlKey || event.isComposing) return;
       if (event.key === "ArrowUp") {
         if (!history.length) return;
         event.preventDefault();
@@ -1446,11 +1522,7 @@
       cancelJob();
       remember(detail.raw);
       const command = detail.command;
-      if (command === "help") {
-        window.setTimeout(function () {
-          print("TIP: ↑/↓ recall history · TAB completes · some commands are hidden. Try `secrets`.", "egg-dim");
-        }, 0);
-      } else if (!isKnownCommand(command)) {
+      if (command !== "help" && !isKnownCommand(command)) {
         window.setTimeout(function () {
           const suggestion = suggestCommand(command);
           if (suggestion) print("Did you mean `" + suggestion + "`?", "egg-dim");
@@ -1488,24 +1560,6 @@
     JBOS.registerCommand(name, spec);
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Runs fn once the terminal has fully closed (its close handlers have released the page).
   function afterTerminalCloses(fn) {
     if (!terminalOpen()) { fn(); return; }
@@ -1542,7 +1596,6 @@
     }
   });
 
-
   register("shake", {
     hidden: true,
     help: "shake: shake things up (phones: switches on the motion sensor)",
@@ -1562,7 +1615,7 @@
           });
         });
       };
-      if (!motion) { shakeForThem("no motion sensor here"); return; }
+      if (!motion) { shakeForThem("no motion sensor here"); return current.promise; }
       print("shake: checking the motion sensor…", "egg-dim");
       // iOS shows its own "allow motion" prompt here; this command is the only thing that asks.
       motion.request().then(function (allowed) {
@@ -1574,18 +1627,9 @@
           current.done();
         });
       });
+      return current.promise;
     }
   });
-
-  // The devtools note, for visitors without devtools (hello, phones).
-
-
-
-
-
-
-
-
 
   register("screensaver", {
     aliases: ["zzz", "afk"],
@@ -1596,14 +1640,20 @@
     }
   });
 
-
   register("party", {
     aliases: ["disco", "rave"],
-    help: "party: 3, 2, 1… drop",
+    help: "party: 26 seconds of after-hours, with music (sound on, Esc to stop)",
     run: function () {
       if (active) { print("party: the last party is still going."); return; }
-      print("♪ JB//OS AFTER HOURS · DOORS OPEN ♪", "egg-ok");
-      window.setTimeout(party, 300);
+      const sound = JBOS.sound || {};
+      // Wake the audio up inside this keypress or click; browsers only allow it from a gesture.
+      const audible = typeof sound.warm === "function" && typeof sound.party === "function" && sound.warm();
+      print(audible ? "Cueing the track. Sound on, Esc to stop." : "Cueing the lights. (No audio in this browser.)", "egg-ok");
+      window.setTimeout(function () {
+        let music = null;
+        try { music = audible ? sound.party() : null; } catch (error) { music = null; }
+        party(music);
+      }, 300);
     }
   });
 
@@ -1612,7 +1662,6 @@
     help: "hack: hollywood mode",
     run: function () {
       const current = startJob();
-      unlock("hack");
       if (terminalEl) terminalEl.classList.add("egg-hacking");
       current.onCancel(function () { if (terminalEl) terminalEl.classList.remove("egg-hacking"); });
       const hex = function (length) {
@@ -1632,7 +1681,7 @@
         function () { return "Compiling kernel with -O" + pick(["3", "fast", "∞"]); },
         function () { return "Tracing packets: " + ip() + " → " + ip() + " → " + ip(); },
         function () { return "Enhancing image… enhance… ENHANCE"; },
-        function () { return "SELECT * FROM secrets WHERE fun = TRUE;  -- " + randInt(2, 99) + " rows"; },
+        function () { return "SELECT * FROM side_projects WHERE finished = TRUE;  -- 0 rows"; },
         function () { return "Brute-forcing password: " + hex(randInt(4, 10)) + "… no"; },
         function () { return "Uploading virus.exe… just kidding, it's a résumé"; },
         function () { return "sudo chmod 777 /dev/motivation"; },
@@ -1651,31 +1700,22 @@
         sfx("success");
       });
       current.after(120 + total * 58 + 900, function () {
-        print("Relax: nothing was hacked. It's a portfolio. Type `help` to see what else this terminal can do.", "egg-dim");
+        print("Relax: nothing was hacked. It's a portfolio.", "egg-dim");
+      });
+      current.after(120 + total * 58 + 1900, function () {
+        print("You now have root on a static site. You can read everything you could already read.");
+      });
+      current.after(120 + total * 58 + 3000, function () {
+        print("Incident reported to the security team. (Also Jake. He's not worried.)", "egg-dim");
         current.done();
       });
-    }
-  });
-
-
-
-
-
-
-
-  register("secrets", {
-    help: "secrets: hints for the hidden stuff on the page",
-    aliases: ["hints", "eggs"],
-    run: function () {
-      print("JB//OS SECRETS · THINGS TO TRY", "egg-banner egg-banner--small");
-      EGGS.forEach(function (egg) { print("  ? " + hintFor(egg)); });
-      print("The fun commands are in `help`.", "egg-dim");
+      return current.promise;
     }
   });
 
   register("snake", {
     help: "snake: the classic, in your terminal",
-    run: function () { startSnake(); }
+    run: function () { return startSnake(); }
   });
 
   /* ---------------------------------------------------------------------------------------------
@@ -1688,6 +1728,7 @@
     const game = snakeGame;
     if (!game) return;
     snakeGame = null;
+    game.settle();
     window.cancelAnimationFrame(game.raf);
     window.removeEventListener("keydown", game.onKey, true);
     game.detach();
@@ -1701,7 +1742,6 @@
     if (!terminalOutput || !terminalEl) return;
     openTerminal();
     if (snakeGame) stopSnake(true);
-    unlock("snake");
 
     const COLS = 21;
     const ROWS = 13;
@@ -1768,8 +1808,10 @@
       mode: "ready", snake: [], dir: DIRS.right, queue: [], food: null, bonus: null,
       score: 0, eaten: 0, interval: 0.14, newBest: false,
       best: Number(readStore("jb-snake-best")) || 0,
-      onKey: null, detach: function () {}
+      onKey: null, detach: function () {}, settle: function () {}
     };
+    // Settles when the game exits, so the command menu lands under the board, not over it.
+    const finished = new Promise(function (resolve) { game.settle = resolve; });
     snakeGame = game;
 
     function occupied(x, y) {
@@ -2057,6 +2099,7 @@
     wrap.focus({ preventScroll: true });
     scrollTerminal();
     game.raf = window.requestAnimationFrame(frame);
+    return finished;
   }
 
   /* ---------------------------------------------------------------------------------------------
@@ -2066,7 +2109,6 @@
   function init404() {
     const page = doc.querySelector("[data-egg-404]");
     if (!page) return;
-    window.setTimeout(function () { unlock("lost"); }, 1400);
 
     let path = window.location.pathname;
     try { path = decodeURIComponent(path); } catch (error) { /* keep the raw path */ }
@@ -2209,7 +2251,6 @@
         arena.classList.add("is-won");
         if (toyStatus) toyStatus.textContent = "Caught it! It was a 404 all along. Here's the homepage instead.";
         if (win) win.hidden = false;
-        unlock("found");
         sfx("fanfare");
         confettiEffect("found", [{ delay: 0, count: 120 }]);
         const winLink = win ? win.querySelector("a") : null;

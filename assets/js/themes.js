@@ -496,33 +496,23 @@
     return output;
   }
 
-  function listThemes() {
-    const active = current();
-    print("DISPLAY MODES", true);
-    THEMES.forEach(function (theme) {
-      const isActive = theme.id === active;
-      const line = print(
-        (isActive ? "▸ " : "  ") + pad(theme.id, 11) + theme.name.toUpperCase() + " — " + theme.blurb + (isActive ? "  [ACTIVE]" : ""),
-        "theme-term-item" + (isActive ? " is-current" : "")
-      );
-      if (line) {
-        const swatch = doc.createElement("i");
-        swatch.className = "theme-term-swatch theme-term-swatch--" + theme.id;
-        swatch.setAttribute("aria-hidden", "true");
-        line.insertBefore(swatch, line.firstChild);
-      }
-    });
-    print("usage: theme <default|crt|synthwave> · theme next · theme random", "theme-term-dim");
+  function settle(done) {
+    if (typeof done === "function") done();
   }
 
-  function printLog(theme, step) {
+  // Prints the boot log (staggered by `step` ms), then calls done once the last line is out.
+  function printLog(theme, step, done) {
     theme.log.forEach(function (text, index) {
       if (!step) {
         print("  " + text, "theme-term-item");
         return;
       }
-      window.setTimeout(function () { print("  " + text, "theme-term-item"); }, step * (index + 1));
+      window.setTimeout(function () {
+        print("  " + text, "theme-term-item");
+        if (index === theme.log.length - 1) settle(done);
+      }, step * (index + 1));
     });
+    if (!step || !theme.log.length) settle(done);
   }
 
   /* ---------- Terminal stage ---------- */
@@ -532,9 +522,18 @@
   // edge (title bar still showing, input still focused), the backdrop clears, the switch
   // plays in plain view with the reveal radiating from the docked bar, and the terminal
   // springs back up to print the boot log. Closing it mid-show finishes the switch at once.
+  // stage.done belongs to the command that started the switch (site.js waits on it before it
+  // puts the command menu back): it runs once the boot log has printed, or straight away when
+  // a newer switch takes the stage over.
   const DOCK_MS = 420; // .terminal.is-theme-docked transition in themes.scss
   const DOCK_GAP = 12;
-  const stage = { dialog: null, target: null, pending: null, commitTimer: 0, returnTimer: 0 };
+  const stage = { dialog: null, target: null, pending: null, commitTimer: 0, returnTimer: 0, done: null };
+
+  function takeDone() {
+    const done = stage.done;
+    stage.done = null;
+    return done;
+  }
 
   function openTerminalDialog() {
     const dialog = JBOS.terminal && JBOS.terminal.element;
@@ -596,16 +595,21 @@
   function returnFromDock() {
     const theme = stage.target;
     const dialog = stage.dialog;
+    const done = takeDone();
     releaseStage();
     if (dialog && dialog.open) play("pop");
-    if (theme) printLog(theme, 170);
+    if (theme) printLog(theme, 170, done);
+    else settle(done);
   }
 
   function commitStaged() {
     const theme = stage.pending;
     stage.commitTimer = 0;
     stage.pending = null;
-    if (!theme || !stage.dialog) return;
+    if (!theme || !stage.dialog) {
+      settle(takeDone());
+      return;
+    }
     // A re-staged switch can land back on the mode already showing: nothing to watch.
     const changed = setTheme(theme.id, { source: "terminal", toast: false, origin: dockPoint(stage.dialog) });
     stage.returnTimer = window.setTimeout(returnFromDock, changed ? theme.hold : 160);
@@ -614,29 +618,35 @@
   function onStageClose() {
     const theme = stage.target;
     const pending = stage.pending;
+    const done = takeDone();
     stage.pending = null;
     releaseStage();
     // The terminal is gone, so the switch (and its toast) now plays in plain view.
     if (pending && pending.id !== current()) setTheme(pending.id, { source: "terminal" });
-    if (theme) printLog(theme, 0);
+    if (theme) printLog(theme, 0, done);
+    else settle(done);
   }
 
-  function stageSwitch(theme) {
+  function stageSwitch(theme, done) {
     const dialog = openTerminalDialog();
+    const previous = takeDone();
     if (!dialog || reducedMotion()) {
       if (stage.dialog) releaseStage();
       stage.pending = null;
+      settle(previous);
       setTheme(theme.id, { source: "terminal", toast: false });
-      printLog(theme, reducedMotion() ? 0 : 170);
+      printLog(theme, reducedMotion() ? 0 : 170, done);
       return;
     }
 
     const docked = stage.dialog === dialog;
+    stage.done = done || null;
+    settle(previous);
     window.clearTimeout(stage.commitTimer);
     window.clearTimeout(stage.returnTimer);
     stage.target = theme;
     stage.pending = theme;
-    dialog.setAttribute("data-theme-dock-label", "\u2192 " + theme.name.toUpperCase());
+    dialog.setAttribute("data-theme-dock-label", "→ " + theme.name.toUpperCase());
     dialog.style.setProperty("--theme-dock-hold", (theme.hold + (docked ? 0 : DOCK_MS)) + "ms");
     // Restart the dock chip's progress bar for every staged switch.
     dialog.classList.remove("is-theme-docking");
@@ -660,37 +670,318 @@
     return stage.pending ? stage.pending.id : current();
   }
 
+  // Resolves once the boot log has printed; nothing to wait for when the mode is already on.
   function switchFromTerminal(id, preface) {
     const theme = byId(id);
-    if (!theme) return;
+    if (!theme) return null;
     if (theme.id === terminalTheme()) {
       print("Already running " + theme.name.toUpperCase() + ". Try: theme next");
-      return;
+      return null;
     }
     if (preface) print(preface);
-    print("> SWITCHING DISPLAY MODE \u2192 " + theme.name.toUpperCase(), true);
-    stageSwitch(theme);
+    print("> SWITCHING DISPLAY MODE → " + theme.name.toUpperCase(), true);
+    return new Promise(function (resolve) { stageSwitch(theme, resolve); });
   }
+
+  /* ---------- Terminal: interactive picker ---------- */
+  // `theme` on its own prints the DISPLAY MODES list and makes it live, like a TUI menu:
+  // ↑/↓ (or j/k, Home/End) move the ▸ cursor, Enter switches, Esc cancels, and a click
+  // (or tap) on a line picks it. Keys are caught in the capture phase on the document, so they
+  // never reach the prompt's history recall and Enter never submits the form. Typing, another
+  // command or closing the terminal ends it quietly. Only one picker is live at a time; a
+  // closed one stays in the log as plain text.
+  let picker = null;
+  let pickerCount = 0;
+
+  function pickerInput() {
+    return JBOS.terminal ? JBOS.terminal.input : null;
+  }
+
+  function renderPickItem(theme, index, listId, isActive) {
+    const item = doc.createElement("p");
+    item.className = "theme-term-item theme-pick__item" + (isActive ? " is-current" : "");
+    item.id = listId + "-" + theme.id;
+    item.setAttribute("role", "option");
+    item.setAttribute("aria-selected", "false");
+    item.setAttribute("data-theme-pick", String(index));
+
+    const swatch = doc.createElement("i");
+    swatch.className = "theme-term-swatch theme-term-swatch--" + theme.id;
+    swatch.setAttribute("aria-hidden", "true");
+    item.appendChild(swatch);
+
+    const parts = [
+      ["theme-pick__caret", "▸"],
+      ["theme-pick__gap", " "],
+      ["theme-pick__id", pad(theme.id, 11)],
+      ["theme-pick__name", theme.name.toUpperCase()],
+      ["theme-pick__blurb", " — " + theme.blurb]
+    ];
+    if (isActive) parts.push(["theme-pick__tag", "  [ACTIVE]"]);
+    parts.forEach(function (part) {
+      const span = doc.createElement("span");
+      span.className = part[0];
+      span.textContent = part[1];
+      if (part[0] === "theme-pick__caret" || part[0] === "theme-pick__gap") span.setAttribute("aria-hidden", "true");
+      item.appendChild(span);
+    });
+    return item;
+  }
+
+  function highlight(index) {
+    if (!picker) return;
+    const count = picker.items.length;
+    picker.index = ((index % count) + count) % count;
+    picker.items.forEach(function (item, position) {
+      const selected = position === picker.index;
+      item.classList.toggle("is-selected", selected);
+      item.setAttribute("aria-selected", String(selected));
+    });
+    const item = picker.items[picker.index];
+    const input = pickerInput();
+    if (input) input.setAttribute("aria-activedescendant", item.id);
+
+    // Keep the highlighted line in view if the log has been scrolled.
+    const output = JBOS.terminal && JBOS.terminal.output;
+    if (output) {
+      const box = output.getBoundingClientRect();
+      const line = item.getBoundingClientRect();
+      if (line.top < box.top) output.scrollTop -= box.top - line.top + 8;
+      else if (line.bottom > box.bottom) output.scrollTop += line.bottom - box.bottom + 8;
+    }
+  }
+
+  function movePicker(step) {
+    if (!picker) return;
+    highlight(picker.index + step);
+    play("tick");
+  }
+
+  // Ends the live picker: its lines become plain log text, the key hint goes, the ▸ stays on
+  // the chosen line (or on the active one when nothing was chosen). Returns its resolver.
+  function closePicker(chosen) {
+    const live = picker;
+    if (!live) return null;
+    picker = null;
+    const mark = typeof chosen === "number" ? chosen : live.activeIndex;
+    live.list.classList.remove("is-live");
+    live.list.removeAttribute("role");
+    live.list.removeAttribute("aria-label");
+    live.items.forEach(function (item, position) {
+      item.classList.remove("is-selected");
+      item.classList.toggle("is-chosen", position === mark);
+      item.removeAttribute("role");
+      item.removeAttribute("aria-selected");
+    });
+    if (live.hint && live.hint.parentNode) live.hint.parentNode.removeChild(live.hint);
+    const input = pickerInput();
+    if (input) {
+      input.removeAttribute("aria-activedescendant");
+      input.removeAttribute("aria-controls");
+    }
+    return live.resolve;
+  }
+
+  // After a pick by keyboard, typing should land in the prompt even if a click on the log
+  // had moved focus to the dialog. Touch screens skip this so no keyboard pops up.
+  function refocusPrompt() {
+    const input = pickerInput();
+    if (!input || JBOS.finePointer === false || !openTerminalDialog() || doc.activeElement === input) return;
+    input.focus({ preventScroll: true });
+  }
+
+  // Quietly ends the picker (another command, typing, the terminal closing).
+  function abandonPicker() {
+    settle(closePicker());
+  }
+
+  function cancelPicker() {
+    if (!picker) return;
+    const theme = byId(terminalTheme());
+    const done = closePicker();
+    print("Cancelled. Still running " + theme.name.toUpperCase() + ".", "theme-term-dim");
+    play("close");
+    refocusPrompt();
+    settle(done);
+  }
+
+  function choosePick(index) {
+    if (!picker) return;
+    const theme = THEMES[index];
+    const done = closePicker(index);
+    refocusPrompt();
+    if (!theme || theme.id === terminalTheme()) {
+      print("Already running " + (theme || byId(terminalTheme())).name.toUpperCase() + ". Nothing to switch.", "theme-term-dim");
+      play("click");
+      settle(done);
+      return;
+    }
+    print("> SWITCHING DISPLAY MODE → " + theme.name.toUpperCase(), true);
+    stageSwitch(theme, done);
+  }
+
+  function openPicker() {
+    const output = JBOS.terminal && JBOS.terminal.output;
+    if (!output) return null;
+    abandonPicker();
+
+    const active = terminalTheme();
+    const activeIndex = indexOfTheme(active);
+    pickerCount += 1;
+    const listId = "theme-pick-" + pickerCount;
+
+    print("DISPLAY MODES", true);
+    const list = doc.createElement("div");
+    list.className = "theme-pick is-live";
+    list.id = listId;
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-label", "Display modes");
+    const items = THEMES.map(function (theme, index) {
+      const item = renderPickItem(theme, index, listId, theme.id === active);
+      list.appendChild(item);
+      return item;
+    });
+    output.appendChild(list);
+    const hint = print(
+      JBOS.finePointer === false
+        ? "Tap a mode to switch · or type: theme crt"
+        : "↑/↓ move · Enter select · Esc cancel · or click one",
+      "theme-term-dim theme-pick__hint"
+    );
+
+    return new Promise(function (resolve) {
+      picker = { list: list, items: items, hint: hint, index: activeIndex, activeIndex: activeIndex, resolve: resolve };
+      const input = pickerInput();
+      if (input) input.setAttribute("aria-controls", listId);
+      highlight(activeIndex);
+      output.scrollTop = output.scrollHeight;
+      // Run with the terminal shut (from code, not the prompt): leave a plain list behind.
+      if (!openTerminalDialog()) {
+        abandonPicker();
+        return;
+      }
+
+      // Clicking a line keeps focus on the prompt (no blur to <body> inside the modal).
+      list.addEventListener("mousedown", function (event) {
+        if (picker && picker.list === list && event.target.closest("[data-theme-pick]")) event.preventDefault();
+      });
+      list.addEventListener("click", function (event) {
+        const item = event.target.closest("[data-theme-pick]");
+        if (!item || !picker || picker.list !== list) return;
+        choosePick(Number(item.getAttribute("data-theme-pick")));
+      });
+      // The mouse drives the highlight too, like any TUI menu.
+      list.addEventListener("pointermove", function (event) {
+        if (event.pointerType !== "mouse" || !picker || picker.list !== list) return;
+        const item = event.target.closest("[data-theme-pick]");
+        if (!item) return;
+        const index = Number(item.getAttribute("data-theme-pick"));
+        if (index !== picker.index) highlight(index);
+      });
+    });
+  }
+
+  function consume(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function onPickerKey(event) {
+    if (!picker || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
+    const dialog = openTerminalDialog();
+    const target = event.target;
+    // Keys aimed at the terminal: from inside it, or from <body> after a click on plain log text.
+    if (!dialog || !(dialog.contains(target) || target === doc.body || target === root)) return;
+    const key = event.key;
+    const input = pickerInput();
+    const empty = !input || !input.value;
+    // Escape always backs out of the picker and never reaches the <dialog> (no cancel/close).
+    if (key === "Escape") {
+      consume(event);
+      cancelPicker();
+      return;
+    }
+    // Leave other controls (the close button, a game) alone.
+    if (target !== input && target && target.closest && target.closest("button, a, input, textarea, select, canvas, [tabindex]")) return;
+
+    switch (key) {
+      case "ArrowDown":
+        consume(event);
+        movePicker(1);
+        return;
+      case "ArrowUp":
+        consume(event);
+        movePicker(-1);
+        return;
+      case "Home":
+      case "PageUp":
+        if (!empty) return;
+        consume(event);
+        highlight(0);
+        return;
+      case "End":
+      case "PageDown":
+        if (!empty) return;
+        consume(event);
+        highlight(picker.items.length - 1);
+        return;
+      case "Enter":
+        // A typed line wins: the picker steps aside and the form submits as usual.
+        if (!empty) {
+          abandonPicker();
+          return;
+        }
+        consume(event);
+        choosePick(picker.index);
+        return;
+      case "j":
+      case "k":
+        if (empty) {
+          consume(event);
+          movePicker(key === "j" ? 1 : -1);
+          return;
+        }
+        abandonPicker();
+        return;
+      default:
+        // Any other character means the visitor is typing a command.
+        if (key && key.length === 1) abandonPicker();
+    }
+  }
+
+  (function wirePicker() {
+    const dialog = JBOS.terminal && JBOS.terminal.element;
+    const input = pickerInput();
+    // Capture on the document runs before the prompt's own listeners (history recall) and
+    // before the <dialog> turns Escape into a cancel.
+    doc.addEventListener("keydown", onPickerKey, true);
+    if (dialog) dialog.addEventListener("close", abandonPicker);
+    if (input) {
+      input.addEventListener("input", function () {
+        if (picker && input.value) abandonPicker();
+      });
+    }
+    if (typeof JBOS.on === "function") JBOS.on("terminal-command", abandonPicker);
+  })();
 
   if (typeof JBOS.registerCommand === "function") {
     JBOS.registerCommand("theme", {
-      help: "theme -crt | -synthwave | -default | -next | -random",
+      help: "theme: pick a display mode (or theme crt · synthwave · default · next · random)",
       aliases: ["themes"],
       run: function (args) {
         const raw = String(args && args[0] ? args[0] : "");
         // Flags work too: `theme -crt`, `theme --synthwave`, `theme -next`.
         const arg = raw.toLowerCase().replace(/^-{1,2}(?=[a-z])/, "");
 
-        if (!arg || arg === "list" || arg === "ls" || arg === "status") {
-          listThemes();
-          return;
+        if (!arg || arg === "list" || arg === "ls" || arg === "status" || arg === "pick" || arg === "menu") {
+          return openPicker();
         }
         if (arg === "help" || arg === "-h" || arg === "--help" || arg === "?") {
-          print("theme                 list display modes", "theme-term-item");
+          print("theme                 pick a mode: ↑/↓ then Enter (or click)", "theme-term-item");
           print("theme <name>          default · crt · synthwave (or -crt, -synthwave)", "theme-term-item");
           print("theme next | prev     cycle through modes", "theme-term-item");
           print("theme random          let fate pick", "theme-term-item");
-          return;
+          return null;
         }
 
         let target = null;
@@ -710,9 +1001,9 @@
         if (!target) {
           print("theme: unknown mode '" + raw + "'. Try: " + THEMES.map(function (theme) { return theme.id; }).join(" · "));
           play("error");
-          return;
+          return null;
         }
-        switchFromTerminal(target, preface);
+        return switchFromTerminal(target, preface);
       }
     });
   }

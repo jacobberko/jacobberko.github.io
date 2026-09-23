@@ -150,7 +150,8 @@
   // ---------- Paper sound (synthesised, no audio files) ----------
   let audio = null;
   let lastSwish = 0;
-  let soundOn = readPref("cure-sound") !== "off";
+  // Off by default, like the rest of the site. The key was renamed so earlier visitors start muted too.
+  let soundOn = readPref("cure-sound-v2") === "on";
 
   function swish(duration) {
     if (!soundOn || !reader.open) return;
@@ -527,7 +528,7 @@
     if (event.target.closest("[data-book-next]")) { step(1); return; }
     if (event.target.closest("[data-book-sound]")) {
       soundOn = !soundOn;
-      writePref("cure-sound", soundOn ? "on" : "off");
+      writePref("cure-sound-v2", soundOn ? "on" : "off");
       renderSoundToggle();
       if (soundOn) swish(500);
     }

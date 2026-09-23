@@ -1,9 +1,26 @@
 # Home-page content. The scroll story in index.html is built from this file.
 bio:
-  - label: "01 / TECH + BUSINESS"
+  - label: "TECH + BUSINESS"
     text: "I’m a Masters student at Cornell University studying Computer Science with a minor in Business. I’ve always loved the intersection of technology and business, a passion that drives my work as President of Kappa Theta Pi, founder of Throttle AI, and my 2026 Software Engineering Internship at Google."
-  - label: "02 / BEYOND THE CLASSROOM"
-    text: "Beyond the classroom, I love to build and create. Whether I’m developing software, running a startup, or working on music production, I’m always looking for new ways to bring ideas to life."
+
+# The ticker at the top of the story, in this order.
+disciplines:
+  - "SOFTWARE ENGINEERING"
+  - "iOS DEVELOPMENT"
+  - "ENTREPRENEURSHIP"
+  - "AI SYSTEMS"
+  - "PRODUCT ENGINEERING"
+  - "MOBILE ENGINEERING"
+  - "ALGORITHMS"
+  - "WEB DEVELOPMENT"
+  - "FUNCTIONAL PROGRAMMING"
+  - "MUSIC PRODUCTION"
+  - "CREATIVE TECHNOLOGY"
+  - "STARTUP BUILDING"
+  - "INTERACTIVE SYSTEMS"
+  - "PROTOTYPING"
+  - "SYSTEMS THINKING"
+  - "TECH + BUSINESS"
 
 experience:
   - year: 2026
@@ -56,5 +73,5 @@ coursework:
 
 links:
   - { label: "Explore code", href: "/code/" }
+  - { label: "Creative work", href: "/creative/" }
   - { label: "View startup", href: "/business/" }
-  - { label: "Hear the work", href: "/creative/" }

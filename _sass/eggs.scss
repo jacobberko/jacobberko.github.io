@@ -10,8 +10,8 @@
    ========================================================================= */
 
 /* ---------- Top-layer host ----------
-   One host holds every overlay and the achievement card, so the card can
-   never end up underneath an effect (it sits above them via z-index). */
+   One host (a manual popover) holds every overlay, so effects can sit
+   above an open terminal. */
 .egg-fx {
   --egg-night: var(--band-ink, var(--midnight));
   --egg-light: var(--band-text, var(--paper));
@@ -41,16 +41,6 @@
   transition: opacity 340ms ease;
 }
 
-.egg-canvas--solid {
-  background: #030503;
-  pointer-events: auto;
-  cursor: none;
-}
-
-.egg-canvas.is-fading {
-  opacity: 0;
-}
-
 /* ---------- Name burst ---------- */
 .egg-title-hidden {
   opacity: 0 !important;
@@ -74,7 +64,7 @@
   will-change: transform;
 }
 
-/* ---------- Snow, hello bubble, orb, hint key ---------- */
+/* ---------- Orb, hint key ---------- */
 
 /* Press-and-hold on touch screens: the orb winds up over the 1.1s hold. */
 .chrome-orb.egg-orb-pressing span {
@@ -111,15 +101,23 @@ body:not(.cursor-ready) .egg-clickable {
   animation: eggWobble 760ms var(--ease-out);
 }
 
+/* ---------- Party ----------
+   Everything follows the music: eggs.js sets --kick (1 on each kick,
+   decaying over the beat), --dim, --wash, --beams and --build (0 -> 1
+   across the build) on the stage every frame, and --beat to the tempo. */
 .egg-party .site-header .brand-mark,
 .egg-party #main-content h1,
 .egg-party #main-content h2,
 .egg-party .cta {
-  animation: eggBeat 484ms ease-in-out infinite;
+  animation: eggBeat var(--egg-beat, 468.75ms) cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
 }
 
-/* ---------- Party ---------- */
-.egg-disco {
+.egg-club {
+  --kick: 0;
+  --dim: 0.12;
+  --wash: 0;
+  --beams: 0;
+  --build: 0;
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -127,54 +125,71 @@ body:not(.cursor-ready) .egg-clickable {
   transition: opacity 500ms ease;
 }
 
-.egg-disco.is-visible {
+.egg-club.is-visible {
   opacity: 1;
 }
 
-.egg-disco__wash {
+.egg-club__dim,
+.egg-club__wash,
+.egg-club__lights {
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, rgba(255, 88, 200, 0.24), rgba(53, 230, 223, 0.2), rgba(217, 255, 67, 0.2), rgba(115, 87, 255, 0.24), rgba(255, 88, 200, 0.24));
-  background-size: 400% 400%;
-  mix-blend-mode: multiply;
-  animation: eggWash 1936ms linear infinite;
 }
 
-.egg-disco__lights i {
+.egg-club__dim {
+  background:
+    radial-gradient(ellipse at 50% 115%, rgba(115, 87, 255, 0.4), rgba(115, 87, 255, 0) 62%),
+    var(--egg-night);
+  opacity: var(--dim);
+}
+
+.egg-club__wash {
+  background: linear-gradient(120deg, var(--magenta), var(--cyan) 35%, var(--violet) 68%, var(--magenta));
+  background-size: 300% 300%;
+  opacity: var(--wash);
+  animation: eggWash calc(var(--beat, 468.75ms) * 16) linear infinite;
+}
+
+.egg-club__lights {
+  opacity: var(--beams);
+}
+
+.egg-club__lights i {
   --beam-from: -28deg;
   --beam-to: 22deg;
-  --beam: rgba(255, 88, 200, 0.5);
+  --beam: var(--magenta);
   position: absolute;
   top: -8vh;
   left: 50%;
   width: 34vmax;
   height: 130vh;
   margin-left: -17vmax;
-  background: linear-gradient(180deg, var(--beam), rgba(255, 255, 255, 0));
+  background: linear-gradient(180deg, var(--beam), transparent 85%);
   clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  opacity: 0.55;
+  opacity: 0.42;
   transform-origin: 50% 0;
-  animation: eggBeam 1936ms ease-in-out infinite alternate;
+  animation: eggBeam calc(var(--beat, 468.75ms) * 4) ease-in-out infinite alternate;
 }
 
-.egg-disco__lights i:nth-child(2) { --beam-from: 30deg; --beam-to: -18deg; --beam: rgba(53, 230, 223, 0.5); animation-duration: 1452ms; }
-.egg-disco__lights i:nth-child(3) { --beam-from: -12deg; --beam-to: 40deg; --beam: rgba(217, 255, 67, 0.45); animation-duration: 968ms; }
-.egg-disco__lights i:nth-child(4) { --beam-from: 45deg; --beam-to: 5deg; --beam: rgba(115, 87, 255, 0.5); animation-duration: 2420ms; }
-.egg-disco__lights i:nth-child(5) { --beam-from: -45deg; --beam-to: -5deg; --beam: rgba(255, 103, 64, 0.45); animation-duration: 1210ms; }
-.egg-disco__lights i:nth-child(6) { --beam-from: 8deg; --beam-to: -38deg; --beam: rgba(255, 255, 255, 0.35); animation-duration: 1694ms; }
+.egg-club__lights i:nth-child(2) { --beam-from: 30deg; --beam-to: -18deg; --beam: var(--cyan); animation-duration: calc(var(--beat, 468.75ms) * 2); }
+.egg-club__lights i:nth-child(3) { --beam-from: -12deg; --beam-to: 40deg; --beam: var(--acid); animation-duration: calc(var(--beat, 468.75ms) * 8); }
+.egg-club__lights i:nth-child(4) { --beam-from: 45deg; --beam-to: 5deg; --beam: var(--violet); animation-duration: calc(var(--beat, 468.75ms) * 4); animation-direction: alternate-reverse; }
+.egg-club__lights i:nth-child(5) { --beam-from: -45deg; --beam-to: -5deg; --beam: var(--orange); animation-duration: calc(var(--beat, 468.75ms) * 2); animation-direction: alternate-reverse; }
+.egg-club__lights i:nth-child(6) { --beam-from: 8deg; --beam-to: -38deg; --beam: rgba(255, 255, 255, 0.8); animation-duration: calc(var(--beat, 468.75ms) * 8); }
 
-.egg-disco__ball {
+/* The mirror ball lowers through the build and swells a touch on every kick. */
+.egg-club__ball {
   position: absolute;
   top: 0;
   left: 50%;
   width: 2px;
-  height: 16vh;
+  height: 14vh;
   margin-left: -1px;
   background: var(--egg-light);
-  animation: eggDrop 800ms var(--ease-out) both;
+  transform: translateY(calc((var(--build) - 1) * (14vh + 8rem)));
 }
 
-.egg-disco__ball span {
+.egg-club__ball span {
   position: absolute;
   top: 100%;
   left: 50%;
@@ -187,87 +202,86 @@ body:not(.cursor-ready) .egg-clickable {
     repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, rgba(0, 0, 0, 0) 1px 12.5%),
     conic-gradient(from 0deg, var(--acid), var(--cyan), var(--magenta), var(--orange), var(--violet), var(--acid));
   background-size: 100% 100%, 200% 100%, 100% 100%, 100% 100%;
-  box-shadow: 0 0 2.5rem rgba(255, 255, 255, 0.55), inset -0.8rem -0.8rem 1.4rem rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 calc(1.2rem + var(--kick) * 2.6rem) rgba(255, 255, 255, 0.6), inset -0.8rem -0.8rem 1.4rem rgba(0, 0, 0, 0.45);
   translate: -50% 0;
+  scale: calc(1 + var(--kick) * 0.07);
   animation: eggBallSpin 1.2s linear infinite;
 }
 
-/* Party, rebuilt: countdown -> drop (lights, ball, banner, beat wash). */
-.egg-disco:not(.is-dropped) .egg-disco__lights {
-  opacity: 0;
-}
-
-.egg-disco__lights {
-  transition: opacity 240ms ease;
-}
-
-.egg-disco:not(.is-dropped) .egg-disco__ball {
-  display: none;
-}
-
-.egg-disco.is-dropped .egg-disco__wash {
-  animation: eggWash 1936ms linear infinite, eggBeatWash var(--beat, 484ms) ease-in-out infinite;
-}
-
-.egg-party-count {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  color: var(--acid);
-  font: 900 unquote("min(36vw, 20rem)")/0.8 var(--font-display);
-  letter-spacing: -0.06em;
-  text-shadow: 0 0 2.4rem rgba(217, 255, 67, 0.55), 0.06em 0.06em 0 var(--magenta);
-  -webkit-text-stroke: 4px var(--ink);
-  paint-order: stroke fill;
-  pointer-events: none;
-}
-
-.egg-party-count.is-hit {
-  animation: eggCountHit var(--beat, 484ms) cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-.egg-party-banner {
+.egg-club__dock {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.7rem;
+}
+
+.egg-club__banner {
+  align-self: stretch;
   overflow: hidden;
   padding: 0.65rem 0;
-  color: var(--ink);
+  color: var(--egg-on-acid);
   background: var(--acid);
-  font: 800 clamp(0.78rem, 1.5vw, 1.05rem) var(--font-mono);
+  font: 800 clamp(0.72rem, 1.5vw, 1rem) var(--font-mono);
   letter-spacing: 0.12em;
   white-space: nowrap;
   transform: translateY(110%);
   transition: transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.egg-disco.is-dropped .egg-party-banner {
-  transform: translateY(0);
+.egg-club.is-dropped .egg-club__banner {
+  transform: none;
 }
 
-.egg-party-banner__track {
+.egg-club__track {
   display: inline-flex;
-  animation: eggBannerScroll 7s linear infinite;
+  animation: eggBannerScroll calc(var(--beat, 468.75ms) * 16) linear infinite;
 }
 
-.egg-party-banner__track span {
+.egg-club__track span {
   padding-right: 2.5rem;
 }
 
-@keyframes eggCountHit {
-  0% { opacity: 0; transform: scale(1.7) rotate(-4deg); }
-  18% { opacity: 1; transform: scale(1) rotate(0deg); }
-  78% { opacity: 1; transform: scale(0.96); }
-  100% { opacity: 0; transform: scale(0.82); }
+/* Sits just above the banner, clear of the site header. */
+.egg-club__stop {
+  margin: 0 1rem 0 0;
+  padding: 0.4rem 0.75rem 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  color: var(--egg-light);
+  background: rgba(0, 0, 0, 0.5);
+  font: 700 0.66rem/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
 }
 
-@keyframes eggBeatWash {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+/* Reduced motion: the music plays in a still, dimmed room with a fixed banner. */
+.egg-club.is-still {
+  --dim: 0.42;
+  --wash: 0.1;
+}
+
+.egg-club.is-still .egg-club__wash {
+  animation: none;
+}
+
+.egg-club.is-still .egg-club__banner {
+  padding-inline: 1rem;
+  text-align: center;
+  white-space: normal;
+  transform: none;
+  transition: none;
+}
+
+.egg-club.is-still .egg-club__track {
+  display: block;
+  animation: none;
+}
+
+.egg-club.is-still .egg-club__track span {
+  padding-right: 0;
 }
 
 @keyframes eggBannerScroll {
@@ -341,9 +355,9 @@ body:not(.cursor-ready) .egg-clickable {
 
 .egg-saver__hint {
   bottom: 1.1rem;
-  font-size: 0.6rem;
+  font-size: 0.66rem;
   letter-spacing: 0.12em;
-  opacity: 0.45;
+  opacity: 0.6;
 }
 
 .egg-saver__corner {
@@ -378,11 +392,6 @@ body:not(.cursor-ready) .egg-clickable {
   font: 900 clamp(1.4rem, 5vw, 2.4rem)/1 var(--font-display);
   letter-spacing: -0.04em;
   animation: eggBannerIn 520ms steps(4, end) both;
-}
-
-.terminal-body .egg-banner--small {
-  font-size: 1rem;
-  letter-spacing: 0;
 }
 
 .terminal-body .egg-hack {
@@ -840,8 +849,8 @@ body:not(.cursor-ready) .egg-clickable {
 }
 
 @keyframes eggBeat {
-  0%, 100% { scale: 1; }
-  50% { scale: 1.035; }
+  0% { scale: 1.035; }
+  100% { scale: 1; }
 }
 
 @keyframes eggShakeX {
@@ -861,11 +870,6 @@ body:not(.cursor-ready) .egg-clickable {
 @keyframes eggBeam {
   from { rotate: var(--beam-from); }
   to { rotate: var(--beam-to); }
-}
-
-@keyframes eggDrop {
-  from { translate: 0 -120%; }
-  to { translate: 0 0; }
 }
 
 @keyframes eggBallSpin {

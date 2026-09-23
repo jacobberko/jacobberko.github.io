@@ -11,7 +11,11 @@ description: Cornell computer science student building software, businesses, and
        assets/js/home-story.js turns scroll position into CSS custom properties; without it
        (or with reduced motion) every chapter renders as a calm static section. -->
   {%- assign story_profile = site.data.profile -%}
-  {%- assign story_bio_count = story_profile.bio | size -%}
+  {%- assign story_bio_total = 0 -%}
+  {%- for block in story_profile.bio -%}
+    {%- assign story_n = block.text | split: " " | size -%}
+    {%- assign story_bio_total = story_bio_total | plus: story_n -%}
+  {%- endfor -%}
   {%- assign story_timeline = story_profile.experience | reverse -%}
   {%- assign story_roles = story_timeline | size -%}
   {%- assign story_roles2 = story_roles | prepend: "0" | slice: -2, 2 -%}
@@ -28,17 +32,17 @@ description: Cornell computer science student building software, businesses, and
   {%- endif %}
 
   <div class="story" data-story{% if story_full_circle != "" %} data-full-circle="{{ story_full_circle | escape }}"{% endif %}>
-    <div class="story-intro" aria-hidden="true">
-      <div class="story-marquee" data-story-marquee data-speed="48" data-dir="1">
-        <div class="story-marquee__track">
-          {%- for copy in (1..2) -%}
-          <span class="story-marquee__group">
-            {%- for rep in (1..3) -%}
-            <b>&#9654;&#xFE0E; NOW PLAYING</b><span>JAKE BERKO: THE SCROLL STORY</span><i>&#10035;&#xFE0E;</i><span>01 BIO</span><i>&#10035;&#xFE0E;</i><span>02 EXPERIENCE</span><i>&#10035;&#xFE0E;</i><span>03 STACK</span><i>&#10035;&#xFE0E;</i><span>04 NEXT</span><i>&#10035;&#xFE0E;</i><span>SCROLL TO PLAY &#8595;&#xFE0E;</span><i>&#10035;&#xFE0E;</i>
-            {%- endfor -%}
-          </span>
-          {%- endfor -%}
+    <!-- The disciplines ticker from the original home page. Without JS it keeps its own CSS loop
+         (held still with reduced motion); while the story is live, home-story.js moves it instead,
+         so scroll speed and direction push it along. Three copies, so the loop never runs out of
+         text on very wide screens. -->
+    <div class="ticker story-intro" aria-label="Portfolio disciplines" data-story-marquee data-loop="34" data-dir="1">
+      <div class="ticker-track">
+        {%- for copy in (1..3) %}
+        <div class="ticker-group"{% if copy > 1 %} aria-hidden="true"{% endif %}>
+          {% for discipline in story_profile.disciplines %}<span class="ticker-item">{{ discipline }} <i aria-hidden="true">&#10035;&#xFE0E;</i></span>{% endfor %}
         </div>
+        {%- endfor %}
       </div>
     </div>
 
@@ -59,10 +63,11 @@ description: Cornell computer science student building software, businesses, and
       </nav>
     </div>
 
-    <!-- 01 · BIO: kinetic type that assembles word by word -->
-    <section class="story-chapter story-bio" id="story-bio" data-story-chapter="bio" data-cursor-tone="dark" aria-labelledby="story-bio-title">
+    <!-- 01 · BIO: kinetic type that assembles word by word. --words (the bio's word count) sets
+         the pinned length, so each word gets a fixed scroll distance (see home-story.scss). -->
+    <section class="story-chapter story-bio" id="story-bio" data-story-chapter="bio" data-cursor-tone="dark" aria-labelledby="story-bio-title" style="--words: {{ story_bio_total }}">
       <div class="story-stage">
-        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>01_BIO.TXT</span><span>{{ story_bio_count }} BLOCKS</span></div>
+        <div class="story-tab" data-theme-scope="surface" aria-hidden="true"><span class="story-tab__dots"><i></i><i></i><i></i></span><span>01_BIO.TXT</span><span>{{ story_bio_total }} WORDS</span></div>
         <div class="story-layer story-layer--mega" aria-hidden="true"><span class="story-mega">HELLO</span></div>
         <div class="story-layer story-layer--parallax" aria-hidden="true">
           <i class="story-glyph story-glyph--head" style="--gx: 0; --gy: 58; --depth: 1.2; --spin: 0.5">&#10035;&#xFE0E;</i>
@@ -77,16 +82,12 @@ description: Cornell computer science student building software, businesses, and
             <h2 class="story-title" id="story-bio-title">The short version<span>.</span></h2>
           </header>
 
-          <!-- Each frame owns a slice of the chapter's scroll (--f0 start, --fl length) sized by its
-               word count, so every word gets the same scroll distance. A key phrase joined to the next
-               key word (is-join) stretches its highlight across the space between them, and the whole
-               phrase is kept on one line (story-phrase). The last two words are kept together the same
-               way, so a paragraph never ends on a single stranded word. -->
-          {%- assign story_bio_total = 0 -%}
-          {%- for block in story_profile.bio -%}
-            {%- assign story_n = block.text | split: " " | size -%}
-            {%- assign story_bio_total = story_bio_total | plus: story_n -%}
-          {%- endfor -%}
+          <!-- One frame per bio block (currently one). Each frame owns a slice of the chapter's
+               scroll (--f0 start, --fl length) sized by its word count, so every word gets the same
+               scroll distance. A key phrase joined to the next key word (is-join) stretches its
+               highlight across the space between them, and the whole phrase is kept on one line
+               (story-phrase). The last two words are kept together the same way, so a paragraph
+               never ends on a single stranded word. -->
           {%- assign story_f0 = 0.0 -%}
           {%- assign story_keyset = " Cornell University Kappa Theta Pi Throttle AI Google " %}
           <div class="story-bio__frames">
@@ -343,4 +344,4 @@ description: Cornell computer science student building software, businesses, and
   </div>
 </div>
 
-<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=5"></script>
+<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=6"></script>

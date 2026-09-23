@@ -433,36 +433,6 @@ html:not(.js) .sound-toggle {
   box-shadow: 0 0 0.5rem rgba(255, 79, 216, 0.8);
 }
 
-.theme-popover__tip {
-  margin: 0;
-  padding: 0.55rem 0.8rem 0.7rem;
-  border-top: 1px dashed var(--line-soft);
-  opacity: 0.78;
-  font: 650 0.56rem/1.5 var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-@media (hover: none) {
-  .theme-popover__tip { display: none; }
-}
-
-.theme-popover__tip kbd {
-  min-width: 1.2rem;
-  min-height: 1.2rem;
-  margin-inline: 0.15rem;
-  font-size: 0.62rem;
-}
-
-.theme-popover__tip code {
-  padding: 0.05rem 0.3rem;
-  border-radius: 0.2rem;
-  color: var(--on-accent, var(--ink));
-  background: var(--acid);
-  font: inherit;
-  text-transform: none;
-}
-
 /* Sound toggle: its state, label and title are driven by assets/js/sound.js. */
 .sound-toggle {
   position: relative;
@@ -588,6 +558,49 @@ html:not(.js) .sound-toggle {
 .theme-term-swatch--default { background: conic-gradient(from 225deg, #f7f5ee 0 50%, #11110f 0 75%, #d9ff43 0); }
 .theme-term-swatch--crt { background: radial-gradient(circle, #ffc266 0 25%, #3a2408 26% 45%, #0d0904 46%); }
 .theme-term-swatch--synthwave { background: linear-gradient(to bottom, #fff17a, #ff4f8e 55%, #1a0640 56%); }
+
+/* The `theme` picker (themes.js): a live list highlights the ▸ line in inverse video, like a
+   TUI menu, and follows the arrow keys, Enter and clicks. Once it closes it is plain log text. */
+.terminal-body .theme-pick {
+  margin: 0 0 0.4rem;
+}
+
+.terminal-body .theme-pick .theme-pick__item {
+  margin: 0 -0.45rem 0.1rem;
+  padding: 0.08rem 0.45rem;
+  border-radius: 0.25rem;
+}
+
+.theme-pick__caret {
+  visibility: hidden;
+}
+
+.theme-pick__item.is-selected .theme-pick__caret,
+.theme-pick__item.is-chosen .theme-pick__caret {
+  visibility: visible;
+}
+
+.theme-pick.is-live .theme-pick__item {
+  cursor: pointer;
+}
+
+.terminal-body .theme-pick.is-live .theme-pick__item.is-selected {
+  color: var(--on-accent, var(--ink));
+  background: var(--acid);
+  text-shadow: none;
+}
+
+.terminal-body .theme-pick.is-live .theme-pick__item.is-selected .theme-term-swatch {
+  border-color: var(--on-accent, var(--ink));
+}
+
+.theme-pick__tag {
+  font-weight: 700;
+}
+
+@media (max-width: 540px) {
+  .theme-pick__blurb { display: none; }
+}
 
 /* =========================================================================
    2. Switching: view-transition reveal, crossfade fallback, flourishes

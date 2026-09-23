@@ -1,0 +1,421 @@
+/* =========================================================================
+   Home hero photo window: the close-button joke (assets/js/portrait.js).
+   -------------------------------------------------------------------------
+   The red title-bar dot is a real button. Pressing it plays one of four
+   short gags: a refusal dialog, a CRT power-off that restores itself from
+   backup, the photo dropping out of frame and peeking back in, and a
+   permission prompt whose only options are Allow and Allow. Everything is
+   drawn inside the window, so it stays put while the window is dragged.
+   ========================================================================= */
+
+/* ---------- The close dot ---------- */
+.portrait-window .portrait-close {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 0.55rem;
+  min-width: 0;
+  height: 0.55rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  /* Dark × on the orange dot in every theme (the CRT amber ink vanished on it). */
+  color: var(--on-accent, #11110f);
+  background: var(--orange);
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms var(--ease-out);
+}
+
+/* A comfortable hit area around the 9px dot that stops short of the yellow one. */
+.portrait-window .portrait-close::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  right: -0.14rem;
+  bottom: -0.6rem;
+  left: -0.7rem;
+}
+
+/* The × that appears on hover or keyboard focus. */
+.portrait-window .portrait-close::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px), currentColor calc(50% + 0.6px), transparent calc(50% + 0.6px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px), currentColor calc(50% + 0.6px), transparent calc(50% + 0.6px));
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+@media (hover: hover) {
+  .portrait-window .portrait-close:hover {
+    transform: scale(1.5);
+  }
+
+  .portrait-window .portrait-close:hover::after {
+    opacity: 1;
+  }
+}
+
+/* The site cursor turns into a filled 4rem disc over buttons, which would bury this
+   9px dot and its ×. Over the close button it shrinks back to a small open ring in the
+   page's own ink (captured on body before the dark themes re-scope --ink on the
+   active reticle), so the × stays visible. */
+body {
+  --portrait-cursor-ink: var(--ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cursor-ready:has(.portrait-close:hover) .cursor-reticle {
+    --ink: var(--portrait-cursor-ink);
+    width: 1.6rem;
+    height: 1.6rem;
+    margin: -0.8rem 0 0 -0.8rem;
+    background: transparent;
+  }
+
+  .cursor-ready:has(.portrait-close:hover) .cursor-reticle span {
+    font-size: 0;
+  }
+}
+
+/* Unscaled, so the ring stays a tidy 2px square that clears the yellow dot. */
+.portrait-window .portrait-close:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: none;
+  transform: none;
+}
+
+.portrait-window .portrait-close:focus-visible::after {
+  opacity: 1;
+}
+
+.portrait-window .portrait-close:active {
+  transform: scale(1.2);
+}
+
+/* The title keeps its ellipsis; the inner span only exists so a rename can be highlighted. */
+.portrait-window [data-portrait-title] {
+  padding: 0.05rem 0.2rem;
+}
+
+.portrait-window [data-portrait-title].is-renamed {
+  animation: portraitRename 1.2s steps(1, end) both;
+}
+
+/* ---------- Overlay inside the photo frame ---------- */
+.portrait-stage {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  padding: 0.9rem;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.portrait-stage:empty {
+  display: none;
+}
+
+.portrait-stage.is-leaving {
+  opacity: 0;
+}
+
+.portrait-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Gag 1 + 4: the little system dialog ---------- */
+.portrait-alert {
+  width: 100%;
+  max-width: 16.5rem;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  border-radius: 0.5rem;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0.3rem 0.3rem 0 var(--ink);
+  font: 600 0.64rem/1.45 var(--font-mono);
+  text-align: left;
+  animation: portraitAlertIn 240ms steps(4, end) both;
+}
+
+.portrait-alert__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.36rem 0.55rem;
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-2);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.portrait-alert__bar i {
+  display: block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1px solid var(--ink);
+  background: var(--orange);
+}
+
+.portrait-alert__body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.7rem;
+  padding: 0.75rem 0.8rem 0.85rem;
+}
+
+.portrait-alert__body p {
+  margin: 0;
+}
+
+.portrait-alert__body strong {
+  display: block;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.portrait-alert__body p span {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
+.portrait-alert__icon {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border: 1px solid var(--ink);
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  font: 900 0.9rem/1 var(--font-mono);
+}
+
+.portrait-alert__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.portrait-alert__actions span {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: transform 90ms ease, background 90ms ease, box-shadow 90ms ease;
+}
+
+.portrait-alert__actions span:last-child {
+  color: var(--paper);
+  background: var(--ink);
+  box-shadow: 0.14rem 0.14rem 0 var(--ink);
+}
+
+.portrait-alert__actions span.is-pressed {
+  color: var(--on-accent, #11110f);
+  background: var(--acid);
+  box-shadow: none;
+  transform: translate(0.14rem, 0.14rem);
+}
+
+/* ---------- Gag 1: the window shakes its head ---------- */
+.portrait-window.is-refusing {
+  animation: portraitShake 520ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* ---------- Gag 2: CRT power-off, restore from backup, power-on ---------- */
+.portrait-window[data-gag^="crt"] .portrait-frame {
+  background: #050505;
+}
+
+.portrait-window[data-gag="crt"] .portrait-frame img {
+  animation: portraitPowerOff 460ms cubic-bezier(0.55, 0, 0.9, 0.45) forwards;
+}
+
+.portrait-window[data-gag="crt-on"] .portrait-frame img {
+  animation: portraitPowerOn 440ms cubic-bezier(0.1, 0.6, 0.3, 1) both;
+}
+
+.portrait-crt {
+  display: grid;
+  align-self: center;
+  width: 100%;
+  max-width: 15rem;
+  gap: 0.35rem;
+  color: var(--acid);
+  font: 800 0.64rem/1.5 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 0.55em rgba(var(--acid-rgb), 0.55);
+  opacity: 0;
+}
+
+.portrait-crt p {
+  margin: 0;
+}
+
+.portrait-crt p:nth-child(2)::after {
+  content: "_";
+  animation: portraitCaret 0.8s steps(1, end) infinite;
+}
+
+.portrait-crt__meter {
+  height: 0.7rem;
+  margin-top: 0.35rem;
+  padding: 2px;
+  border: 1px solid currentColor;
+  box-shadow: 0 0 0.6rem rgba(var(--acid-rgb), 0.3);
+}
+
+.portrait-crt__meter i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.portrait-stage.is-lit .portrait-crt {
+  opacity: 1;
+}
+
+.portrait-stage.is-lit .portrait-crt__meter i {
+  animation: portraitMeter 1.2s steps(12, end) 120ms forwards;
+}
+
+/* ---------- Gag 3: the photo drops out, peeks back in, pops home ---------- */
+.portrait-window[data-gag="peek"] .portrait-frame img {
+  animation: portraitPeek 2.85s linear both;
+}
+
+/* ---------- Theme touches ---------- */
+html[data-theme="crt"] .portrait-alert {
+  box-shadow: 0.3rem 0.3rem 0 rgba(255, 174, 26, 0.3), 0 0 1.4rem rgba(255, 150, 30, 0.2);
+}
+
+html[data-theme="crt"] .portrait-alert__bar,
+html[data-theme="crt"] .portrait-alert__body strong {
+  text-shadow: 0 0 0.35em rgba(255, 170, 40, 0.38);
+}
+
+html[data-theme="crt"] .portrait-window[data-gag^="crt"] .portrait-frame {
+  background: #0a0703;
+}
+
+html[data-theme="synthwave"] .portrait-alert {
+  border-color: rgba(54, 241, 255, 0.6);
+  box-shadow: 0.3rem 0.3rem 0 rgba(255, 79, 216, 0.55), 0 0 1.4rem rgba(54, 241, 255, 0.22);
+}
+
+html[data-theme="synthwave"] .portrait-alert__bar {
+  border-bottom-color: rgba(54, 241, 255, 0.45);
+  background: linear-gradient(90deg, rgba(255, 79, 216, 0.3), rgba(157, 92, 255, 0.24) 55%, rgba(54, 241, 255, 0.18)), var(--paper-2);
+}
+
+html[data-theme="synthwave"] .portrait-window[data-gag^="crt"] .portrait-frame {
+  background: #07021a;
+}
+
+html[data-theme="synthwave"] .portrait-crt {
+  color: var(--cyan);
+  text-shadow: 0 0 0.55em rgba(54, 241, 255, 0.6);
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes portraitShake {
+  0%, 100% { transform: translateX(0); }
+  14% { transform: translateX(-0.6rem) rotate(-0.8deg); }
+  28% { transform: translateX(0.5rem) rotate(0.6deg); }
+  42% { transform: translateX(-0.38rem) rotate(-0.4deg); }
+  57% { transform: translateX(0.26rem); }
+  71% { transform: translateX(-0.14rem); }
+  85% { transform: translateX(0.06rem); }
+}
+
+@keyframes portraitAlertIn {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Every step sets the colour: the "off" steps go back to the bar's own ink, so the
+   new name never turns dark-on-dark in the CRT and Synthwave title bars. */
+@keyframes portraitRename {
+  0%, 50% { color: var(--on-accent, #11110f); background: var(--acid); }
+  25%, 75%, 100% { color: var(--ink); background: transparent; }
+}
+
+/* The picture squashes into a bright line, shrinks to a dot, and goes dark. */
+@keyframes portraitPowerOff {
+  0% { scale: 1 1; opacity: 1; }
+  48% { scale: 1 0.012; filter: brightness(3.5); opacity: 1; }
+  78% { scale: 0.035 0.012; filter: brightness(6); opacity: 1; }
+  100% { scale: 0 0; filter: brightness(6); opacity: 0; }
+}
+
+@keyframes portraitPowerOn {
+  0% { scale: 0.035 0.012; filter: brightness(6); opacity: 1; }
+  42% { scale: 1 0.012; filter: brightness(3.5); }
+  100% { scale: 1 1; opacity: 1; }
+}
+
+@keyframes portraitMeter {
+  to { transform: scaleX(1); }
+}
+
+@keyframes portraitCaret {
+  50% { opacity: 0; }
+}
+
+/* 0-15% fall out, 15-36% an empty frame, 36-58% creep back up to eye level,
+   58-82% look left and right, 82-100% pop home with a little overshoot. */
+@keyframes portraitPeek {
+  0% { translate: 0 0; rotate: 0deg; scale: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.95, 0.5); }
+  15% { translate: 0 115%; rotate: 6deg; scale: 1; animation-timing-function: step-end; }
+  36% { translate: 0 115%; rotate: 0deg; scale: 1.1; animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
+  58% { translate: 0 63%; rotate: 0deg; scale: 1.1; animation-timing-function: ease-in-out; }
+  65% { translate: -3% 63%; rotate: -2deg; scale: 1.1; animation-timing-function: ease-in-out; }
+  74% { translate: 3% 63%; rotate: 2deg; scale: 1.1; animation-timing-function: ease-in-out; }
+  82% { translate: 0 63%; rotate: 0deg; scale: 1.1; animation-timing-function: cubic-bezier(0.3, 0, 0.3, 1); }
+  93% { translate: 0 -3%; rotate: 0deg; scale: 1; animation-timing-function: ease-out; }
+  100% { translate: 0 0; rotate: 0deg; scale: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portrait-window .portrait-close,
+  .portrait-window .portrait-close:hover,
+  .portrait-window .portrait-close:focus-visible,
+  .portrait-window .portrait-close:active {
+    transform: none;
+  }
+
+  .portrait-alert,
+  .portrait-window.is-refusing,
+  .portrait-window[data-gag] .portrait-frame img {
+    animation: none;
+  }
+}

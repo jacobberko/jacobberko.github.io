@@ -162,6 +162,7 @@
       return { element: tag, at: at === undefined ? 0.98 : at, found: false };
     });
 
+    const cache = {};
     let shown = -1;
     let complete = false;
 
@@ -173,6 +174,15 @@
           shown = count;
           if (countEl) countEl.textContent = pad(count, 3);
         }
+
+        // The meter bar follows the words (0 -> 1 as they land, easing between one word and
+        // the next), so it is full exactly when the counter is, not at the end of the pin.
+        let landed = count;
+        if (count < thresholds.length) {
+          const from = count ? thresholds[count - 1] : 0;
+          landed += clamp((p - from) / Math.max(thresholds[count] - from, 0.0001), 0, 1);
+        }
+        setVar(element, cache, "--wp", thresholds.length ? landed / thresholds.length : p);
 
         let newlyFound = false;
         let all = tags.length > 0;
@@ -198,6 +208,7 @@
       reset: function () {
         shown = -1;
         complete = false;
+        clearVars(element, cache, ["--wp"]);
         element.classList.remove("has-all-keys");
         tags.forEach(function (tag) {
           tag.found = false;
@@ -416,12 +427,16 @@
 
   /* ---------- Marquees: speed (and direction) follow the scroll ---------- */
 
+  // Each marquee is a track of identical groups, moved by exactly one group width per loop.
+  // Its resting speed is data-speed (px/s) or, for the disciplines ticker, data-loop: the
+  // seconds its CSS loop (used without JS) takes per group, so both run at the same pace.
   const marquees = Array.from(story.querySelectorAll("[data-story-marquee]")).map(function (element) {
     const hostElement = element.closest("[data-story-chapter]");
     return {
       element: element,
-      track: element.querySelector(".story-marquee__track"),
-      group: element.querySelector(".story-marquee__group"),
+      track: element.querySelector(".story-marquee__track, .ticker-track"),
+      group: element.querySelector(".story-marquee__group, .ticker-group"),
+      loop: parseFloat(element.getAttribute("data-loop")) || 0,
       speed: parseFloat(element.getAttribute("data-speed")) || 40,
       direction: parseFloat(element.getAttribute("data-dir")) || 1,
       host: chapters.find(function (chapter) { return chapter.element === hostElement; }) || null,
@@ -655,11 +670,31 @@
     if (chapter.module && chapter.module.reset) chapter.module.reset();
   }
 
+  // Where a CSS-animated track is right now (px along x), so taking it over does not jump.
+  function currentShift(element) {
+    const Matrix = window.DOMMatrixReadOnly || window.WebKitCSSMatrix;
+    const transform = window.getComputedStyle(element).transform;
+    if (!Matrix || !transform || transform === "none") return 0;
+    try {
+      return new Matrix(transform).m41 || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
   function setLive(next) {
     if (next === live) return;
     live = next;
-    story.classList.toggle("is-live", live);
-    if (live) return;
+    if (live) {
+      // A marquee with its own CSS loop (the ticker) continues from where that loop was.
+      marquees.forEach(function (marquee) {
+        marquee.offset = -currentShift(marquee.track);
+        marquee.track.style.transform = "translate3d(" + (-marquee.offset).toFixed(2) + "px,0,0)";
+      });
+      story.classList.add("is-live");
+      return;
+    }
+    story.classList.remove("is-live");
 
     if (frameId) {
       window.cancelAnimationFrame(frameId);
@@ -793,7 +828,9 @@
     storyTop = chapters[0].top;
     storyHeight = Math.max(last.top + last.height - storyTop, 1);
     marquees.forEach(function (marquee) {
-      marquee.width = Math.max(marquee.group.offsetWidth, 1);
+      // Fractional, so the wrap lands on the exact pixel (offsetWidth rounds).
+      marquee.width = Math.max(marquee.group.getBoundingClientRect().width, 1);
+      if (marquee.loop) marquee.speed = marquee.width / marquee.loop;
     });
 
     lastY = y;
