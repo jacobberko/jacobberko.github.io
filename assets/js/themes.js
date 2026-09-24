@@ -500,187 +500,64 @@
     if (typeof done === "function") done();
   }
 
-  // Prints the boot log (staggered by `step` ms), then calls done once the last line is out.
-  function printLog(theme, step, done) {
-    theme.log.forEach(function (text, index) {
-      if (!step) {
-        print("  " + text, "theme-term-item");
-        return;
-      }
-      window.setTimeout(function () {
-        print("  " + text, "theme-term-item");
-        if (index === theme.log.length - 1) settle(done);
-      }, step * (index + 1));
-    });
-    if (!step || !theme.log.length) settle(done);
+  // The mode's boot log, left in the terminal's history.
+  function printLog(theme) {
+    theme.log.forEach(function (text) { print("  " + text, "theme-term-item"); });
   }
 
-  /* ---------- Terminal stage ---------- */
-  // The terminal is a modal <dialog>: it sits in the top layer over a dimmed, blurred
-  // ::backdrop, and the reveal, the synthwave scene and the page flourishes all render
-  // underneath it. So a switch typed there is staged: the terminal docks to the bottom
-  // edge (title bar still showing, input still focused), the backdrop clears, the switch
-  // plays in plain view with the reveal radiating from the docked bar, and the terminal
-  // springs back up to print the boot log. Closing it mid-show finishes the switch at once.
-  // stage.done belongs to the command that started the switch (site.js waits on it before it
-  // puts the command menu back): it runs once the boot log has printed, or straight away when
-  // a newer switch takes the stage over.
-  const DOCK_MS = 420; // .terminal.is-theme-docked transition in themes.scss
-  const DOCK_GAP = 12;
-  const stage = { dialog: null, target: null, pending: null, commitTimer: 0, returnTimer: 0, done: null };
-
-  function takeDone() {
-    const done = stage.done;
-    stage.done = null;
-    return done;
-  }
-
+  /* ---------- Terminal: a switch exits the terminal ---------- */
+  // The terminal is a modal <dialog> over a dimmed, blurred ::backdrop, and the reveal, the
+  // synthwave scene and the page flourishes all render underneath it. So a switch picked or
+  // typed there closes the terminal and then plays in plain view: the reveal radiates from
+  // where the terminal sat, and the usual toast follows. The boot log stays in the terminal's
+  // history for the next time it opens.
   function openTerminalDialog() {
     const dialog = JBOS.terminal && JBOS.terminal.element;
     return dialog && dialog.open ? dialog : null;
   }
 
-  // Current value of the individual `translate` property (the dock), mid-transition too.
-  function dockTranslate(element) {
-    const value = window.getComputedStyle(element).translate;
-    if (!value || value === "none") return 0;
-    const parts = value.split(/\s+/);
-    return parts.length > 1 ? parseFloat(parts[1]) || 0 : 0;
-  }
-
-  function barHeight(dialog) {
-    const bar = dialog.querySelector(".window-bar");
-    return bar ? bar.offsetHeight : 40;
-  }
-
-  // Distance that puts the title bar just above the bottom of the visible viewport
-  // (visualViewport keeps it above an on-screen keyboard). Includes any drag offset.
-  function dockOffset(dialog) {
-    const top = dialog.getBoundingClientRect().top - dockTranslate(dialog);
-    const viewport = window.visualViewport;
-    const floor = viewport ? Math.min(window.innerHeight, viewport.offsetTop + viewport.height) : window.innerHeight;
-    return Math.max(0, Math.round(floor - DOCK_GAP - barHeight(dialog) - top));
-  }
-
-  function positionDock() {
-    if (stage.dialog) stage.dialog.style.setProperty("--theme-dock-y", dockOffset(stage.dialog) + "px");
-  }
-
-  function dockPoint(dialog) {
-    const rect = dialog.getBoundingClientRect();
-    const offset = parseFloat(dialog.style.getPropertyValue("--theme-dock-y")) || 0;
-    const top = rect.top - dockTranslate(dialog) + offset;
-    return {
-      x: rect.left + rect.width / 2,
-      y: Math.min(window.innerHeight - 1, top + barHeight(dialog) / 2)
-    };
-  }
-
-  function releaseStage() {
-    const dialog = stage.dialog;
-    window.clearTimeout(stage.commitTimer);
-    window.clearTimeout(stage.returnTimer);
-    stage.commitTimer = 0;
-    stage.returnTimer = 0;
-    stage.dialog = null;
-    stage.target = null;
-    window.removeEventListener("resize", positionDock);
-    if (window.visualViewport) window.visualViewport.removeEventListener("resize", positionDock);
-    if (!dialog) return;
-    dialog.removeEventListener("close", onStageClose);
-    dialog.classList.remove("is-theme-docked", "is-theme-docking");
-    dialog.removeAttribute("data-theme-dock-label");
-  }
-
-  function returnFromDock() {
-    const theme = stage.target;
-    const dialog = stage.dialog;
-    const done = takeDone();
-    releaseStage();
-    if (dialog && dialog.open) play("pop");
-    if (theme) printLog(theme, 170, done);
-    else settle(done);
-  }
-
-  function commitStaged() {
-    const theme = stage.pending;
-    stage.commitTimer = 0;
-    stage.pending = null;
-    if (!theme || !stage.dialog) {
-      settle(takeDone());
-      return;
-    }
-    // A re-staged switch can land back on the mode already showing: nothing to watch.
-    const changed = setTheme(theme.id, { source: "terminal", toast: false, origin: dockPoint(stage.dialog) });
-    stage.returnTimer = window.setTimeout(returnFromDock, changed ? theme.hold : 160);
-  }
-
-  function onStageClose() {
-    const theme = stage.target;
-    const pending = stage.pending;
-    const done = takeDone();
-    stage.pending = null;
-    releaseStage();
-    // The terminal is gone, so the switch (and its toast) now plays in plain view.
-    if (pending && pending.id !== current()) setTheme(pending.id, { source: "terminal" });
-    if (theme) printLog(theme, 0, done);
-    else settle(done);
-  }
-
-  function stageSwitch(theme, done) {
+  function exitTerminal() {
     const dialog = openTerminalDialog();
-    const previous = takeDone();
-    if (!dialog || reducedMotion()) {
-      if (stage.dialog) releaseStage();
-      stage.pending = null;
-      settle(previous);
-      setTheme(theme.id, { source: "terminal", toast: false });
-      printLog(theme, reducedMotion() ? 0 : 170, done);
+    if (!dialog) return;
+    if (JBOS.terminal && typeof JBOS.terminal.close === "function") JBOS.terminal.close();
+    else dialog.close();
+  }
+
+  function switchAndExit(theme) {
+    printLog(theme);
+    const dialog = openTerminalDialog();
+    if (!dialog) {
+      setTheme(theme.id, { source: "terminal" });
       return;
     }
-
-    const docked = stage.dialog === dialog;
-    stage.done = done || null;
-    settle(previous);
-    window.clearTimeout(stage.commitTimer);
-    window.clearTimeout(stage.returnTimer);
-    stage.target = theme;
-    stage.pending = theme;
-    dialog.setAttribute("data-theme-dock-label", "→ " + theme.name.toUpperCase());
-    dialog.style.setProperty("--theme-dock-hold", (theme.hold + (docked ? 0 : DOCK_MS)) + "ms");
-    // Restart the dock chip's progress bar for every staged switch.
-    dialog.classList.remove("is-theme-docking");
-    void dialog.offsetWidth;
-    dialog.classList.add("is-theme-docking");
-
-    if (!docked) {
-      stage.dialog = dialog;
-      positionDock();
-      dialog.classList.add("is-theme-docked");
-      dialog.addEventListener("close", onStageClose);
-      window.addEventListener("resize", positionDock, { passive: true });
-      if (window.visualViewport) window.visualViewport.addEventListener("resize", positionDock, { passive: true });
-      play("whoosh");
+    const rect = dialog.getBoundingClientRect();
+    const origin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    let started = false;
+    // Start once the dialog's close handlers have run (backdrop gone, page unlocked).
+    function go() {
+      if (started) return;
+      started = true;
+      window.requestAnimationFrame(function () {
+        setTheme(theme.id, { source: "terminal", origin: origin });
+      });
     }
-    stage.commitTimer = window.setTimeout(commitStaged, docked ? 60 : DOCK_MS);
+    dialog.addEventListener("close", go, { once: true });
+    exitTerminal();
+    window.setTimeout(go, 120);
   }
 
-  // The mode the terminal is heading to: a staged switch counts before it commits.
-  function terminalTheme() {
-    return stage.pending ? stage.pending.id : current();
-  }
-
-  // Resolves once the boot log has printed; nothing to wait for when the mode is already on.
+  // Typed switches (`theme crt`, `theme next`, …): nothing to wait for, the terminal closes.
   function switchFromTerminal(id, preface) {
     const theme = byId(id);
     if (!theme) return null;
-    if (theme.id === terminalTheme()) {
+    if (theme.id === current()) {
       print("Already running " + theme.name.toUpperCase() + ". Try: theme next");
       return null;
     }
     if (preface) print(preface);
     print("> SWITCHING DISPLAY MODE → " + theme.name.toUpperCase(), true);
-    return new Promise(function (resolve) { stageSwitch(theme, resolve); });
+    switchAndExit(theme);
+    return null;
   }
 
   /* ---------- Terminal: interactive picker ---------- */
@@ -797,7 +674,7 @@
 
   function cancelPicker() {
     if (!picker) return;
-    const theme = byId(terminalTheme());
+    const theme = byId(current());
     const done = closePicker();
     print("Cancelled. Still running " + theme.name.toUpperCase() + ".", "theme-term-dim");
     play("close");
@@ -805,19 +682,21 @@
     settle(done);
   }
 
+  // Picking a mode ends the command and exits the terminal, even when it is the one already on.
   function choosePick(index) {
     if (!picker) return;
     const theme = THEMES[index];
     const done = closePicker(index);
-    refocusPrompt();
-    if (!theme || theme.id === terminalTheme()) {
-      print("Already running " + (theme || byId(terminalTheme())).name.toUpperCase() + ". Nothing to switch.", "theme-term-dim");
+    if (!theme || theme.id === current()) {
+      print("Already running " + (theme || byId(current())).name.toUpperCase() + ".", "theme-term-dim");
       play("click");
       settle(done);
+      exitTerminal();
       return;
     }
     print("> SWITCHING DISPLAY MODE → " + theme.name.toUpperCase(), true);
-    stageSwitch(theme, done);
+    settle(done);
+    switchAndExit(theme);
   }
 
   function openPicker() {
@@ -825,7 +704,7 @@
     if (!output) return null;
     abandonPicker();
 
-    const active = terminalTheme();
+    const active = current();
     const activeIndex = indexOfTheme(active);
     pickerCount += 1;
     const listId = "theme-pick-" + pickerCount;
@@ -987,11 +866,11 @@
         let target = null;
         let preface = "";
         if (arg === "next" || arg === "cycle" || arg === "toggle") {
-          target = neighbour(1, terminalTheme());
+          target = neighbour(1, current());
         } else if (arg === "prev" || arg === "previous" || arg === "back") {
-          target = neighbour(-1, terminalTheme());
+          target = neighbour(-1, current());
         } else if (arg === "random" || arg === "shuffle" || arg === "surprise" || arg === "roll") {
-          target = randomOther(terminalTheme());
+          target = randomOther(current());
           preface = "ROLLING THE DICE… ⚄";
         } else {
           const theme = resolve(arg);
