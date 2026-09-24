@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  // JB//OS easter eggs. Terminal commands: gravity, barrel, party, hack, snake and screensaver, plus
+  // JB//OS easter eggs. Terminal commands: gravity, barrel, matrix, party, hack, snake and screensaver, plus
   // the hidden `do` and `shake` (theme lives in themes.js). On the page: the hero name bursts on five
   // quick clicks, a mouse or phone shake wobbles the page, 60 idle seconds start a screensaver (any
   // click or key wakes it, or catch its runaway logo three times), the chrome star charges up, and
@@ -46,6 +46,7 @@
   function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
   function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
   function sfx(name) {
     try {
@@ -761,6 +762,384 @@
   // page stops the music on the spot. Reduced motion keeps the music and a still, dimmed room.
   const PARTY_PLAN = { bpm: 128, dropBeat: 16, endBeat: 48, lengthBeats: 56 };
   const PARTY_BANNER = "NOW PLAYING ✱ JB//OS — AFTER HOURS (EXTENDED MIX) ✱ 128 BPM ✱ LIVE FROM ITHACA, NY ✱ ";
+
+  /* ---------------------------------------------------------------------------------------------
+   * matrix: the page melts into code. Every visible letter is redrawn in place on a canvas (the real
+   * text steps aside), flickers into code and turns green. A black drip front runs down the screen,
+   * the letters it reaches fall away with code trails, and Matrix rain fills everything behind it.
+   * Then the black recedes from the bottom up and every letter drops back into place as itself.
+   * ------------------------------------------------------------------------------------------- */
+
+  const CODE_GLYPHS = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ0123456789{}[]()<>=+-*/;:$#&|_";
+  function codeGlyph() { return CODE_GLYPHS.charAt(Math.floor(Math.random() * CODE_GLYPHS.length)); }
+
+  function rgbOf(color, fallback) {
+    const match = /rgba?\(([^)]+)\)/.exec(color || "");
+    if (!match) return fallback;
+    const parts = match[1].split(/[\s,/]+/).map(parseFloat);
+    return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+  }
+
+  // Every character visible on screen: where it sits, and the font and colour it is drawn in.
+  // Hit-testing (with every element briefly made hittable, and full-screen overlays hidden) skips
+  // letters that something else covers, like text under the header or behind a story window.
+  function visibleGlyphs(limit, measure) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const glyphs = [];
+    const range = doc.createRange();
+    const opacities = new Map();
+    function opacityOf(element) {
+      if (!element || element === root) return 1;
+      if (opacities.has(element)) return opacities.get(element);
+      const style = window.getComputedStyle(element);
+      let value = style.visibility === "hidden" ? 0 : parseFloat(style.opacity);
+      if (isNaN(value)) value = 1;
+      value = value <= 0.03 ? 0 : value * opacityOf(element.parentElement);
+      opacities.set(element, value);
+      return value;
+    }
+    const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        const parent = node.parentElement;
+        if (!parent || !/\S/.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+        if (parent.closest("script, style, noscript, template, textarea, select, .egg-fx, dialog:not([open]), [hidden]")) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    root.classList.add("egg-matrix-probe");
+    try {
+      let node;
+      while ((node = walker.nextNode()) && glyphs.length < limit) {
+        range.selectNodeContents(node);
+        const box = range.getBoundingClientRect();
+        if (!box.width || box.bottom < 0 || box.top > vh || box.right < 0 || box.left > vw) continue;
+        const parent = node.parentElement;
+        const alpha = opacityOf(parent);
+        if (alpha <= 0) continue;
+        const style = window.getComputedStyle(parent);
+        const size = parseFloat(style.fontSize) || 16;
+        let fill = style.webkitTextFillColor;
+        if (!fill || /^(transparent|rgba\(0, 0, 0, 0\))$/.test(fill)) fill = style.color;
+        const rgb = /^(transparent|rgba\(0, 0, 0, 0\))$/.test(fill) ? null : rgbOf(fill, null);
+        const color = rgb || rgbOf(cssVar("--acid", "rgb(217, 255, 67)"), [217, 255, 67]);
+        const transform = style.textTransform;
+        const text = node.nodeValue;
+        let metrics = null;
+        for (let i = 0; i < text.length && glyphs.length < limit; i += 1) {
+          let ch = text.charAt(i);
+          if (!/\S/.test(ch)) continue;
+          const code = text.charCodeAt(i);
+          if (code >= 0xd800 && code <= 0xdbff) { ch = text.slice(i, i + 2); range.setStart(node, i); range.setEnd(node, i + 2); i += 1; }
+          else { range.setStart(node, i); range.setEnd(node, i + 1); }
+          const rect = range.getClientRects()[0];
+          if (!rect || !rect.width || rect.bottom < 0 || rect.top > vh || rect.right < 0 || rect.left > vw) continue;
+          const cx = clamp(rect.left + rect.width / 2, 0, vw - 1);
+          const cy = clamp(rect.top + rect.height / 2, 0, vh - 1);
+          const hit = doc.elementFromPoint(cx, cy);
+          if (!hit || !(hit === parent || parent.contains(hit) || hit.contains(parent))) continue;
+          if (!metrics) {
+            // Fit the drawn size to the rendered one, so transformed or scaled text lines up too.
+            measure.font = style.fontStyle + " " + style.fontWeight + " " + size + "px " + style.fontFamily;
+            const m = measure.measureText("Hg");
+            const ascent = m.fontBoundingBoxAscent || size * 0.8;
+            const descent = m.fontBoundingBoxDescent || size * 0.2;
+            const scale = clamp(rect.height / (ascent + descent), 0.3, 4);
+            metrics = { size: size * scale, ascent: ascent * scale };
+            metrics.font = style.fontStyle + " " + style.fontWeight + " " + metrics.size.toFixed(1) + "px " + style.fontFamily;
+          }
+          if (transform === "uppercase") ch = ch.toUpperCase();
+          else if (transform === "lowercase") ch = ch.toLowerCase();
+          else if (transform === "capitalize" && (i === 0 || /\s/.test(text.charAt(i - 1)))) ch = ch.toUpperCase();
+          glyphs.push({
+            ch: ch, x: rect.left, y: rect.top, h: rect.height, base: rect.top + metrics.ascent,
+            size: metrics.size, font: metrics.font, rgb: color, alpha: alpha
+          });
+        }
+      }
+    } finally {
+      root.classList.remove("egg-matrix-probe");
+    }
+    return glyphs;
+  }
+
+  function matrix() {
+    if (reduceMotion) {
+      toast("WAKE UP. (MOTION IS REDUCED, SO THE PAGE STAYS PUT.)");
+      return;
+    }
+    effect("matrix", function (fx) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const measure = doc.createElement("canvas").getContext("2d");
+      if (!measure) throw new Error("canvas unavailable");
+      const glyphs = visibleGlyphs(3200, measure);
+      const view = fxCanvas(fx, "egg-matrix");
+      const ctx = view.ctx;
+      const dpr = view.canvas.width / Math.max(view.w, 1);
+      root.classList.add("egg-matrix-mute");
+      fx.onEnd(function () { root.classList.remove("egg-matrix-mute"); });
+
+      // The page stays put while it is code.
+      const scrollKeys = ["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " ", "Spacebar"];
+      function stopScroll(event) { event.preventDefault(); }
+      function stopKeys(event) { if (scrollKeys.indexOf(event.key) >= 0) event.preventDefault(); }
+      function onResize() { fx.end(); }
+      window.addEventListener("wheel", stopScroll, { passive: false });
+      window.addEventListener("touchmove", stopScroll, { passive: false });
+      window.addEventListener("keydown", stopKeys, true);
+      window.addEventListener("resize", onResize);
+      fx.onEnd(function () {
+        window.removeEventListener("wheel", stopScroll);
+        window.removeEventListener("touchmove", stopScroll);
+        window.removeEventListener("keydown", stopKeys, true);
+        window.removeEventListener("resize", onResize);
+      });
+
+      const MONO = cssVar("--font-mono", "monospace");
+      const GREEN = [57, 255, 106];
+      const HEAD = "#d7ffe0";
+      const NIGHT = "#010b03";
+      const SIZE = vw < 600 ? 14 : 16;
+      const RAIN_FONT = "700 " + SIZE + "px " + MONO;
+      const MELT_AT = 650;
+      const REBUILD_AT = 4200;
+      const cols = Math.ceil(vw / SIZE);
+      const rows = Math.ceil(vh / SIZE) + 2;
+
+      // The drip front: how far down each column has melted (px), each with its own start and speed.
+      const front = new Float32Array(cols);
+      const seed = rand(0, 10);
+      const meltDelay = [];
+      const meltSpeed = [];
+      const backDelay = [];
+      const backSpeed = [];
+      for (let c = 0; c < cols; c += 1) {
+        meltDelay.push(MELT_AT + rand(0, 360) + (1 + Math.sin(c * 0.37 + seed)) * 110);
+        meltSpeed.push(vh / rand(1.0, 1.55));
+        backDelay.push(REBUILD_AT + rand(0, 280) + (1 + Math.sin(c * 0.29 + seed)) * 90);
+        backSpeed.push(vh / rand(0.85, 1.25));
+      }
+
+      // Rain: a grid of flickering characters, lit by a falling head in each column.
+      const grid = [];
+      for (let i = 0; i < cols * rows; i += 1) grid.push(codeGlyph());
+      const heads = [];
+      for (let c = 0; c < cols; c += 1) heads.push({ y: rand(-vh * 0.6, vh * 0.2), speed: rand(300, 820), trail: randInt(8, 26) });
+
+      glyphs.forEach(function (g) {
+        g.state = "home";
+        g.corruptAt = 80 + rand(0, 520) + (g.y / vh) * 260;
+        g.flipAt = 0;
+        g.code = g.ch;
+        g.codeFont = "700 " + g.size.toFixed(1) + "px " + MONO;
+        g.col = clamp(Math.floor((g.x + 2) / SIZE), 0, cols - 1);
+        g.fy = g.base;
+        g.vy = 0;
+      });
+
+      function rgba(rgb, a) { return "rgba(" + Math.round(rgb[0]) + "," + Math.round(rgb[1]) + "," + Math.round(rgb[2]) + "," + a.toFixed(3) + ")"; }
+      function mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+
+      let meltSounded = false;
+      let rebuildSounded = false;
+      let doneAt = 0;
+      sfx("glitch");
+
+      fx.loop(function (dt, now) {
+        const t = now - fx.startedAt;
+        const rebuilding = t >= REBUILD_AT;
+
+        // Drip front.
+        let melted = 0;
+        for (let c = 0; c < cols; c += 1) {
+          let f;
+          if (!rebuilding) f = clamp((t - meltDelay[c]) / 1000 * meltSpeed[c], 0, vh + SIZE * 2);
+          else f = clamp(vh + SIZE * 2 - Math.max(t - backDelay[c], 0) / 1000 * backSpeed[c], 0, vh + SIZE * 2);
+          if (rebuilding) f = Math.min(f, front[c] || vh + SIZE * 2);
+          front[c] = f;
+          if (f > 0) melted += 1;
+        }
+        if (!meltSounded && t >= MELT_AT) { meltSounded = true; sfx("powerdown"); }
+        if (!rebuildSounded && rebuilding) { rebuildSounded = true; sfx("powerup"); }
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, vw, vh);
+        ctx.globalAlpha = 1;
+
+        // The page dims toward green-black while it turns into code, and brightens back at the end.
+        const dim = rebuilding ? clamp(1 - (t - REBUILD_AT) / 1800, 0, 1) * 0.3 : clamp(t / 900, 0, 1) * 0.3;
+        if (dim > 0.005) {
+          ctx.fillStyle = "rgba(0, 16, 5, " + dim.toFixed(3) + ")";
+          ctx.fillRect(0, 0, vw, vh);
+        }
+
+        // Everything above the front has melted: black, with rounded drips at the leading edge.
+        const melt = new Path2D();
+        for (let c = 0; c < cols; c += 1) {
+          const f = front[c];
+          if (f <= 0) continue;
+          const x = c * SIZE;
+          melt.rect(x, 0, SIZE + 0.6, f);
+          melt.moveTo(x + SIZE, f);
+          melt.arc(x + SIZE / 2, f, SIZE / 2, 0, Math.PI);
+        }
+        if (melted) {
+          ctx.fillStyle = NIGHT;
+          ctx.fill(melt);
+
+          // Rain, only inside the melted area.
+          ctx.save();
+          ctx.clip(melt);
+          ctx.font = RAIN_FONT;
+          ctx.textBaseline = "top";
+          for (let flips = Math.ceil(cols * rows * 0.03); flips > 0; flips -= 1) grid[Math.floor(Math.random() * grid.length)] = codeGlyph();
+          for (let c = 0; c < cols; c += 1) {
+            const head = heads[c];
+            head.y += head.speed * dt;
+            if (head.y - head.trail * SIZE > vh) {
+              head.y = rand(-vh * 0.4, 0);
+              head.speed = rand(300, 820);
+              head.trail = randInt(8, 26);
+            }
+            if (front[c] <= 0) continue;
+            const headRow = Math.floor(head.y / SIZE);
+            for (let k = 0; k < head.trail; k += 1) {
+              const row = headRow - k;
+              if (row < 0) break;
+              const y = row * SIZE;
+              if (y > front[c] + SIZE) continue;
+              if (y > vh) continue;
+              if (k === 0) {
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = HEAD;
+              } else {
+                ctx.globalAlpha = Math.pow(1 - k / head.trail, 1.4) * 0.85;
+                ctx.fillStyle = "#39ff6a";
+              }
+              ctx.fillText(grid[c * rows + row], c * SIZE, y);
+            }
+          }
+          ctx.restore();
+
+          // A bright glyph rides each drip tip: the front reads as code eating down the page.
+          ctx.font = RAIN_FONT;
+          ctx.textBaseline = "top";
+          ctx.fillStyle = HEAD;
+          ctx.globalAlpha = rebuilding ? 0.5 : 0.9;
+          for (let c = 0; c < cols; c += 1) {
+            const f = front[c];
+            if (f > 0 && f < vh) ctx.fillText(grid[c * rows + (Math.floor(f / SIZE) % rows)], c * SIZE, f - SIZE * 0.6);
+          }
+        }
+
+        // The page's own letters.
+        ctx.textBaseline = "alphabetic";
+        let lastFont = "";
+        let pending = 0;
+        for (let i = 0; i < glyphs.length; i += 1) {
+          const g = glyphs[i];
+          if (g.state === "home" && !rebuilding && front[g.col] >= g.y) {
+            g.state = "falling";
+            g.vy = rand(0, 80);
+            g.fy = g.base;
+          }
+          if (g.state === "gone" && rebuilding && front[g.col] <= g.y + g.h * 0.5) {
+            g.state = "landing";
+            g.from = g.base - rand(90, 240);
+            g.landAt = now;
+            g.landFor = rand(380, 620);
+          }
+          if (g.state === "gone") continue;
+
+          // Code characters flicker; corruption starts on a stagger.
+          const coded = g.state !== "home" || t >= g.corruptAt;
+          if (coded && now >= g.flipAt) {
+            g.code = codeGlyph();
+            g.flipAt = now + (g.state === "falling" ? rand(40, 90) : rand(70, 170));
+          }
+
+          let ch = g.ch;
+          let font = g.font;
+          let color = g.rgb;
+          let a = g.alpha;
+          let y = g.base;
+          let stretch = 1;
+          if (g.state === "home") {
+            if (coded) {
+              const k = clamp((t - g.corruptAt) / 260, 0, 1);
+              ch = g.code;
+              font = g.codeFont;
+              color = mix(g.rgb, GREEN, k);
+              a = g.alpha + (1 - g.alpha) * k;
+            }
+          } else if (g.state === "falling") {
+            g.vy += rand(900, 1500) * dt;
+            g.fy += g.vy * dt;
+            if (g.fy - g.size > vh) { g.state = "gone"; continue; }
+            ch = g.code;
+            font = g.codeFont;
+            color = GREEN;
+            a = 1;
+            y = g.fy;
+            stretch = 1 + Math.min(g.vy / 900, 1.4);
+          } else if (g.state === "landing") {
+            const p = clamp((now - g.landAt) / g.landFor, 0, 1);
+            const e = easeOutCubic(p);
+            y = g.from + (g.base - g.from) * e;
+            ch = p < 0.72 ? g.code : g.ch;
+            font = p < 0.8 ? g.codeFont : g.font;
+            color = mix(GREEN, g.rgb, clamp((p - 0.45) / 0.55, 0, 1));
+            a = 1 + (g.alpha - 1) * p;
+            if (p >= 1) g.state = "set";
+            else pending += 1;
+          }
+          if (g.state === "set") {
+            ch = g.ch;
+            font = g.font;
+            color = g.rgb;
+            a = g.alpha;
+            y = g.base;
+          }
+
+          if (font !== lastFont) { ctx.font = font; lastFont = font; }
+          if (g.state === "falling") {
+            // A short code trail above each falling letter, and a melty stretch as it speeds up.
+            ctx.fillStyle = rgba(GREEN, 1);
+            for (let k = 3; k >= 1; k -= 1) {
+              ctx.globalAlpha = 0.16 * (4 - k);
+              ctx.fillText(g.code, g.x, y - k * Math.max(g.size * 0.8, g.vy * 0.03));
+            }
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = HEAD;
+            ctx.setTransform(dpr, 0, 0, dpr * stretch, dpr * g.x, dpr * y);
+            ctx.fillText(ch, 0, 0);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            continue;
+          }
+          ctx.globalAlpha = clamp(a, 0, 1);
+          ctx.fillStyle = rgba(color, 1);
+          ctx.fillText(ch, g.x, y);
+        }
+        ctx.globalAlpha = 1;
+
+        // Rebuilt: hand the letters back to the page, then fade the canvas copies out.
+        if (rebuilding && melted === 0 && pending === 0 && t > REBUILD_AT + 400) {
+          if (!doneAt) {
+            doneAt = now;
+            root.classList.remove("egg-matrix-mute");
+            glyphs.forEach(function (g) { if (g.state !== "set") g.state = "set"; });
+          }
+          const fade = clamp((now - doneAt) / 220, 0, 1);
+          view.canvas.style.opacity = String(1 - fade);
+          if (fade >= 1) { fx.end(); return false; }
+        }
+        // Safety net: never outstay a few seconds past the rebuild.
+        if (t > REBUILD_AT + 5000) { fx.end(); return false; }
+        return true;
+      });
+    });
+  }
 
   function party(music) {
     if (busy()) {
@@ -1720,6 +2099,7 @@
 
   pageEffectCommand("gravity", { help: "gravity: turn on physics and watch the page fall", line: "Enabling gravity. Hold on to something.", aliases: ["newton"], run: gravity });
   pageEffectCommand("barrel", { help: "barrel: do a barrel roll", line: "Do a barrel roll!", aliases: ["barrelroll", "roll"], run: barrelRoll });
+  pageEffectCommand("matrix", { help: "matrix: melt the page into code", line: "Entering the Matrix. Esc gets you out.", aliases: ["neo"], run: matrix });
 
   register("do", {
     hidden: true,

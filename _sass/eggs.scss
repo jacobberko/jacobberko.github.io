@@ -288,6 +288,33 @@ body:not(.cursor-ready) .egg-clickable {
   to { transform: translateX(-50%); }
 }
 
+/* ---------- matrix ---------- */
+/* The page's own letters are redrawn as code on a canvas, so the real text steps aside
+   (only the glyph fill: borders and icons drawn in currentColor stay). */
+html.egg-matrix-mute body *,
+html.egg-matrix-mute body *::before,
+html.egg-matrix-mute body *::after {
+  -webkit-text-fill-color: transparent !important;
+  -webkit-text-stroke-color: transparent !important;
+  text-shadow: none !important;
+}
+
+/* A single synchronous hit-test pass (eggs.js): every element answers elementFromPoint, and
+   the full-screen decoration layers step out of the way. */
+html.egg-matrix-probe body * {
+  pointer-events: auto !important;
+}
+
+html.egg-matrix-probe .site-noise,
+html.egg-matrix-probe .cursor-dot,
+html.egg-matrix-probe .cursor-reticle,
+html.egg-matrix-probe .page-transition,
+html.egg-matrix-probe .scroll-progress,
+html.egg-matrix-probe .boot-screen,
+html.egg-matrix-probe .egg-fx {
+  visibility: hidden !important;
+}
+
 /* ---------- Screensaver ---------- */
 .egg-saver {
   position: absolute;
