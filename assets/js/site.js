@@ -149,24 +149,43 @@
     }
   }
 
-  // Scroll progress meter.
+  // Scroll progress meter. The page height is measured only when it changes, and the scroll
+  // position is read in the scroll event (the start of the frame), so drawing the bar never
+  // forces a style or layout pass in the middle of other scripts' animation frames.
   const progressBar = doc.querySelector(".scroll-progress i");
   let progressQueued = false;
+  let scrollable = 1;
+  let scrollTop = window.scrollY;
+  function measureScrollable() {
+    scrollable = Math.max(doc.documentElement.scrollHeight - window.innerHeight, 1);
+  }
   function updateProgress() {
-    const scrollable = Math.max(doc.documentElement.scrollHeight - window.innerHeight, 1);
-    const progress = Math.min(Math.max(window.scrollY / scrollable, 0), 1);
-    if (progressBar) progressBar.style.transform = "scaleX(" + progress + ")";
+    const progress = Math.min(Math.max(scrollTop / scrollable, 0), 1);
+    if (progressBar) progressBar.style.transform = "scaleX(" + progress.toFixed(4) + ")";
     progressQueued = false;
   }
+  function queueProgress() {
+    if (progressQueued) return;
+    progressQueued = true;
+    window.requestAnimationFrame(updateProgress);
+  }
   window.addEventListener("scroll", function () {
-    if (!progressQueued) {
-      progressQueued = true;
-      window.requestAnimationFrame(updateProgress);
-    }
+    scrollTop = window.scrollY;
+    queueProgress();
   }, { passive: true });
+  window.addEventListener("resize", function () { measureScrollable(); queueProgress(); }, { passive: true });
+  window.addEventListener("load", function () { measureScrollable(); queueProgress(); });
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(function () { measureScrollable(); queueProgress(); }).observe(body);
+  }
+  measureScrollable();
   updateProgress();
 
-  // Custom pixel cursor with a softly trailing reticle.
+  // Custom pixel cursor with a softly trailing reticle. It turns light over dark surfaces: a
+  // data-cursor-tone="dark" or "light" on the way up from the element decides, otherwise the
+  // background colour behind the pointer does. It re-checks after a scroll as well, because the
+  // page can move under a mouse that is standing still (wheel, trackpad, keys). The reticle only
+  // animates while it is catching up, and the label is only rewritten when it changes.
   if (finePointer && !reduceMotion) {
     const dot = doc.querySelector(".cursor-dot");
     const reticle = doc.querySelector(".cursor-reticle");
@@ -176,42 +195,125 @@
       let mouseY = -100;
       let trailX = -100;
       let trailY = -100;
+      let pointerIn = false;
       let cursorSurface = null;
+      let labelText = "";
+      let trailing = false;
+      let toneCache = new WeakMap();
+
+      // Relative luminance of an opaque-enough colour, or null for a see-through one.
+      function luminance(color) {
+        const match = /rgba?\(([^)]+)\)/.exec(color || "");
+        if (!match) return null;
+        const parts = match[1].split(/[\s,/]+/).map(parseFloat);
+        const alpha = parts.length > 3 && !isNaN(parts[3]) ? parts[3] : 1;
+        if (alpha < 0.5) return null;
+        const channel = function (value) {
+          const c = value / 255;
+          return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * channel(parts[0]) + 0.7152 * channel(parts[1]) + 0.0722 * channel(parts[2]);
+      }
+
+      // "dark" or "light": the surface an element sits on. Cached per element (cleared when the
+      // theme changes), so the walk up the tree runs once per element, not on every move.
+      function toneOf(element) {
+        const path = [];
+        let node = element;
+        let tone = null;
+        while (node && node.nodeType === 1) {
+          if (toneCache.has(node)) { tone = toneCache.get(node); break; }
+          path.push(node);
+          const hint = node.getAttribute("data-cursor-tone");
+          if (hint === "dark" || hint === "light") { tone = hint; break; }
+          const lum = luminance(window.getComputedStyle(node).backgroundColor);
+          // 0.18 is where black and white text have equal contrast on a colour.
+          if (lum !== null) { tone = lum < 0.18 ? "dark" : "light"; break; }
+          node = node.parentElement;
+        }
+        tone = tone || "light";
+        path.forEach(function (item) { toneCache.set(item, tone); });
+        return tone;
+      }
+
+      function refresh(target) {
+        const element = target && target.nodeType === 1 ? target : null;
+        const interactive = element && element.closest ? element.closest("[data-cursor], a, button") : null;
+        body.classList.toggle("cursor-active", Boolean(interactive));
+        body.classList.toggle("cursor-on-close", Boolean(interactive && interactive.classList.contains("window-close")));
+        if (element !== cursorSurface) {
+          cursorSurface = element;
+          body.classList.toggle("cursor-on-dark", Boolean(element) && toneOf(element) === "dark");
+        }
+        const text = interactive
+          ? (interactive.getAttribute("data-cursor") || (interactive.tagName === "A" ? "OPEN" : "CLICK"))
+          : "";
+        if (label && text !== labelText) {
+          labelText = text;
+          label.textContent = text;
+        }
+      }
+
+      function drawCursor() {
+        trailX += (mouseX - trailX) * 0.17;
+        trailY += (mouseY - trailY) * 0.17;
+        const settled = Math.abs(mouseX - trailX) < 0.15 && Math.abs(mouseY - trailY) < 0.15;
+        if (settled) {
+          trailX = mouseX;
+          trailY = mouseY;
+        }
+        reticle.style.transform = "translate3d(" + trailX.toFixed(2) + "px," + trailY.toFixed(2) + "px,0)";
+        if (settled) {
+          trailing = false;
+          return;
+        }
+        window.requestAnimationFrame(drawCursor);
+      }
+
+      function trail() {
+        if (trailing) return;
+        trailing = true;
+        window.requestAnimationFrame(drawCursor);
+      }
 
       body.classList.add("cursor-ready");
       window.addEventListener("pointermove", function (event) {
         mouseX = event.clientX;
         mouseY = event.clientY;
+        pointerIn = true;
         dot.style.transform = "translate3d(" + mouseX + "px," + mouseY + "px,0)";
-
-        const interactive = event.target.closest("[data-cursor], a, button");
-        const darkSurface = event.target.closest("[data-cursor-tone='dark'], .section-block--dark, .site-footer, .coursework-panel, .album-stage, .terminal, .lightbox");
-        body.classList.toggle("cursor-active", Boolean(interactive));
-        if (event.target !== cursorSurface) {
-          cursorSurface = event.target;
-          body.classList.toggle("cursor-on-dark", Boolean(darkSurface));
-        }
-        if (label) {
-          label.textContent = interactive
-            ? (interactive.getAttribute("data-cursor") || (interactive.tagName === "A" ? "OPEN" : "CLICK"))
-            : "";
-        }
+        refresh(event.target);
+        trail();
       }, { passive: true });
 
       window.addEventListener("pointerout", function (event) {
         if (!event.relatedTarget) {
-          body.classList.remove("cursor-active", "cursor-on-dark");
+          pointerIn = false;
+          body.classList.remove("cursor-active", "cursor-on-dark", "cursor-on-close");
           cursorSurface = null;
         }
       });
 
-      function drawCursor() {
-        trailX += (mouseX - trailX) * 0.17;
-        trailY += (mouseY - trailY) * 0.17;
-        reticle.style.transform = "translate3d(" + trailX + "px," + trailY + "px,0)";
-        window.requestAnimationFrame(drawCursor);
+      // After a scroll, look again at whatever is under the still pointer (a few times a second
+      // at most, in a timer between frames, when the page's styles are already up to date).
+      let recheckQueued = false;
+      function recheck() {
+        recheckQueued = false;
+        if (pointerIn) refresh(doc.elementFromPoint(mouseX, mouseY));
       }
-      drawCursor();
+      window.addEventListener("scroll", function () {
+        if (!pointerIn || recheckQueued) return;
+        recheckQueued = true;
+        window.setTimeout(recheck, 90);
+      }, { passive: true });
+
+      JBOS.on("theme-change", function () {
+        toneCache = new WeakMap();
+        cursorSurface = null;
+        window.setTimeout(recheck, 0);
+      });
+
+      trail();
     }
   }
 

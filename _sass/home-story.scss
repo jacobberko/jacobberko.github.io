@@ -1453,6 +1453,48 @@
     transform: none !important;
   }
 
+  // Performance fences. The scroll values (--in, --p, --out, --vel, --speed) are written on
+  // each chapter every frame, and custom properties inherit, so by default every element in a
+  // chapter is restyled with them. Groups that never read them pin them (and the values the
+  // chapter derives from them) to constants here: the browser then sees nothing change below
+  // this point and skips the whole group. Only add a group whose rules use none of these.
+  .story-bio.is-pinned .story-bio__frames,
+  .story-bio.is-pinned .story-bio__meter {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+  }
+
+  .story-work.is-pinned .story-card__bar,
+  .story-work.is-pinned .story-card__content {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    --vel: 0;
+    --speed: 0;
+    --draw: 0;
+    --t: 1;
+    --u: 0;
+    --o: 1;
+    --node: 1;
+    --e: 0;
+  }
+
+  .story-stack.is-pinned .story-marquee-wrap {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    --vel: 0;
+    --speed: 0;
+    --swap: 0;
+    --swap-out: 0;
+  }
+
+  // The ticker's sparkling separators rest while the ticker is off screen (home-story.js).
+  .ticker.is-offscreen .ticker-item i {
+    animation-play-state: paused;
+  }
+
   /* ---------- 01 · Bio (pinned) ---------- */
 
   // The frame stack is centred in the free space between the heading and the word meter

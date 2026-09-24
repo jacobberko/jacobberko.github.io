@@ -148,7 +148,8 @@ kbd {
   background-image:
     repeating-radial-gradient(circle at 20% 40%, transparent 0, rgba(var(--ink-rgb), 0.9) 0.6px, transparent 1px, transparent 3px);
   background-size: 7px 7px;
-  mix-blend-mode: multiply;
+  /* No blend mode: a full-screen blended layer makes the browser re-blend the whole viewport on
+     every scroll frame. At 3.5% opacity, plain alpha looks the same as multiply did. */
 }
 
 .page-shell {
@@ -755,6 +756,8 @@ body.is-leaving .page-transition i {
   .cursor-ready .cursor-dot,
   .cursor-ready .cursor-reticle {
     display: block;
+    /* Their own compositor layers: moving them never repaints the page under them. */
+    will-change: transform;
   }
 
   .cursor-dot {

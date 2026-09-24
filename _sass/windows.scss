@@ -64,14 +64,16 @@
 }
 
 /* The site cursor turns into a filled 4rem disc over buttons, which would bury the
-   9px dot and its ×. Over a close button it shrinks to a small open ring in the page's
-   own ink (captured on body before dark themes re-scope --ink on the reticle). */
+   9px dot and its ×. Over a close button (site.js sets body.cursor-on-close) it shrinks to
+   a small open ring in the page's own ink (captured on body before dark themes re-scope
+   --ink on the reticle). A body class, not :has(), so text changing anywhere on the page
+   never makes the browser re-check every element. */
 body {
   --window-cursor-ink: var(--ink);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .cursor-ready:has(.window-close:hover) .cursor-reticle {
+  .cursor-on-close .cursor-reticle {
     --ink: var(--window-cursor-ink);
     width: 1.6rem;
     height: 1.6rem;
@@ -79,7 +81,7 @@ body {
     background: transparent;
   }
 
-  .cursor-ready:has(.window-close:hover) .cursor-reticle span {
+  .cursor-on-close .cursor-reticle span {
     font-size: 0;
   }
 }

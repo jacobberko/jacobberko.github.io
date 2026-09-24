@@ -482,7 +482,10 @@
     const marqueeObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         const marquee = marquees.find(function (item) { return item.element === entry.target; });
-        if (marquee) marquee.visible = entry.isIntersecting;
+        if (!marquee) return;
+        marquee.visible = entry.isIntersecting;
+        // Pause the ticker's sparkling separators while it is off screen.
+        marquee.element.classList.toggle("is-offscreen", !entry.isIntersecting);
       });
       schedule();
     });
@@ -662,9 +665,19 @@
       setVar(chapter.element, chapter.cache, "--p", p);
       setVar(chapter.element, chapter.cache, "--out", out);
       if (chapter.tracksVelocity) {
-        setVar(chapter.element, chapter.cache, "--vel", signed, 3);
-        setVar(chapter.element, chapter.cache, "--speed", speed, 3);
+        // Every change restyles the whole chapter. While the chapter is moving anyway (--in, --p
+        // or --out changed this frame) velocity rides along at full precision for free; once it
+        // is still (the scroll has stopped, or the chapter is parked) the easing-out velocity
+        // only updates in coarse steps, and a chapter the next one has covered stops at 0 instead
+        // of updating unseen every frame.
+        const moving = enter !== chapter.lastIn || p !== chapter.lastP || out !== chapter.lastOut;
+        const vel = chapter.covered ? 0 : (moving ? signed : Math.round(signed * 10) / 10);
+        setVar(chapter.element, chapter.cache, "--vel", vel, moving ? 3 : 1);
+        setVar(chapter.element, chapter.cache, "--speed", Math.abs(vel), moving ? 3 : 1);
       }
+      chapter.lastIn = enter;
+      chapter.lastP = p;
+      chapter.lastOut = out;
       if (chapter.module && chapter.module.update) chapter.module.update(p, quiet, out);
     });
 
