@@ -40,6 +40,10 @@
 <script defer src="{{ site.baseurl }}/assets/js/themes.js?v=20260926b"></script>
 <script defer src="{{ site.baseurl }}/assets/js/eggs.js?v=20260926d"></script>
 <script defer src="{{ site.baseurl }}/assets/js/windows.js?v=20260926a"></script>
+{%- if page.url contains "/fitness/" or page.url contains "/the-move/" -%}{%- assign gc_skip = true -%}{%- else -%}{%- assign gc_skip = false -%}{%- endif %}
+{% if site.analytics.goatcounter.enabled and gc_skip == false and jekyll.environment == "production" %}
+<script data-goatcounter="{{ site.analytics.goatcounter.endpoint }}" async src="https://gc.zgo.at/count.js"></script>
+{% endif %}
 {% if site.analytics.plausible.enabled %}
 <script defer data-domain="{{ site.analytics.plausible.site_fqdn }}"
   src="{{ site.analytics.plausible.script_source }}"></script>

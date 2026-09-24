@@ -11,6 +11,9 @@ keywords: ['Jacob Berko', 'Jake Berko', 'software engineer', 'Cornell University
 
 # Analytics (Plausible requires sign-up)
 analytics:
+  goatcounter:
+    enabled: true
+    endpoint: 'https://jacobberko.goatcounter.com/count'
   plausible:
     enabled: false
     site_fqdn: 'your.site.fqdn'
