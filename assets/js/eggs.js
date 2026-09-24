@@ -4,7 +4,8 @@
   // JB//OS easter eggs. Terminal commands: gravity, barrel, party, hack, snake and screensaver, plus
   // the hidden `do` and `shake` (theme lives in themes.js). On the page: the hero name bursts on five
   // quick clicks, a mouse or phone shake wobbles the page, 60 idle seconds start a screensaver (any
-  // click or key wakes it), the chrome star charges up, and the 404 page has a runaway page to catch.
+  // click or key wakes it, or catch its runaway logo three times), the chrome star charges up, and
+  // the 404 page has a runaway page to catch.
   // Effects run one at a time, stop on Escape, and swap motion for a toast under reduced motion.
   // Nothing here lists the page secrets: finding them is the point.
 
@@ -1031,14 +1032,17 @@
     closeTerminal();
     // Not skippable by the global Escape/click handlers: the screensaver handles its own wake-up.
     effect("saver", function (fx) {
+      const GOAL = 3;
       const layer = make("div", "egg-saver");
       const logo = make("div", "egg-saver__logo");
       logo.appendChild(make("strong", "", "JB//OS"));
       logo.appendChild(make("small", "", "PORTFOLIO.26"));
+      const game = make("p", "egg-saver__game");
       const time = make("p", "egg-saver__clock");
       const hint = make("p", "egg-saver__hint", finePointer ? "Click the mouse or press any key" : "Tap the screen or press any key");
       const corner = make("p", "egg-saver__corner", "CORNER!");
       layer.appendChild(logo);
+      layer.appendChild(game);
       layer.appendChild(time);
       layer.appendChild(hint);
       layer.appendChild(corner);
@@ -1052,6 +1056,7 @@
       let y = rand(0, Math.max(window.innerHeight - logo.offsetHeight, 1));
       let vx = (Math.random() < 0.5 ? -1 : 1) * 150;
       let vy = (Math.random() < 0.5 ? -1 : 1) * 115;
+      let cruise = Math.hypot(vx, vy);
       let lastHitX = -1;
       let lastHitY = -1;
       let elapsed = 0;
@@ -1064,13 +1069,124 @@
       }
       updateClock();
 
-      fx.loop(function (dt) {
+      /* The catch game, with the 404 page's runaway logic: the logo darts away when the cursor
+         gets close (and jumps to the far side when it is cornered), every sixth dodge it gets
+         tired and crawls for a moment, and a click on it is a catch. Three catches wake the
+         screen with confetti. A click anywhere else, or any key, still just wakes it. */
+      const pointer = { x: 0, y: 0, known: false };
+      let caught = 0;
+      let dodges = 0;
+      let lastDodge = -Infinity;
+      let tiredUntil = 0;
+      let tired = false;
+      let won = false;
+
+      function setGame(message) {
+        game.textContent = message + " · " + caught + " / " + GOAL;
+      }
+      setGame(finePointer ? "Or catch the logo" : "Or tap the logo");
+
+      function blink() {
+        logo.classList.remove("is-blink");
+        void logo.offsetWidth;
+        logo.classList.add("is-blink");
+      }
+
+      // Jump to the half of the screen away from `fromX`.
+      function teleport(fromX) {
+        const maxX = Math.max(window.innerWidth - logo.offsetWidth, 0);
+        const maxY = Math.max(window.innerHeight - logo.offsetHeight, 0);
+        x = fromX < window.innerWidth / 2 ? rand(maxX * 0.6, maxX) : rand(0, maxX * 0.4);
+        y = rand(0, maxY);
+        blink();
+      }
+
+      function dodge(now, w, h, lw, lh) {
+        const cx = x + lw / 2;
+        const cy = y + lh / 2;
+        const angle = Math.atan2(cy - pointer.y, cx - pointer.x) + rand(-0.7, 0.7);
+        vx = Math.cos(angle) * 820;
+        vy = Math.sin(angle) * 820;
+        // Against a wall, slide along it; pinned in a corner, jump to the far side.
+        const edge = 12;
+        const pinnedX = (x <= edge && vx < 0) || (x + lw >= w - edge && vx > 0);
+        const pinnedY = (y <= edge && vy < 0) || (y + lh >= h - edge && vy > 0);
+        if (pinnedX && pinnedY) teleport(pointer.x);
+        else if (pinnedX) vx = -vx;
+        else if (pinnedY) vy = -vy;
+        dodges += 1;
+        lastDodge = now;
+        sfx("tick");
+        if (dodges % 6 === 0) {
+          tiredUntil = now + 1500;
+          setGame("It's tired. Now's your chance!");
+        }
+      }
+
+      function catchLogo() {
+        caught += 1;
+        const rect = logo.getBoundingClientRect();
+        sfx("coin");
+        sparkle({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }, { count: 30, power: 520 });
+        if (caught >= GOAL) {
+          won = true;
+          vx = 0;
+          vy = 0;
+          logo.classList.remove("is-tired");
+          logo.classList.add("is-caught");
+          setGame("Caught it! Welcome back");
+          sfx("fanfare");
+          fx.after(1100, function () { fx.end(); });
+          return;
+        }
+        setGame("Caught it. It slipped away again…");
+        // Faster every time, like the 404 page's file. A catch also wakes it up (quietly, so the
+        // message above stays until the next tired spell).
+        cruise *= 1.15;
+        tiredUntil = 0;
+        tired = false;
+        logo.classList.remove("is-tired");
+        const angle = rand(0, Math.PI * 2);
+        vx = Math.cos(angle) * cruise;
+        vy = Math.sin(angle) * cruise;
+        if (!reduceMotion) teleport(rect.left + rect.width / 2);
+      }
+
+      function track(event) {
+        if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        pointer.known = true;
+      }
+      window.addEventListener("pointermove", track, { passive: true });
+
+      fx.loop(function (dt, now) {
         elapsed += dt;
         const w = window.innerWidth;
         const h = window.innerHeight;
         const lw = logo.offsetWidth;
         const lh = logo.offsetHeight;
         if (reduceMotion) { x = (w - lw) / 2; y = (h - lh) / 2; }
+
+        const isTired = now < tiredUntil;
+        if (isTired !== tired) {
+          tired = isTired;
+          logo.classList.toggle("is-tired", tired);
+          if (!tired && !won) setGame(finePointer ? "Or catch the logo" : "Or tap the logo");
+        }
+        if (!reduceMotion && !won) {
+          if (finePointer && pointer.known && !tired && now - lastDodge > 230) {
+            const reach = Math.max(lw, lh) / 2 + 70;
+            if (Math.hypot(pointer.x - (x + lw / 2), pointer.y - (y + lh / 2)) < reach) dodge(now, w, h, lw, lh);
+          }
+          // Ease back to cruising speed after a dart, and crawl while tired.
+          const target = tired ? cruise * 0.15 : cruise;
+          const speed = Math.hypot(vx, vy) || 1;
+          const next = speed + (target - speed) * Math.min(1, dt * (speed > target ? 2.2 : 4));
+          vx *= next / speed;
+          vy *= next / speed;
+        }
+
         x += vx * dt;
         y += vy * dt;
         let hitX = false;
@@ -1081,7 +1197,7 @@
         else if (y + lh >= h) { y = Math.max(h - lh, 0); vy = -Math.abs(vy); hitY = true; }
         if (hitX) lastHitX = elapsed;
         if (hitY) lastHitY = elapsed;
-        if (hitX || hitY) {
+        if ((hitX || hitY) && !won) {
           colorIndex = (colorIndex + 1) % palette.length;
           logo.style.setProperty("--saver-color", palette[colorIndex]);
           if (lastHitX >= 0 && lastHitY >= 0 && Math.abs(lastHitX - lastHitY) < 0.1) {
@@ -1099,24 +1215,43 @@
         return true;
       });
 
-      // Any click, tap or key wakes it; moving the mouse or scrolling does not. The waking input is
-      // swallowed (backtick must not also open the terminal, a click must not land on a link). Input
-      // in the first moments is swallowed too, so the gesture that started it cannot end it.
+      // A click or tap on the logo is a catch. Any other click, tap or key wakes it; moving the
+      // mouse or scrolling does not. The waking input is swallowed (backtick must not also open the
+      // terminal, a click must not land on a link). Input in the first moments is swallowed too, so
+      // the gesture that started it cannot end it.
+      function onLogo(event) {
+        if (event.type !== "pointerdown" || won) return false;
+        const rect = logo.getBoundingClientRect();
+        const pad = event.pointerType === "touch" ? 28 : 14;
+        return event.clientX >= rect.left - pad && event.clientX <= rect.right + pad &&
+          event.clientY >= rect.top - pad && event.clientY <= rect.bottom + pad;
+      }
       const armedAt = clock() + 450;
       const wakeEvents = ["pointerdown", "keydown"];
       function wake(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
-        if (clock() < armedAt || fx.ended) return;
+        if (clock() < armedAt || fx.ended || won) return;
+        if (onLogo(event)) {
+          swallowWakeGesture(null);
+          catchLogo();
+          return;
+        }
         swallowWakeGesture(event.type === "keydown" ? event.key : null);
         fx.end();
       }
       wakeEvents.forEach(function (type) { window.addEventListener(type, wake, true); });
       fx.onEnd(function () {
         wakeEvents.forEach(function (type) { window.removeEventListener(type, wake, true); });
+        window.removeEventListener("pointermove", track);
         layer.classList.remove("is-visible");
         window.setTimeout(function () { layer.remove(); settleHost(); }, 340);
-        if (elapsed > 4) toast("WELCOME BACK. JB//OS KEPT YOUR SEAT WARM.");
+        if (won) {
+          toast("CAUGHT JB//OS · " + GOAL + " / " + GOAL + ". WELCOME BACK.");
+          window.setTimeout(function () { confettiEffect("saver-win", [{ delay: 0, count: 120 }]); }, 360);
+        } else if (elapsed > 4) {
+          toast("WELCOME BACK. JB//OS KEPT YOUR SEAT WARM.");
+        }
       });
     }, { skippable: false });
   }

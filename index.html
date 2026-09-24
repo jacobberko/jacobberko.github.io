@@ -20,18 +20,13 @@ description: Cornell computer science student building software, businesses, and
   {%- assign story_roles = story_timeline | size -%}
   {%- assign story_roles2 = story_roles | prepend: "0" | slice: -2, 2 -%}
   {%- assign story_first = story_timeline | first -%}
-  {%- assign story_last = story_timeline | last -%}
   {%- assign story_start_year = story_first.year | append: "" -%}
   {%- assign story_langs = story_profile.languages | size -%}
   {%- assign story_courses = story_profile.coursework | size -%}
   {%- assign story_courses2 = story_courses | prepend: "0" | slice: -2, 2 -%}
   {%- assign story_links = story_profile.links | size -%}
-  {%- assign story_full_circle = "" -%}
-  {%- if story_first.org contains "Google" and story_last.org contains "Google" and story_roles > 1 -%}
-    {%- capture story_full_circle -%}ACHIEVEMENT · FULL CIRCLE: GOOGLE {{ story_first.year }} → GOOGLE {{ story_last.year }}{%- endcapture -%}
-  {%- endif %}
 
-  <div class="story" data-story{% if story_full_circle != "" %} data-full-circle="{{ story_full_circle | escape }}"{% endif %}>
+  <div class="story" data-story>
     <!-- The disciplines ticker from the original home page. Without JS it keeps its own CSS loop
          (held still with reduced motion); while the story is live, home-story.js moves it instead,
          so scroll speed and direction push it along. Three copies, so the loop never runs out of
@@ -198,9 +193,6 @@ description: Cornell computer science student building software, businesses, and
                     </div>
                     {%- if forloop.last %}
                     <span class="story-card__badge" aria-hidden="true">Now</span>
-                    {%- if story_full_circle != "" %}
-                    <span class="story-card__stamp" aria-hidden="true">Full circle</span>
-                    {%- endif %}
                     {%- endif %}
                   </div>
                   {%- if forloop.last %}
@@ -343,4 +335,4 @@ description: Cornell computer science student building software, businesses, and
   </div>
 </div>
 
-<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=7"></script>
+<script defer src="{{ '/assets/js/home-story.js' | relative_url }}?v=8"></script>

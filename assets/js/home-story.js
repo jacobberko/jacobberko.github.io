@@ -312,7 +312,6 @@
     const geometry = { viewport: 1, shift: 0 };
     let current = -1;
     let finale = false;
-    let celebrated = false;
 
     function setYear(year) {
       if (!digits.length) return;
@@ -334,36 +333,6 @@
         const top = card.body.offsetTop;
         return top >= -1 && top + card.body.offsetHeight <= card.element.offsetHeight + 1;
       });
-    }
-
-    // "ACHIEVEMENT · FULL CIRCLE: GOOGLE 2022 → GOOGLE 2026": everything after the colon is
-    // joined with no-break spaces, so the toast breaks after the colon (or not at all) and
-    // never leaves the last year on a line of its own.
-    const fullCircle = (function () {
-      const raw = story.getAttribute("data-full-circle") || "";
-      const split = raw.indexOf(": ");
-      if (split < 0) return raw;
-      return raw.slice(0, split + 2) + raw.slice(split + 2).replace(/ /g, "\u00A0");
-    })();
-    let toastShown = false;
-
-    function celebrate() {
-      const toast = jbos().toast;
-      if (!fullCircle || typeof toast !== "function") return;
-      try {
-        if (window.sessionStorage.getItem("jb-story-full-circle")) return;
-        window.sessionStorage.setItem("jb-story-full-circle", "1");
-      } catch (error) { /* storage is optional; toast anyway */ }
-      toast(fullCircle);
-      toastShown = true;
-    }
-
-    // The toast belongs to the end of the timeline: once the next chapter starts to slide
-    // over it, clear it (only if it is still ours) so it never sits on the next window.
-    function dismissToast() {
-      toastShown = false;
-      const element = doc.querySelector(".system-toast");
-      if (element && element.textContent === fullCircle) element.classList.remove("is-visible");
     }
 
     return {
@@ -397,8 +366,6 @@
         });
       },
       update: function (p, quiet, out) {
-        if (toastShown && out > 0.04) dismissToast();
-
         let next = 0;
         cards.forEach(function (card, index) {
           if (cardProgress(card, p) >= 0.75) next = index;
@@ -419,13 +386,7 @@
         if (atEnd !== finale) {
           finale = atEnd;
           element.classList.toggle("is-finale", finale);
-          if (finale && !quiet) {
-            play("powerup");
-            if (!celebrated) {
-              celebrated = true;
-              celebrate();
-            }
-          }
+          if (finale && !quiet) play("powerup");
         }
       },
       reset: function () {

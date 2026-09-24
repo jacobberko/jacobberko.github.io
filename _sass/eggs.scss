@@ -298,7 +298,8 @@ body:not(.cursor-ready) .egg-clickable {
     var(--egg-night);
   opacity: 0;
   pointer-events: auto;
-  cursor: none;
+  /* The catch game needs something to aim with (the site's own cursor sits under this layer). */
+  cursor: crosshair;
   transition: opacity 600ms ease;
 }
 
@@ -358,6 +359,49 @@ body:not(.cursor-ready) .egg-clickable {
   font-size: 0.66rem;
   letter-spacing: 0.12em;
   opacity: 0.6;
+}
+
+/* Catch game: the score line, the logo's tired wobble, its jump to the far side, and the catch. */
+.egg-saver__game {
+  position: absolute;
+  top: 1.2rem;
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding-inline: 1rem;
+  color: var(--acid);
+  font: 700 0.68rem/1.4 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.egg-saver__logo.is-tired {
+  opacity: 0.8;
+  animation: eggTired 500ms ease-in-out infinite alternate;
+}
+
+.egg-saver__logo.is-blink {
+  animation: eggSaverBlink 300ms var(--ease-out);
+}
+
+.egg-saver__logo.is-caught {
+  color: var(--egg-on-acid);
+  background: var(--saver-color, var(--acid));
+  animation: eggSaverCaught 700ms var(--ease-out) forwards;
+}
+
+@keyframes eggSaverBlink {
+  from { opacity: 0; scale: 0.6; }
+  to { opacity: 1; scale: 1; }
+}
+
+@keyframes eggSaverCaught {
+  0% { scale: 1; }
+  35% { scale: 1.28; }
+  100% { scale: 1.12; }
 }
 
 .egg-saver__corner {
@@ -819,7 +863,10 @@ body:not(.cursor-ready) .egg-clickable {
   .egg-404__digits::before,
   .egg-404__digits::after,
   .egg-404__led,
-  .egg-404__file.is-tired {
+  .egg-404__file.is-tired,
+  .egg-saver__logo.is-tired,
+  .egg-saver__logo.is-blink,
+  .egg-saver__logo.is-caught {
     animation: none;
   }
 
