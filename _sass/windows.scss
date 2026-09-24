@@ -1,0 +1,116 @@
+/* =========================================================================
+   Window close buttons (assets/js/windows.js). The first of every window's
+   three title-bar dots becomes a real close button: the window shrinks away
+   and bounces back into its original spot a few seconds later.
+   ========================================================================= */
+
+/* The button wraps a fresh dot (an <i>), so the dot keeps the look its title bar
+   already gives it (.window-controls i, .story-tab__dots i). */
+.window-close {
+  position: relative;
+  display: block;
+  flex: none;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  /* Dark × on the orange dot in every theme. */
+  color: var(--on-accent, #11110f);
+  background: none;
+  box-shadow: none;
+  font: inherit;
+  line-height: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms var(--ease-out);
+}
+
+/* A comfortable hit area around the 9px dot that stops short of the next one. */
+.window-close::before {
+  content: "";
+  position: absolute;
+  top: -0.6rem;
+  right: -0.14rem;
+  bottom: -0.6rem;
+  left: -0.6rem;
+}
+
+/* The × that appears on hover or keyboard focus. */
+.window-close::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background:
+    linear-gradient(45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px), currentColor calc(50% + 0.6px), transparent calc(50% + 0.6px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.6px), currentColor calc(50% - 0.6px), currentColor calc(50% + 0.6px), transparent calc(50% + 0.6px));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+@media (hover: hover) {
+  .window-close:hover {
+    transform: scale(1.5);
+  }
+
+  .window-close:hover::after {
+    opacity: 1;
+  }
+}
+
+/* The site cursor turns into a filled 4rem disc over buttons, which would bury the
+   9px dot and its ×. Over a close button it shrinks to a small open ring in the page's
+   own ink (captured on body before dark themes re-scope --ink on the reticle). */
+body {
+  --window-cursor-ink: var(--ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cursor-ready:has(.window-close:hover) .cursor-reticle {
+    --ink: var(--window-cursor-ink);
+    width: 1.6rem;
+    height: 1.6rem;
+    margin: -0.8rem 0 0 -0.8rem;
+    background: transparent;
+  }
+
+  .cursor-ready:has(.window-close:hover) .cursor-reticle span {
+    font-size: 0;
+  }
+}
+
+/* Unscaled, so the ring stays a tidy square that clears the next dot. */
+.window-close:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+  box-shadow: none;
+  transform: none;
+}
+
+.window-close:focus-visible::after {
+  opacity: 1;
+}
+
+.window-close:active {
+  transform: scale(1.2);
+}
+
+/* While a window is closed, its empty spot cannot be clicked, dragged or read out. */
+.is-window-closed {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window-close,
+  .window-close:hover,
+  .window-close:focus-visible,
+  .window-close:active {
+    transform: none;
+  }
+}

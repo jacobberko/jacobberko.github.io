@@ -544,12 +544,17 @@
   let commandRun = 0;
   let commandBusy = false;
 
+  // theme and gravity lead; everything else follows alphabetically, and clear comes last.
+  const MENU_FIRST = ["theme", "gravity"];
+
   function menuText() {
     const fun = Object.keys(JBOS.commands).filter(function (name) {
       const spec = JBOS.commands[name];
       return spec && !spec.hidden && name !== "help" && name !== "clear";
-    }).sort();
-    return "COMMANDS: " + fun.concat(["clear"]).join(" · ");
+    });
+    const lead = MENU_FIRST.filter(function (name) { return fun.indexOf(name) >= 0; });
+    const rest = fun.filter(function (name) { return MENU_FIRST.indexOf(name) < 0; }).sort();
+    return "COMMANDS: " + lead.concat(rest, ["clear"]).join(" · ");
   }
 
   function placeMenu() {
