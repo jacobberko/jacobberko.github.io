@@ -141,6 +141,7 @@
     const frames = Array.from(element.querySelectorAll(".story-bio__frame"));
     const frameCount = Math.max(frames.length, 1);
     const thresholds = [];
+    const flights = [];
     const keyStarts = {};
     let firstStart = 1;
     let lastLand = 0;
@@ -151,6 +152,8 @@
       const sliceLength = readNumber(frame, "--fl", 1 / frameCount) || 1 / frameCount;
       frame.querySelectorAll(".story-word").forEach(function (word) {
         const start = readNumber(word, "--s", 0);
+        // Where this word's own flight starts and ends on the clock (t = 0 before, 1 after).
+        flights.push({ element: word, from: sliceStart + start * sliceLength, to: sliceStart + (start + 1 / 12) * sliceLength, state: "" });
         // Mirrors --t in home-story.scss: a word reads as landed halfway through its 1/12 window.
         const at = sliceStart + (start + 0.5 / 12) * sliceLength;
         thresholds.push(at);
@@ -177,6 +180,11 @@
     });
 
     const cache = {};
+    // The clock only feeds the frames (--ap) and the meter bar (--wp): write each where it is read,
+    // so the rest of the chapter is not restyled on every clock frame.
+    const clockEl = framesEl || element;
+    const barEl = element.querySelector(".story-bio__progress") || element;
+    const barCache = {};
     let shown = -1;
     let complete = false;
     let state = "idle";
@@ -185,7 +193,17 @@
     let startedAt = 0;
 
     function render(p, audible) {
-      setVar(element, cache, "--ap", p);
+      setVar(clockEl, cache, "--ap", p);
+      // A word that has not started or has already landed does not change with the clock: flag
+      // it (home-story.scss pins its clock values) so the browser skips restyling it and its
+      // letters every frame. Only the few words in flight follow the clock.
+      flights.forEach(function (flight) {
+        const flag = p <= flight.from ? "is-pending" : p >= flight.to ? "is-landed" : "";
+        if (flag === flight.state) return;
+        if (flight.state) flight.element.classList.remove(flight.state);
+        if (flag) flight.element.classList.add(flag);
+        flight.state = flag;
+      });
 
       let count = 0;
       while (count < thresholds.length && thresholds[count] <= p) count += 1;
@@ -201,7 +219,7 @@
         const from = count ? thresholds[count - 1] : 0;
         landed += clamp((p - from) / Math.max(thresholds[count] - from, 0.0001), 0, 1);
       }
-      setVar(element, cache, "--wp", thresholds.length ? landed / thresholds.length : p);
+      setVar(barEl, barCache, "--wp", thresholds.length ? landed / thresholds.length : p);
 
       let newlyFound = false;
       let all = tags.length > 0;
@@ -248,7 +266,12 @@
       state = "idle";
       shown = -1;
       complete = false;
-      clearVars(element, cache, ["--ap", "--wp"]);
+      clearVars(clockEl, cache, ["--ap"]);
+      clearVars(barEl, barCache, ["--wp"]);
+      flights.forEach(function (flight) {
+        if (flight.state) flight.element.classList.remove(flight.state);
+        flight.state = "";
+      });
       if (countEl) countEl.textContent = pad(0, 3);
       element.classList.remove("has-all-keys");
       tags.forEach(function (tag) {
@@ -260,7 +283,12 @@
     if (framesEl && "IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          visible = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+          // Half the paragraph inside the screen, whether or not a covering chapter clips it
+          // (synthwave clips a covered stage, which would lower intersectionRatio).
+          const box = entry.boundingClientRect;
+          const top = entry.rootBounds ? entry.rootBounds.top : 0;
+          const bottom = entry.rootBounds ? entry.rootBounds.bottom : window.innerHeight;
+          visible = entry.isIntersecting && Math.min(box.bottom, bottom) - Math.max(box.top, top) >= box.height * 0.5;
           if (visible) {
             start();
             return;
@@ -357,11 +385,15 @@
         const lineLength = line ? Math.max(vertical ? line.offsetHeight : line.offsetWidth, 1) : Math.max(size, 1);
         geometry.viewport = view;
         geometry.shift = Math.max(size - view, 0);
+        // Every layout read first, then every write: a write between two reads forces the
+        // browser to restyle the chapter again before the next read.
+        cards.forEach(function (card) {
+          card.position = offsetWithin(card.element, track, vertical);
+        });
         element.style.setProperty("--shift", geometry.shift.toFixed(1));
         element.style.setProperty("--vp", view.toFixed(1));
         element.style.setProperty("--line", lineLength.toFixed(1));
         cards.forEach(function (card) {
-          card.position = offsetWithin(card.element, track, vertical);
           card.element.style.setProperty("--x", card.position.toFixed(1));
         });
       },
@@ -484,6 +516,7 @@
         const marquee = marquees.find(function (item) { return item.element === entry.target; });
         if (!marquee) return;
         marquee.visible = entry.isIntersecting;
+        if (!marquee.visible) unparkMarquee(marquee);
         // Pause the ticker's sparkling separators while it is off screen.
         marquee.element.classList.toggle("is-offscreen", !entry.isIntersecting);
       });
@@ -494,9 +527,40 @@
     marquees.forEach(function (marquee) { marquee.visible = true; });
   }
 
+  // At rest (no scroll velocity) a marquee moves at a constant px/s, which the compositor can
+  // run on its own: hand it a Web Animation from the exact offset, so the main thread can sleep.
+  // The next frame that needs it (scroll, resize, visibility) takes it back at the same spot.
+  function parkMarquees() {
+    marquees.forEach(function (marquee) {
+      if (marquee.idle || !marquee.visible || (marquee.host && marquee.host.covered)) return;
+      if (typeof marquee.track.animate !== "function") return;
+      const v = marquee.speed * marquee.direction * scrollDirection;
+      if (!v) return;
+      const period = marquee.width / Math.abs(v) * 1000;
+      const phase = marquee.offset / marquee.width;
+      marquee.idle = marquee.track.animate(
+        [{ transform: "translate3d(0px,0,0)" }, { transform: "translate3d(" + (-marquee.width) + "px,0,0)" }],
+        { duration: period, iterations: Infinity, easing: "linear", direction: v > 0 ? "normal" : "reverse" }
+      );
+      marquee.idle.currentTime = (v > 0 ? phase : 1 - phase) * period;
+      marquee.idleV = v;
+      marquee.idlePeriod = period;
+    });
+  }
+
+  function unparkMarquee(marquee) {
+    if (!marquee.idle) return;
+    const t = ((marquee.idle.currentTime || 0) % marquee.idlePeriod) / marquee.idlePeriod;
+    marquee.offset = ((marquee.idleV > 0 ? t : 1 - t) * marquee.width) % marquee.width;
+    marquee.idle.cancel();
+    marquee.idle = null;
+    marquee.track.style.transform = "translate3d(" + (-marquee.offset).toFixed(2) + "px,0,0)";
+  }
+
   function driveMarquees(dt, speed) {
     let running = false;
     marquees.forEach(function (marquee) {
+      unparkMarquee(marquee);
       // Hidden (display: none) marquees never intersect, so `visible` covers them too.
       if (!marquee.visible || (marquee.host && marquee.host.covered)) return;
       running = true;
@@ -511,6 +575,9 @@
   /* ---------- Chapter rail ---------- */
 
   const rail = story.querySelector("[data-story-rail]");
+  // Only the meter's bar reads --story-p, so it is written on the meter: written on the rail it
+  // restyled every link and label in it on each scroll frame.
+  const railMeter = rail ? rail.querySelector(".story-rail__meter") || rail : null;
   const railLinks = Array.from(story.querySelectorAll("[data-story-jump]"));
   const railCache = {};
   let railIndex = -1;
@@ -535,7 +602,7 @@
       if (typeof bus.emit === "function") bus.emit("story-chapter", { index: index, name: chapters[index].name });
     }
 
-    setVar(rail, railCache, "--story-p", clamp((y - storyTop) / Math.max(storyHeight - viewHeight, 1), 0, 1), 3);
+    setVar(railMeter, railCache, "--story-p", clamp((y - storyTop) / Math.max(storyHeight - viewHeight, 1), 0, 1), 3);
     const visible = storyTop - y < viewHeight * 0.35 && storyTop + storyHeight - y > viewHeight * 0.6;
     if (visible !== railVisible) {
       railVisible = visible;
@@ -548,7 +615,7 @@
     railVisible = false;
     if (rail) {
       rail.classList.remove("is-visible");
-      clearVars(rail, railCache, ["--story-p"]);
+      clearVars(railMeter, railCache, ["--story-p"]);
     }
     railLinks.forEach(function (link) {
       link.classList.remove("is-current");
@@ -691,9 +758,10 @@
     frameId = 0;
     if (!live) return;
     const running = update(now, false);
-    if (running || velocity !== 0 || idleFrames < 8 || rewinding) {
+    if (velocity !== 0 || idleFrames < 8 || rewinding) {
       schedule();
     } else {
+      if (running) parkMarquees();
       // Next scroll restarts the clock so the first frame does not read as a velocity spike.
       lastTime = 0;
     }
@@ -740,6 +808,7 @@
       return;
     }
     story.classList.remove("is-live");
+    marquees.forEach(unparkMarquee);
 
     if (frameId) {
       window.cancelAnimationFrame(frameId);
@@ -761,11 +830,12 @@
   // Where the decorative glyphs may drift (see "Glyph lanes" in home-story.scss), in px from
   // the stage's top-left corner, measured while every moving part is parked: the foot of the
   // heading, the top of the stage's bottom row, the right end of the title text and the
-  // right edge of the bio text column.
-  function measureLanes(chapter) {
+  // right edge of the bio text column. The values are queued in `writes` and applied once every
+  // chapter has been read, so one chapter's writes do not force a restyle before the next read.
+  function measureLanes(chapter, writes) {
     const element = chapter.element;
     const origin = chapter.stage.getBoundingClientRect();
-    const setPx = function (name, value) { element.style.setProperty(name, value.toFixed(1) + "px"); };
+    const setPx = function (name, value) { writes.push([element, name, value.toFixed(1) + "px"]); };
     if (chapter.head) setPx("--head-end", chapter.head.getBoundingClientRect().bottom - origin.top);
     const foot = chapter.inner.lastElementChild;
     if (foot && foot !== chapter.head) setPx("--foot-top", foot.getBoundingClientRect().top - origin.top);
@@ -821,8 +891,23 @@
     hung.forEach(function (unit) { unit.classList.add("is-hang"); });
   }
 
+  // A pinned stage is a grid of heading / content / footer rows. Content taller than its
+  // centred middle row spills over the rows around it without growing scrollHeight, so the
+  // rows are also checked for overlap: a chapter only pins when no row runs into the next.
+  function rowsFit(inner) {
+    let last = null;
+    for (let i = 0; i < inner.children.length; i += 1) {
+      const rect = inner.children[i].getBoundingClientRect();
+      if (!rect.height) continue;
+      if (last && rect.top < last.bottom - 0.5) return false;
+      last = rect;
+    }
+    return true;
+  }
+
   function measure() {
     measureId = 0;
+    marquees.forEach(unparkMarquee);
     setLive(supportsStory && !motionQuery.matches && window.innerHeight >= MIN_VIEW_HEIGHT);
     if (!live) {
       hangMarks();
@@ -841,7 +926,7 @@
       chapter.dockDistance = Math.max(parseFloat(window.getComputedStyle(chapter.inner).paddingTop) || 0, 1);
       const module = chapter.module;
       const moduleFits = !module || !module.fits || module.fits();
-      chapter.pinned = moduleFits && chapter.inner.scrollHeight <= chapter.stage.clientHeight + 2;
+      chapter.pinned = moduleFits && chapter.inner.scrollHeight <= chapter.stage.clientHeight + 2 && rowsFit(chapter.inner);
     });
     chapters.forEach(function (chapter) {
       chapter.element.classList.toggle("is-pinned", chapter.pinned);
@@ -850,8 +935,12 @@
     chapters.forEach(function (chapter) {
       if (!chapter.pinned) return;
       if (chapter.module && chapter.module.measure) chapter.module.measure();
-      measureLanes(chapter);
     });
+    const laneWrites = [];
+    chapters.forEach(function (chapter) {
+      if (chapter.pinned) measureLanes(chapter, laneWrites);
+    });
+    laneWrites.forEach(function (write) { write[0].style.setProperty(write[1], write[2]); });
     story.classList.remove("is-measuring");
     hangMarks();
 

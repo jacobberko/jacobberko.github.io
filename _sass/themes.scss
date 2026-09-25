@@ -168,7 +168,10 @@ html:not(.js) .sound-toggle {
   z-index: 5;
   top: calc(100% + 1rem);
   right: 0;
-  width: unquote("min(19.5rem, calc(100vw - 2rem))");
+  // Never wider than the header card it hangs from (the card is inset by --page-pad and the
+  // popover lines up with its content edge), so on phones under ~352px it no longer pokes out
+  // past the card's left border. Wider screens still get the full 19.5rem.
+  width: unquote("min(19.5rem, calc(100vw - 2 * var(--page-pad) - 0.45rem))");
   max-height: calc(100vh - 7rem);
   max-height: calc(100dvh - 7rem);
   overflow: auto;
@@ -526,6 +529,8 @@ html:not(.js) .sound-toggle {
   .theme-switcher__swatch { width: 1.95rem; height: 1.95rem; }
   .sound-toggle { width: 2.5rem; height: 2.5rem; }
   .header-contact { width: 2.5rem; min-height: 2.5rem; }
+  // The icon-only Menu pill matches its three neighbours (it was 43.6 x 44.8 against 40 x 40).
+  .nav-toggle { min-height: 2.5rem; padding-inline: 0.7rem; }
 }
 
 @media (max-width: 349px) {
@@ -1748,4 +1753,16 @@ html.theme-enter:not([data-theme]) main h1 {
   .sound-toggle { display: none !important; }
 
   html[data-theme="crt"] .site-noise { display: none; }
+}
+
+/* Synthwave gives the story chapters translucent backgrounds, so the chapter being covered
+   used to show through the one sliding over it (the bio paragraph readable behind
+   "THE TIMELINE." and its cards). On phones, where the two chapters' text lands on top of
+   each other, the covered stage is cut off at the incoming chapter's top edge instead: --out
+   is exactly how far that edge has climbed (home-story.js). Wider screens keep the
+   see-through cover as it was. Default and CRT have opaque chapters and need no clip. */
+@media (max-width: 760px) {
+  #{$theme-synth} .home-story .story-chapter.is-pinned:not(.story-chapter--end) > .story-stage {
+    clip-path: inset(0 0 calc(var(--out, 0) * 100%) 0);
+  }
 }

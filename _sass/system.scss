@@ -29,6 +29,7 @@
   --font-display: "Arial Black", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  /* Also widened by the safe-area block at the end of this file; keep the two in sync. */
   --page-pad: clamp(1.1rem, 4vw, 4rem);
   --radius-sm: 0.4rem;
   --radius-md: 0.9rem;
@@ -66,6 +67,16 @@ body {
 
 body[data-page="startup"] {
   background: #0b0c0b;
+}
+
+// Decorations that hang past the right edge (the spinning page-hero star, whose rotated
+// corners poke out as it turns, the creative hero circle, the album glow) are already cut off
+// by the screen edge. body's overflow-x: clip stops scrollbars but not phones widening their
+// layout viewport to fit them, which let /code/, /creative/ and /portfolio/ pan sideways under
+// a finger. <main> is exactly screen-wide, so clipping here cuts nothing that was visible.
+// clip (not hidden) makes no scroll container: sticky chapters and reveals are unaffected.
+#main-content {
+  overflow-x: clip;
 }
 
 body.nav-open,
@@ -201,13 +212,51 @@ kbd {
 
 .status-pulse,
 .availability i {
+  position: relative;
   display: inline-block;
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
   background: var(--signal);
   box-shadow: 0 0 0 0.25rem rgba(var(--signal-rgb), 0.16);
-  animation: statusPulse 2s ease-out infinite;
+}
+
+// The pulse ring. It used to be an animated box-shadow, which can only be drawn on the main
+// thread, so every page repainted 60 times a second forever. The same ring as a scaled,
+// fading disc runs on the compositor: its box is the dot plus the old 0.45rem spread on each
+// side, and it rests at dot / ring scale, so it grows over exactly the old spread and alpha.
+@media (prefers-reduced-motion: no-preference) {
+  .status-pulse { box-shadow: none; }
+}
+
+.status-pulse::before,
+.availability i::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.45rem;
+  height: 1.45rem;
+  margin: -0.725rem 0 0 -0.725rem;
+  border-radius: 50%;
+  background: rgba(var(--signal-rgb), 1);
+  opacity: 0.35;
+  transform: scale(0.37931);
+  animation: statusPulseRing 2s ease-out infinite;
+  pointer-events: none;
+}
+
+.availability i::before {
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: -0.65rem 0 0 -0.65rem;
+  transform: scale(0.30769);
+  animation-name: statusPulseRingSmall;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-pulse::before,
+  .availability i::before { content: none; }
 }
 
 .section-header {
@@ -401,10 +450,24 @@ kbd {
   padding: 0.55rem 0.65rem;
   border: 1px solid rgba(var(--ink-rgb), 0.9);
   border-radius: 0.75rem;
+  position: relative;
   background: rgba(var(--paper-rgb), 0.84);
   box-shadow: 0 0.5rem 2rem rgba(var(--ink-rgb), 0.09);
-  backdrop-filter: blur(18px) saturate(1.35);
   pointer-events: auto;
+}
+
+// The frosted blur sits on a layer behind the card rather than on the card itself: a
+// backdrop-filter on the card made it the containing block and stacking context of the
+// mobile menu (position: fixed), which then opened as a narrow card inside the header card
+// instead of the full-width sheet below it.
+.header-shell::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -1px;
+  border-radius: inherit;
+  backdrop-filter: blur(18px) saturate(1.35);
+  pointer-events: none;
 }
 
 .header-shell > *,
@@ -1993,6 +2056,19 @@ body.is-leaving .page-transition i {
   object-fit: contain;
 }
 
+/* A terminal transcript whose lines run edge to edge (Little Language Model). Where its box is
+   narrower than the screenshot's own proportions (phones, tablets, narrow windows), cover cut
+   every line off at both ends, so there it gets the poster treatment above. Wide desktops,
+   and the 12.9" iPad in landscape (1366px), where the box already shows the whole
+   screenshot, still show it full-bleed. */
+@media (max-width: 1080px), (max-width: 1365px) and (hover: none) and (pointer: coarse) {
+  .project-media--term img {
+    padding: 0.75rem;
+    background: var(--matte);
+    object-fit: contain;
+  }
+}
+
 .project-media > .window > img {
   min-height: 0;
   flex: 1;
@@ -3283,12 +3359,15 @@ html:not(.js) .album-art__badge { display: none; }
   border-radius: 0.3rem;
   color: var(--paper);
   background: rgba(var(--ink-rgb), 0.76);
-  backdrop-filter: blur(0.6rem);
+  // The blur is only switched on while the caption can be seen (hover/focus below) and stays
+  // on until its fade-out is over: an always-on backdrop-filter kept ~40 invisible captions
+  // as compositor layers.
+  backdrop-filter: none;
   font: 700 0.58rem var(--font-mono);
   letter-spacing: 0.04em;
   opacity: 0;
   transform: translateY(0.5rem);
-  transition: opacity 250ms ease, transform 300ms var(--ease-out);
+  transition: opacity 250ms ease, transform 300ms var(--ease-out), backdrop-filter 0s linear 300ms;
 }
 
 .gallery-item:hover img {
@@ -3305,6 +3384,8 @@ html:not(.js) .album-art__badge { display: none; }
 .gallery-item a:focus-visible .gallery-meta {
   opacity: 1;
   transform: translateY(0);
+  backdrop-filter: blur(0.6rem);
+  transition-delay: 0s;
 }
 
 .lightbox {
@@ -3357,6 +3438,8 @@ html:not(.js) .album-art__badge { display: none; }
   grid-template-rows: minmax(0, 1fr) auto;
   margin: 0;
   padding: 1rem;
+  // Clear of the notch / Dynamic Island and the home indicator (0 everywhere else).
+  padding: unquote("max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left))");
 }
 
 .lightbox figure img {
@@ -3380,9 +3463,17 @@ html:not(.js) .album-art__badge { display: none; }
 .lightbox figcaption {
   display: flex;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 0.75rem 4rem 0;
   font: 700 0.68rem var(--font-mono);
   text-transform: uppercase;
+}
+
+// The "01 / 42" counter keeps its own room on one line; a long caption wraps instead of
+// squeezing it onto two lines ("18 /" over "42") or into the caption's last word.
+.lightbox figcaption small {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .lightbox-close,
@@ -3403,6 +3494,14 @@ html:not(.js) .album-art__badge { display: none; }
 .lightbox-close { top: 1rem; right: 1rem; }
 .lightbox-prev { top: 50%; left: 1rem; }
 .lightbox-next { top: 50%; right: 1rem; }
+
+.lightbox-close {
+  top: unquote("max(1rem, env(safe-area-inset-top))");
+  right: unquote("max(1rem, env(safe-area-inset-right))");
+}
+
+.lightbox-prev { left: unquote("max(1rem, env(safe-area-inset-left))"); }
+.lightbox-next { right: unquote("max(1rem, env(safe-area-inset-right))"); }
 
 /* Terminal and easter eggs */
 .terminal {
@@ -3633,7 +3732,9 @@ body.game-mode::before {
 
 .footer-meta p { margin: 0; }
 .footer-links { display: flex; gap: 1rem; }
-.footer-links a { border-bottom: 1px solid transparent; }
+.footer-links a { position: relative; border-bottom: 1px solid transparent; }
+// An invisible pad makes each footer link ~40px tall to tap without changing how it looks.
+.footer-links a::after { content: ""; position: absolute; inset: -0.75rem -0.35rem; }
 .footer-links a:hover { border-color: var(--acid); color: var(--acid); }
 
 /* Scroll reveal and tilt */
@@ -3657,9 +3758,14 @@ body.game-mode::before {
 }
 
 /* Animation keyframes */
-@keyframes statusPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--signal-rgb), 0.35); }
-  50% { box-shadow: 0 0 0 0.45rem rgba(var(--signal-rgb), 0); }
+@keyframes statusPulseRing {
+  0%, 100% { opacity: 0.35; transform: scale(0.37931); }
+  50% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes statusPulseRingSmall {
+  0%, 100% { opacity: 0.35; transform: scale(0.30769); }
+  50% { opacity: 0; transform: scale(1); }
 }
 
 @keyframes bootLoad { to { transform: scaleX(1); } }
@@ -3843,6 +3949,7 @@ body.game-mode::before {
     top: 0;
     right: 0;
     left: 0;
+    justify-self: stretch;
     padding: 5.5rem var(--page-pad) 1.5rem;
     border-bottom: 1px solid var(--ink);
     background: var(--paper);
@@ -4016,6 +4123,10 @@ body.game-mode::before {
 
   .footer-meta { grid-template-columns: 1fr 1fr; }
   .footer-links { grid-column: 1 / -1; }
+
+  // One column: the body has no spare height, so the pill's margin-top: auto resolved to 0
+  // and it sat flush on the tags. Same gap the App Store badges get from their padding.
+  .project-body > .store-badge-availability { margin-top: 0.9rem; }
 }
 
 @media (max-width: 620px) {
@@ -4024,7 +4135,9 @@ body.game-mode::before {
   .brand-copy small { display: none; }
   .brand-mark { width: 2.2rem; height: 2.2rem; }
   .header-shell { gap: 0.45rem; padding: 0.4rem; }
-  .header-contact { width: 2.8rem; padding: 0; justify-content: center; font-size: 0; }
+  // gap: 0 because the hidden "Contact" text is still a zero-width flex item, and the gap
+  // after it pushed the arrow 5.6px right of the circle's centre.
+  .header-contact { width: 2.8rem; gap: 0; padding: 0; justify-content: center; font-size: 0; }
   .header-contact span { font-size: 0.9rem; }
   .nav-toggle span:first-child { display: none; }
 
@@ -4097,6 +4210,14 @@ body.game-mode::before {
   .section-heading > p:last-child { grid-column: 1; grid-row: auto; }
   .project-grid { grid-template-columns: 1fr; }
   .project-card--featured { grid-column: span 1; }
+  // The Gerrit card's button (a plain .cta) gets the same size and gap as the other archive
+  // cards' links instead of a full-width button flush on its tags.
+  body[data-page="code"] .project-grid:not(.project-grid--featured) .project-body > .cta {
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.8rem 1rem;
+  }
   .project-row { grid-template-columns: 3rem 1fr; }
   .project-row .project-stack { grid-column: 2; }
   .project-row p { grid-column: 2; }
@@ -4115,16 +4236,37 @@ body.game-mode::before {
   .gallery-item:nth-child(n) { grid-column: 1; }
   .gallery-item img,
   .gallery-item:nth-child(n) img { min-height: 20rem; aspect-ratio: 4 / 5; }
-  .lightbox { width: 100vw; height: 100svh; border: 0; border-radius: 0; }
-  .lightbox figcaption { padding-inline: 0; }
-  .lightbox-nav { top: auto; bottom: 0.7rem; }
-  .lightbox-prev { left: 0.7rem; }
-  .lightbox-next { right: 0.7rem; }
+  .lightbox { width: 100vw; height: 100svh; height: 100dvh; border: 0; border-radius: 0; }
+  // The arrows sit in the bottom corners here, so the caption and the "01 / 42" counter
+  // keep clear of them instead of running underneath.
+  .lightbox figcaption { min-height: 2.8rem; align-items: center; padding: 0.5rem 3rem 0; }
+  .lightbox-nav { top: auto; bottom: 0.7rem; bottom: unquote("max(0.7rem, env(safe-area-inset-bottom))"); }
+  .lightbox-prev { left: 0.7rem; left: unquote("max(0.7rem, env(safe-area-inset-left))"); }
+  .lightbox-next { right: 0.7rem; right: unquote("max(0.7rem, env(safe-area-inset-right))"); }
 
   .footer-callout > a { font-size: clamp(1.5rem, 8vw, 3rem); }
   .footer-callout > a span:nth-child(2) { margin-left: 0; }
   .footer-meta { grid-template-columns: 1fr; }
   .footer-links { grid-column: 1; flex-wrap: wrap; }
+}
+
+// 320px screens (iPhone SE 1st gen, Display Zoom): the big hero titles' minimum sizes were
+// wider than the words, which broke mid-word ("CREATIV/E", "THROUG/H MY LENS").
+@media (max-width: 359px) {
+  .creative-title { font-size: 18vw; }
+  .photo-title { font-size: 17.5vw !important; }
+}
+
+// Under 320px (fold cover screens) the legal page titles broke mid-word the same way.
+@media (max-width: 319px) {
+  .legal-page h1 { font-size: 15.5vw; }
+}
+
+// Touch screens: the Waves player's small "↺ FLIP" chip gets a finger-sized hit area. Its
+// look is unchanged, and mouse users keep the exact hover area they have today.
+@media (pointer: coarse) {
+  .album-flip__close { position: relative; }
+  .album-flip__close::before { content: ""; position: absolute; inset: -0.6rem -0.3rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4154,4 +4296,22 @@ body.game-mode::before {
   .portrait-window { transform: none; }
   .album-flip__inner,
   .album-flip__face { transition: none !important; }
+}
+
+/* Safe areas. viewport-fit=cover (head.html) lets the page run under a notched iPhone's
+   sensor housing and rounded corners in landscape, so the side padding grows to at least the
+   safe-area inset there. env() is 0 on desktops, Android, iPads and portrait iPhones, where
+   max() gives exactly the clamp() above. Keep these three clamp() values in sync with the
+   --page-pad definitions at the top of this file and in the 1080px / 900px blocks. The
+   @supports guard keeps browsers without max() or env() on the plain values. */
+@supports (padding: #{unquote("max(0px, env(safe-area-inset-left))")}) {
+  :root { --page-pad: max(clamp(1.1rem, 4vw, 4rem), env(safe-area-inset-left), env(safe-area-inset-right)); }
+
+  @media (max-width: 1080px) {
+    :root { --page-pad: max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right)); }
+  }
+
+  @media (max-width: 900px) {
+    :root { --page-pad: max(clamp(1rem, 4vw, 2rem), env(safe-area-inset-left), env(safe-area-inset-right)); }
+  }
 }

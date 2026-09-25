@@ -1490,6 +1490,46 @@
     --swap-out: 0;
   }
 
+  // Heads only, not the chapter tabs: home-story.js writes --dock inline on each tab every
+  // frame, and pinning the chapter values on that same element made scrolling slower (about
+  // 12% more style work in synthwave on phones) instead of faster.
+  .story-chapter.is-pinned .story-head {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    --vel: 0;
+    --speed: 0;
+    --draw: 0;
+    --swap: 0;
+    --swap-out: 0;
+  }
+
+  .story-work.is-pinned .story-burst {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    --vel: 0;
+    --speed: 0;
+    --draw: 0;
+    --t: 1;
+    --u: 0;
+    --o: 1;
+    --node: 1;
+    --e: 0;
+  }
+
+  .story-stack.is-pinned .story-catalog__body,
+  .story-stack.is-pinned .story-panel > .window-bar,
+  .story-stack.is-pinned .story-eq__legend {
+    --in: 0;
+    --p: 0;
+    --out: 0;
+    --vel: 0;
+    --speed: 0;
+    --swap: 0;
+    --swap-out: 0;
+  }
+
   // The ticker's sparkling separators rest while the ticker is off screen (home-story.js).
   .ticker.is-offscreen .ticker-item i {
     animation-play-state: paused;
@@ -1545,6 +1585,21 @@
     --e: calc(var(--u) * var(--u));
     --flash: calc(var(--t) * var(--u) * 4);
   }
+
+  // A word that has not started (is-pending) or has already landed (is-landed) does not move
+  // with the clock: home-story.js flags it, and it pins the clock values to that state (t = 0
+  // or t = 1) so the browser skips restyling it, its letters and its bars on every clock frame.
+  .story-bio.is-pinned .story-word.is-pending,
+  .story-bio.is-pinned .story-word.is-landed {
+    --ap: 0;
+    --wp: 0;
+    --fx: 0;
+    --leave: 0;
+    --on: 1;
+    --q: 0;
+  }
+
+  .story-bio.is-pinned .story-word.is-landed { --q: 1; }
 
   // A faint redaction bar holds each word's place until it lands.
   .story-bio.is-pinned .story-word::before {
@@ -2266,6 +2321,15 @@
       bottom: 1rem;
     }
 
+    // The dots are drawn small on phones; this invisible pad gives each link a finger-sized
+    // hit area (about 42 x 27px) without changing how the rail looks. The vertical extension
+    // is exactly half the gap between links, so neighbours never overlap.
+    .story-rail a::before {
+      content: "";
+      position: absolute;
+      inset: -0.1rem -0.3rem -0.1rem -0.8rem;
+    }
+
     // Phones have no side margin for decoration: only the glyphs parked in the right-hand
     // gutter (or beside a heading) stay, so none drifts behind a line of text.
     .story-chapter.is-pinned .story-glyph:not(.story-glyph--phone) {
@@ -2512,6 +2576,47 @@
       top: 9.2rem;
       right: auto;
       left: var(--page-pad);
+    }
+  }
+
+  // Short phones (iPhone SE 2/3 in Safari is ~548px tall with the toolbar showing): the bio
+  // paragraph and the course catalog are centred in the stage's middle row, so on these
+  // heights they spilled into the title above and the meter / marquee below. The type and
+  // paddings step down a little here only; every screen taller than 600px is unchanged.
+  @media (max-width: 760px) and (max-height: 600px) {
+    .story-bio.is-pinned .story-words {
+      font-size: unquote("clamp(1rem, min(5.2vw, 3.2vh), 2.1rem)");
+      font-size: unquote("clamp(1rem, min(5.2vw, 3.2svh), 2.1rem)");
+    }
+
+    .story-stack.is-pinned .story-catalog__body {
+      gap: 0.75rem;
+      padding-block: 0.8rem;
+    }
+
+    .story-stack.is-pinned .story-catalog__count b {
+      font-size: 2.2rem;
+    }
+
+    .story-stack.is-pinned .story-marquee-wrap {
+      padding-block: 0.2rem;
+    }
+  }
+
+  // Below 360px the year odometer left the "[ 02 / EXPERIENCE.LOG ]" kicker ~27px short, so it
+  // wrapped onto two lines and dropped that title below the other chapters' titles.
+  @media (max-width: 359px) {
+    .story-work.is-pinned .story-work__head {
+      column-gap: 0.6rem;
+    }
+
+    .story-work.is-pinned .story-odo {
+      font-size: 2rem;
+    }
+
+    .story-work.is-pinned .story-kicker {
+      padding-inline: 0.4rem;
+      letter-spacing: 0.04em;
     }
   }
 }

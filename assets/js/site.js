@@ -39,6 +39,52 @@
     JBOS.events.dispatchEvent(new CustomEvent(type, { detail: detail }));
   };
 
+  // iOS zooms the page in when a text field or menu set under 16px gets focus (the terminal
+  // prompt, the book's chapter menu) and leaves it zoomed. While such a field is being tapped
+  // or has focus, the viewport gets maximum-scale=1, which turns that zoom off, and it goes
+  // back to the page's own viewport as soon as the field lets go. Safari ignores maximum-scale
+  // for pinch-zoom, but in-app browsers (WKWebView) honour it, so it is never left on:
+  // pinch-zoom keeps working everywhere else. iPhone/iPad only; other browsers are untouched.
+  (function () {
+    const viewport = doc.querySelector('meta[name="viewport"]');
+    const ios = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!ios || !viewport) return;
+    const free = viewport.getAttribute("content") || "";
+    const held = free + ", maximum-scale=1";
+    let holding = false;
+    let releaseTimer = 0;
+    function smallField(node) {
+      const field = node && node.closest ? node.closest("input, select, textarea") : null;
+      if (!field || field.disabled) return null;
+      if (field.tagName === "INPUT" && /^(button|submit|reset|checkbox|radio|range|color|file|image|hidden)$/i.test(field.type)) return null;
+      return parseFloat(window.getComputedStyle(field).fontSize) < 16 ? field : null;
+    }
+    function hold(on) {
+      window.clearTimeout(releaseTimer);
+      if (holding === on) return;
+      holding = on;
+      viewport.setAttribute("content", on ? held : free);
+    }
+    function releaseSoon(delay) {
+      if (!holding) return;
+      window.clearTimeout(releaseTimer);
+      releaseTimer = window.setTimeout(function () {
+        if (!smallField(doc.activeElement)) hold(false);
+      }, delay);
+    }
+    // The tap arrives before iOS decides to zoom; focusin also covers focus() from script
+    // (the terminal focuses its prompt when it opens). A tap that ends without focusing the
+    // field (a scroll that started on it) lets go again shortly after.
+    doc.addEventListener("touchstart", function (event) {
+      if (smallField(event.target)) hold(true);
+    }, { capture: true, passive: true });
+    doc.addEventListener("touchend", function () { releaseSoon(600); }, { capture: true, passive: true });
+    doc.addEventListener("focusin", function (event) {
+      if (smallField(event.target)) hold(true);
+    });
+    doc.addEventListener("focusout", function () { releaseSoon(0); });
+  })();
+
   // Only show the boot sequence once per browsing session.
   try {
     if (window.sessionStorage.getItem("jb-booted")) {
@@ -436,6 +482,7 @@
   }
 
   // Fast pixel-shutter transitions for ordinary same-origin navigation.
+  const prefetched = {};
   doc.addEventListener("click", function (event) {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target.closest("a[href]");
@@ -451,7 +498,20 @@
     event.preventDefault();
     body.classList.remove("nav-open");
     body.classList.add("is-leaving");
-    window.setTimeout(function () { window.location.href = destination.href; }, reduceMotion ? 0 : 430);
+    const shutter = reduceMotion ? 0 : 430;
+    // Start downloading the next page while the shutter plays, so the navigation that follows
+    // can be answered from the HTTP cache instead of waiting for the network afterwards.
+    // Pages only: a link straight to a file (image, PDF) is left to the navigation itself.
+    const isPage = !/\.[a-z0-9]{2,5}$/i.test(destination.pathname) || /\.html?$/i.test(destination.pathname);
+    if (shutter && isPage && !prefetched[destination.href]) {
+      prefetched[destination.href] = true;
+      try {
+        if (window.fetch) window.fetch(destination.href, { credentials: "same-origin" }).catch(function () {});
+      } catch (error) {
+        // Prefetching is only a head start; the navigation below still happens.
+      }
+    }
+    window.setTimeout(function () { window.location.href = destination.href; }, shutter);
   });
 
   window.addEventListener("pageshow", function () {
@@ -887,20 +947,82 @@
     }, { passive: true });
   }
 
-  // Eastern-time clock for the footer.
+  // Eastern-time clock for the footer. The first time-zone formatter costs a few ms (tens on a
+  // slow phone) to load its data, so it is built once and reused, and the first reading waits
+  // until the footer comes into view or the browser is idle, whichever is first.
   const clock = doc.querySelector("#local-clock");
+  let clockFormat = null;
   function updateClock() {
     if (!clock) return;
-    const formatted = new Intl.DateTimeFormat("en-US", {
-      timeZone: "America/New_York",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true
-    }).format(new Date());
-    clock.textContent = "ITHACA " + formatted + " ET";
+    if (!clockFormat) {
+      clockFormat = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    }
+    clock.textContent = "ITHACA " + clockFormat.format(new Date()) + " ET";
   }
-  updateClock();
-  window.setInterval(updateClock, 30000);
+  if (clock) {
+    let clockStarted = false;
+    let clockObserver = null;
+    const startClock = function () {
+      if (clockStarted) return;
+      clockStarted = true;
+      if (clockObserver) clockObserver.disconnect();
+      updateClock();
+    };
+    if ("IntersectionObserver" in window) {
+      clockObserver = new IntersectionObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.isIntersecting; })) startClock();
+      });
+      clockObserver.observe(clock);
+    }
+    if (window.requestIdleCallback) window.requestIdleCallback(startClock, { timeout: 1000 });
+    else window.setTimeout(startClock, 200);
+    window.setInterval(updateClock, 30000);
+  }
+
+  // Archive titles on narrow cards (/code/): with the desktop Arial Black one long word
+  // ("Reimplementation") can be wider than its card, whose edge then cut it off. Only a title
+  // that runs past its card's content edge is scaled down, just enough to fit; every title
+  // that fits (all of them with Apple's fonts, and all of them on wide screens) keeps the
+  // size from the CSS.
+  const archiveTitles = Array.prototype.slice.call(doc.querySelectorAll(".project-grid:not(.project-grid--featured) .project-body h3"));
+  if (archiveTitles.length) {
+    let fitFrame = 0;
+    let fitWidth = -1;
+    const fitTitles = function () {
+      fitFrame = 0;
+      archiveTitles.forEach(function (title) { title.style.removeProperty("font-size"); });
+      const sizes = archiveTitles.map(function (title) {
+        const box = title.parentElement;
+        const boxStyle = window.getComputedStyle(box);
+        const boxRect = box.getBoundingClientRect();
+        const scale = box.offsetWidth ? boxRect.width / box.offsetWidth : 1;
+        const left = boxRect.left + (parseFloat(boxStyle.borderLeftWidth) + parseFloat(boxStyle.paddingLeft)) * scale;
+        const right = boxRect.right - (parseFloat(boxStyle.borderRightWidth) + parseFloat(boxStyle.paddingRight)) * scale;
+        const range = doc.createRange();
+        range.selectNodeContents(title);
+        const text = range.getBoundingClientRect();
+        if (!(right > left) || text.right <= right + 0.5) return 0;
+        return Math.floor(parseFloat(window.getComputedStyle(title).fontSize) * (right - left - scale) / (text.right - left) * 10) / 10;
+      });
+      archiveTitles.forEach(function (title, index) {
+        if (sizes[index]) title.style.fontSize = sizes[index] + "px";
+      });
+    };
+    const scheduleFit = function () {
+      // Phone toolbars resize only the height; the titles depend on the width alone.
+      if (window.innerWidth === fitWidth) return;
+      fitWidth = window.innerWidth;
+      if (!fitFrame) fitFrame = window.requestAnimationFrame(fitTitles);
+    };
+    scheduleFit();
+    if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(function () { fitWidth = -1; scheduleFit(); });
+    window.addEventListener("resize", scheduleFit, { passive: true });
+  }
 
   // Waves cover flips over to reveal the Apple Music player on its back.
   doc.querySelectorAll("[data-flip]").forEach(function (card) {
@@ -910,6 +1032,48 @@
     // Matches the 425ms face swap in CSS; focus can only land once the face is visible.
     const swapDelay = reduceMotion ? 0 : 460;
 
+    // The player on the back face is a cross-origin embed (~0.3-1.4 MB). It used to start loading
+    // with the page although it is hidden until the flip, competing with the page's own images.
+    // It now loads (once) as soon as the card is on screen or about to be used, or, once the page
+    // has finished loading and the browser is idle, when the card is within lazy-loading distance
+    // of the screen, whichever comes first. The sandbox is applied here too, just before the src
+    // (sandbox flags are fixed when a navigation starts, so the player loads exactly as
+    // sandboxed as before): Chrome logs a "can escape its sandboxing" warning when a frame that
+    // is already sandboxed while still empty is pointed at a page later by script.
+    const frame = card.querySelector("iframe[data-src]");
+    const frameObservers = [];
+    function loadFrame() {
+      if (!frame || frame.getAttribute("src")) return;
+      const sandbox = frame.getAttribute("data-sandbox");
+      if (sandbox !== null) frame.setAttribute("sandbox", sandbox);
+      frame.setAttribute("src", frame.getAttribute("data-src"));
+      frameObservers.forEach(function (observer) { observer.disconnect(); });
+    }
+    function loadWhenNear(margin) {
+      if (!("IntersectionObserver" in window)) {
+        loadFrame();
+        return;
+      }
+      const observer = new IntersectionObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.isIntersecting; })) loadFrame();
+      }, { rootMargin: margin });
+      frameObservers.push(observer);
+      observer.observe(card);
+    }
+    if (frame) {
+      ["pointerenter", "touchstart", "focusin"].forEach(function (type) {
+        card.addEventListener(type, loadFrame, { once: true, passive: true });
+      });
+      if ("IntersectionObserver" in window) loadWhenNear("0px");
+      const whenIdle = function () {
+        const near = function () { if (!frame.getAttribute("src")) loadWhenNear("1250px 0px"); };
+        if (window.requestIdleCallback) window.requestIdleCallback(near, { timeout: 2000 });
+        else window.setTimeout(near, 1);
+      };
+      if (doc.readyState === "complete") whenIdle();
+      else window.addEventListener("load", whenIdle, { once: true });
+    }
+
     function setFlipped(flipped) {
       card.classList.toggle("is-flipped", flipped);
       openButton.setAttribute("aria-expanded", String(flipped));
@@ -918,7 +1082,10 @@
       }, swapDelay);
     }
 
-    openButton.addEventListener("click", function () { setFlipped(true); });
+    openButton.addEventListener("click", function () {
+      loadFrame();
+      setFlipped(true);
+    });
     closeButton.addEventListener("click", function () { setFlipped(false); });
     card.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && card.classList.contains("is-flipped")) setFlipped(false);

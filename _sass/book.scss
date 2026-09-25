@@ -445,6 +445,51 @@ html:has(> body.dialog-open) {
   .cure-scrub { width: 52vw; }
 }
 
+/* Safe areas: in landscape on a notched iPhone the bar's title and ✕ and the page controls
+   step out from under the sensor housing, and the controls clear the home indicator.
+   env() is 0 everywhere else, where max() gives the padding above. */
+.cure-reader__bar,
+.cure-reader__foot {
+  padding-left: unquote("max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-left))");
+  padding-right: unquote("max(clamp(1rem, 3vw, 2rem), env(safe-area-inset-right))");
+}
+
+.cure-reader__foot {
+  padding-bottom: unquote("max(0.9rem, env(safe-area-inset-bottom))");
+}
+
+/* The page height above is a fixed guess at the chrome around the book; on phones the bar and
+   footer are taller than it allows, so the page ran into the "P. x / 25" label (and into the
+   → button on short landscape screens). With container units the page is also capped at the
+   height its row really has. min() with the old value means it only ever shrinks, and only
+   where it did not fit. */
+@supports (height: 1cqh) {
+  .cure-reader__table { container-type: size; }
+  .cure-stage { --page-h: min(100cqh, calc(100dvh - 10.5rem), calc((100vw - 3rem) / (2 * 0.6471)), 54rem); }
+
+  @media (max-width: 760px) {
+    .cure-stage { --page-h: min(100cqh, calc(100dvh - 12.5rem), calc((100vw - 2rem) / 0.6471)); }
+  }
+}
+
+/* Narrow phones: the chips stay one-line pills instead of wrapping into two- and three-line
+   blobs (the round ✕ is left alone). */
+@media (max-width: 480px) {
+  .cure-reader__bar {
+    padding-left: unquote("max(0.75rem, env(safe-area-inset-left))");
+    padding-right: unquote("max(0.75rem, env(safe-area-inset-right))");
+  }
+
+  .cure-reader__actions { flex-wrap: wrap; justify-content: flex-end; gap: 0.4rem 0.35rem; }
+
+  .cure-reader__actions .cure-chip:not([data-book-close]),
+  .cure-reader select { padding-inline: 0.55rem; letter-spacing: 0.04em; white-space: nowrap; }
+}
+
+@media (max-width: 370px) {
+  .cure-reader__actions > label { order: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cure-book,
   .cure-leaf,

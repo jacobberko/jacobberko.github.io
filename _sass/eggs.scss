@@ -592,6 +592,12 @@ html.egg-matrix-probe .egg-fx {
   margin: 0;
 }
 
+/* Under 360px the code wraps onto its own line under the eyebrow; there the phone rule's
+   narrow right-aligned block (made for sitting beside it) read as two misaligned lines. */
+@media (max-width: 359px) {
+  .egg-404__meta .system-code { max-width: none; text-align: left; }
+}
+
 .egg-404__led {
   display: inline-block;
   width: 0.55rem;
@@ -692,7 +698,10 @@ html.egg-matrix-probe .egg-fx {
   color: var(--on-accent, #11110f);
   background: var(--acid);
   font: 700 0.86em var(--font-mono);
-  word-break: break-all;
+  // A path that fits on a line moves down whole instead of splitting ("/404.h" / "tml"); one
+  // too long for any line can still wrap anywhere, so nothing overflows.
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .egg-404__suggest {

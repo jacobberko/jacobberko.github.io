@@ -2297,7 +2297,21 @@
       return;
     }
     const available = clamp(terminalOutput.clientWidth - 34, 168, 546);
-    const cell = Math.max(8, Math.floor(available / COLS));
+    // Touch screens in landscape that are only a phone's height tall: the terminal shows about
+    // 200px, and a width-sized board was almost entirely scrolled out above the key pad. There
+    // the board is also sized by the height the output can show, and starts in view with its
+    // score line (the pad sits just below; swiping the board steers). Everywhere else (desktop
+    // windows, tablets, phones held upright) the board and scroll position are as before, which
+    // keeps the key pad and the "press an arrow key" line in view.
+    const outStyle = window.getComputedStyle(terminalOutput);
+    const shortLandscape = !!(window.matchMedia &&
+      window.matchMedia("(pointer: coarse) and (orientation: landscape) and (max-height: 600px)").matches);
+    let cell = Math.max(8, Math.floor(available / COLS));
+    if (shortLandscape) {
+      const boxHeight = parseFloat(outStyle.maxHeight) || terminalOutput.clientHeight;
+      const room = boxHeight - parseFloat(outStyle.paddingTop) - parseFloat(outStyle.paddingBottom) - hud.offsetHeight - 16;
+      cell = Math.max(8, Math.min(cell, Math.floor(room / ROWS)));
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = COLS * cell * dpr;
     canvas.height = ROWS * cell * dpr;
@@ -2610,6 +2624,12 @@
     draw();
     wrap.focus({ preventScroll: true });
     scrollTerminal();
+    // Short landscape touch screens only (see the board size above): when the pad does not fit
+    // below the board, keep the board's top (and the score) in view rather than the pad.
+    if (shortLandscape) {
+      const overflow = wrap.getBoundingClientRect().top - terminalOutput.getBoundingClientRect().top - parseFloat(outStyle.paddingTop);
+      if (overflow < 0) terminalOutput.scrollTop += overflow;
+    }
     game.raf = window.requestAnimationFrame(frame);
     return finished;
   }

@@ -17,11 +17,14 @@
 <meta name="keywords"
   content="{% if page.tags %}{{ page.tags | join: ','}}{% else %}{{ site.keywords | join: ',' }}{% endif %}" />
 {% endif %}
-<link rel="icon" type="image/png" href="/images/favicon.png" />
-<link rel="apple-touch-icon" href="/apple.png" />
-<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css?v=20260927a" />
+<link rel="icon" type="image/png" href="/images/favicon.png?v=2" />
+<link rel="apple-touch-icon" href="/apple.png?v=2" />
+<link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/assets/css/styles.css?v=20260928a" />
 <script>
   document.documentElement.classList.add('js');
+  // Later pages of a session skip the boot screen (site.js). Deciding it here, before the first
+  // paint, stops the boot card from flashing up until the deferred site.js has run.
+  try { if (sessionStorage.getItem('jb-booted')) document.documentElement.classList.add('boot-skipped'); } catch (error) {}
   // Apply the saved theme before first paint (themes.js owns everything after this).
   try {
     var jbTheme = localStorage.getItem('jb-theme');
@@ -35,11 +38,11 @@
     }
   } catch (error) {}
 </script>
-<script defer src="{{ site.baseurl }}/assets/js/site.js?v=20260927a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/site.js?v=20260928a"></script>
 <script defer src="{{ site.baseurl }}/assets/js/sound.js?v=20260926a"></script>
 <script defer src="{{ site.baseurl }}/assets/js/themes.js?v=20260926b"></script>
-<script defer src="{{ site.baseurl }}/assets/js/eggs.js?v=20260926d"></script>
-<script defer src="{{ site.baseurl }}/assets/js/windows.js?v=20260926a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/eggs.js?v=20260928a"></script>
+<script defer src="{{ site.baseurl }}/assets/js/windows.js?v=20260928a"></script>
 {%- if page.url contains "/fitness/" or page.url contains "/the-move/" -%}{%- assign gc_skip = true -%}{%- else -%}{%- assign gc_skip = false -%}{%- endif %}
 {% if site.analytics.goatcounter.enabled and gc_skip == false and jekyll.environment == "production" %}
 <script data-goatcounter="{{ site.analytics.goatcounter.endpoint }}" async src="https://gc.zgo.at/count.js"></script>

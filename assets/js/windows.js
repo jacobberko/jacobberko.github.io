@@ -4,13 +4,14 @@
   // Every window with the three title-bar dots (the home photo, the project previews on /code/,
   // the story's chapter bars, timeline cards and stack windows, the creative page, the 404 page)
   // gets a real close button: the first dot. Pressing it closes that window with a quick
-  // shrink-and-fade, and a few seconds later the window bounces back into its original spot
+  // shrink-and-fade, and right after it vanishes the window bounces back into its original spot
   // (undoing any drag). The terminal keeps its own close, and menus are left alone.
   // Reduced motion swaps both animations for a plain fade.
 
   const doc = document;
   const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-  const AWAY_MS = 2600;
+  // How long a closed window stays gone before it bounces back: just a beat.
+  const AWAY_MS = 150;
   const busy = new WeakSet();
 
   function reduced() {
