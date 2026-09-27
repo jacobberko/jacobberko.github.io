@@ -252,6 +252,10 @@ html:has(> body.dialog-open) {
 }
 
 .cure-leaf.is-turned { --angle: -180deg; }
+
+/* A leaf lying fully covered under the top of its stack (book.js wakes it before it can be seen).
+   Hidden, it keeps no layer contents, so the reader stays light on phones. */
+.cure-leaf.is-dormant { visibility: hidden; }
 .cure-leaf.is-peek { --angle: -13deg; transition-duration: 320ms; }
 .cure-leaf.is-turned.is-peek { --angle: -167deg; }
 

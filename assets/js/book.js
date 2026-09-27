@@ -138,6 +138,55 @@
   const endFace = book.querySelector(".cure-face--end");
   const board = book.querySelector(".cure-board");
 
+  // ---------- Covered leaves sleep ----------
+  // Only the top leaf of each stack can be seen, plus a leaf while it turns or peeks and the one it
+  // uncovers. Every other leaf lies fully covered, yet as a 3D layer it would still keep a
+  // page-sized backing store with its big soft shadow: on an iPhone at 3x that came to hundreds of
+  // megabytes the moment the reader opened, enough for Safari to drop the tab on a first open.
+  // Covered leaves get visibility: hidden (no layer contents, no image decode) and wake up before
+  // any turn or peek can reveal them, so nothing you can see changes. Awake: two leaves either
+  // side of the current spread, and while a turn runs, every leaf between where it started and
+  // where it lands.
+  let settleId = 0;
+  function wakeLeaves(from, to) {
+    leaves.forEach(function (leaf, k) {
+      leaf.classList.toggle("is-dormant", k < from - 2 || k > to + 1);
+    });
+    restack();
+  }
+
+  // Every leaf casts the same soft shadow, and a stack's shadows pile up into the deep shadow
+  // around the book. Hidden leaves cast none, so the lowest awake leaf of each stack casts theirs
+  // as extra copies of the same shadow: the pile-up looks exactly as it did with every leaf shown.
+  // Recomputed whenever a leaf sleeps, wakes, starts or finishes a turn.
+  let faceShadow = null;
+  let shadowed = [];
+  function restack() {
+    shadowed.forEach(function (face) { face.style.boxShadow = ""; });
+    shadowed = [];
+    if (faceShadow === null) {
+      faceShadow = window.getComputedStyle(leaves[0].querySelector(".cure-face")).boxShadow;
+      if (!faceShadow || faceShadow === "none") faceShadow = "";
+    }
+    if (!faceShadow) return;
+    [true, false].forEach(function (turnedStack) {
+      // At rest in this stack (a leaf in mid-turn casts its own shadow as it flies).
+      const resting = leaves.filter(function (leaf) {
+        return leaf.classList.contains("is-turned") === turnedStack && !leaf.classList.contains("is-turning");
+      });
+      const awake = resting.filter(function (leaf) { return !leaf.classList.contains("is-dormant"); });
+      const hidden = resting.length - awake.length;
+      if (!hidden || !awake.length) return;
+      // Turned leaves pile up with the latest on top, so the lowest awake one has the smallest
+      // index; unturned leaves the other way round.
+      const lowest = turnedStack ? awake[0] : awake[awake.length - 1];
+      const face = lowest.querySelector(turnedStack ? ".cure-face--back" : ".cure-face--front");
+      if (!face) return;
+      face.style.boxShadow = new Array(hidden + 1).fill(faceShadow).join(", ");
+      shadowed.push(face);
+    });
+  }
+
   function loadLeaves(from, to) {
     for (let k = Math.max(0, from - 1); k <= Math.min(LEAF_COUNT - 1, to + 1); k += 1) {
       leaves[k].querySelectorAll("img[data-src]").forEach(function (image) {
@@ -211,11 +260,13 @@
       void leaf.offsetWidth; // restart the shading animation
       leaf.classList.add("is-turning");
       leaf.classList.toggle("is-turned", turned);
+      restack();
       swish(duration);
       activeTurns += 1;
       later(function () {
         leaf.classList.remove("is-turning");
         activeTurns = Math.max(0, activeTurns - 1);
+        restack();
       }, duration + 60);
     }, delay);
     pendingLeaf.set(index, id);
@@ -238,6 +289,7 @@
     const leadGap = opts.lead ? Math.round(TURN_MS * 0.45) : 0;
 
     spread = target;
+    wakeLeaves(Math.min(from, target), Math.max(from, target));
     loadLeaves(Math.min(from, target), Math.max(from, target));
     clearPeek();
     let total = 0;
@@ -248,6 +300,12 @@
       turnLeaf(index, forward, delay, turnFor);
       total = Math.max(total, delay + turnFor);
     });
+    // Once every turn has landed, only the leaves around the new spread stay awake.
+    if (settleId) cancel(settleId);
+    settleId = later(function () {
+      settleId = 0;
+      wakeLeaves(spread, spread);
+    }, total + 120);
     update(opts);
     return total;
   }
@@ -438,6 +496,7 @@
     leaves.forEach(function (leaf) { leaf.classList.remove("is-turned", "is-turning", "is-peek"); });
     spread = 0;
     side = "right";
+    wakeLeaves(0, 0);
     loadLeaves(0, 3);
     update({ quiet: true });
     reader.showModal();

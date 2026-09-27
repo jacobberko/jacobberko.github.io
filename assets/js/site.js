@@ -805,8 +805,15 @@
     }
   }
 
-  function openTerminal() {
+  // Whatever opened the terminal with a mouse click or a tap (the orb, the 404 button). When the
+  // terminal closes, the browser hands focus back to it, and since the visitor was just typing,
+  // it would draw the keyboard focus ring around it. A keyboard opener keeps the ring (it shows
+  // keyboard users where they are); a pointer opener just lets go of focus.
+  let terminalOpener = null;
+
+  function openTerminal(event) {
     if (!terminal || terminal.open) return;
+    terminalOpener = event && event.currentTarget && event.currentTarget.nodeType === 1 && event.detail > 0 ? event.currentTarget : null;
     resetTerminalPosition();
     terminal.showModal();
     setDialogState(true);
@@ -842,6 +849,8 @@
     terminal.addEventListener("close", function () {
       resetTerminalPosition();
       setDialogState(false);
+      if (terminalOpener && doc.activeElement === terminalOpener) terminalOpener.blur();
+      terminalOpener = null;
     });
     terminal.addEventListener("click", function (event) { if (event.target === terminal) closeTerminal(); });
   }
