@@ -496,18 +496,37 @@ kbd {
 }
 
 /* The header logo: Jake's memoji on the acid tile from the favicon and the loading screen,
-   with the same ink outline as the round header buttons next to it. */
+   with the same ink outline as the round header buttons next to it. The tile, the memoji
+   (::before) and the outline (::after) are separate layers, so the CRT and synthwave themes
+   can repaint the tile without touching the face, and tint the face without the tile.
+   The tile stops 1px inside the edge, under the 1.5px outline, so only the outline draws
+   the anti-aliased rim (no tile colour fringing around the corners). */
 .brand-mark {
   position: relative;
   display: block;
   width: 2.55rem;
   height: 2.55rem;
+  padding: 1px;
   border-radius: 0.55rem;
-  /* Always the brand green (not the theme's --acid), so it matches the favicon in every theme;
-     the CRT theme's amber filter still tints it along with everything else. */
-  background: #d9ff43 url("/images/memoji-brand.png?v=3") center / 100% no-repeat;
-  box-shadow: inset 0 0 0 1.5px var(--ink);
+  background: #d9ff43 content-box;
   transition: transform 500ms var(--ease-out), filter 250ms ease;
+}
+
+.brand-mark::before,
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.brand-mark::before {
+  background: url("/images/memoji-brand.png?v=3") center / 100% no-repeat;
+  transition: filter 250ms ease;
+}
+
+.brand-mark::after {
+  box-shadow: inset 0 0 0 1.5px var(--ink);
 }
 
 .brand:hover .brand-mark {

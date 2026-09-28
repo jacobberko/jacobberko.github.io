@@ -1002,12 +1002,19 @@ html.theme-enter:not([data-theme]) main h1 {
     filter: none;
   }
 
-  .brand-mark,
+  /* The logo tile becomes a little phosphor screen: dark glass and a soft glow,
+     with the memoji burned in amber like every other picture on the tube. */
+  .brand-mark {
+    background-image: radial-gradient(circle at 50% 45%, #3a2408, #0d0904 80%);
+    box-shadow: 0 0 0.9rem rgba(255, 170, 40, 0.35);
+  }
+
+  .brand-mark::before,
   .chrome-orb span {
     filter: grayscale(1) sepia(1) saturate(3.2) hue-rotate(-12deg) brightness(1.02) contrast(1.05);
   }
 
-  .brand:hover .brand-mark,
+  .brand:hover .brand-mark::before,
   .chrome-orb:hover span {
     filter: grayscale(1) sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.18) contrast(1.1);
   }
@@ -1470,6 +1477,11 @@ html.theme-enter:not([data-theme]) main h1 {
     background:
       linear-gradient(to bottom, transparent 58%, rgba(255, 79, 216, 0.9) 58% 62%, transparent 62% 74%, rgba(255, 79, 216, 0.9) 74% 77%, transparent 77%),
       linear-gradient(to bottom, #fff17a 0%, #ff8a4c 30%, #ff4f8e 52%, #1a0640 56%, #2a0a55 100%);
+  }
+
+  /* The logo tile catches the same sunset as the swatch. */
+  .brand-mark {
+    background-image: linear-gradient(to bottom, #fff17a 0%, #ff8a4c 45%, #ff4f8e 100%);
   }
 
   .ticker {
