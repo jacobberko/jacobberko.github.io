@@ -1767,14 +1767,11 @@ html.theme-enter:not([data-theme]) main h1 {
   html[data-theme="crt"] .site-noise { display: none; }
 }
 
-/* Synthwave gives the story chapters translucent backgrounds, so the chapter being covered
-   used to show through the one sliding over it (the bio paragraph readable behind
-   "THE TIMELINE." and its cards). On phones, where the two chapters' text lands on top of
-   each other, the covered stage is cut off at the incoming chapter's top edge instead: --out
-   is exactly how far that edge has climbed (home-story.js). Wider screens keep the
-   see-through cover as it was. Default and CRT have opaque chapters and need no clip. */
-@media (max-width: 760px) {
-  #{$theme-synth} .home-story .story-chapter.is-pinned:not(.story-chapter--end) > .story-stage {
-    clip-path: inset(0 0 calc(var(--out, 0) * 100%) 0);
-  }
+/* Synthwave gives the story chapters translucent backgrounds (so its sunset scene shows
+   through), which let the chapter being covered show through the one sliding over it: the
+   bio paragraph readable behind "THE TIMELINE." and its cards. So the covered stage is cut
+   off at the incoming chapter's top edge instead: --out is exactly how far that edge has
+   climbed (home-story.js). Default and CRT have opaque chapters and need no clip. */
+#{$theme-synth} .home-story .story-chapter.is-pinned:not(.story-chapter--end) > .story-stage {
+  clip-path: inset(0 0 calc(var(--out, 0) * 100%) 0);
 }
